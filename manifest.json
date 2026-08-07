@@ -1,0 +1,56 @@
+{
+  "id": "/raees-builder/",
+  "name": "Raees Builder - Precast Roofing & Installation",
+  "short_name": "Raees Builder",
+  "description": "Precast RCC roof slabs, free site estimation and professional installation services by Raees Builder.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#f26522",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "411x220",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Free Estimate",
+      "short_name": "Estimate",
+      "description": "Request a free site estimate",
+      "url": "./index.html#contact"
+    },
+    {
+      "name": "Services",
+      "short_name": "Services",
+      "description": "See all services",
+      "url": "./index.html#services"
+    },
+    {
+      "name": "Our Work",
+      "short_name": "Work",
+      "description": "Recent projects",
+      "url": "./index.html#work"
+    }
+  ]
+}
