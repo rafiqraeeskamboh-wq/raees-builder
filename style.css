@@ -171,3 +171,12 @@ form .btn{width:100%}
   .grid-3,.grid-4,.grid-2,.gallery{grid-template-columns:1fr}
   .topbar .container{justify-content:center;text-align:center}
 }
+
+
+/* ============ APP INSTALL BUTTON (PWA) ============ */
+.btn--install{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.6);color:#fff;font-family:inherit;font-size:15px}
+.btn--install:hover{background:rgba(255,255,255,.28)}
+.btn--install[hidden]{display:none}
+@media all and (display-mode:standalone){
+  .btn--install{display:none!important}
+}
