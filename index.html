@@ -20,6 +20,15 @@
 <meta name="twitter:description" content="Precast RCC roof slabs, free site estimation and professional installation.">
 <meta name="twitter:image" content="https://rafiqraeeskamboh-wq.github.io/raees-builder/logo.png">
 
+<!-- ============ APP / PWA ============ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f26522">
+<meta name="application-name" content="Raees Builder">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Raees Builder">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -73,6 +82,7 @@
       <a class="btn btn--primary" href="#contact">Get a Free Estimate</a>
       <a class="btn btn--wa" href="https://wa.me/923001234567" target="_blank" rel="noopener">Chat on WhatsApp</a>
       <a class="btn btn--ghost" href="#services">View Services</a>
+<button class="btn btn--install" type="button" id="installApp" hidden>&#8681; Install App</button>
     </div>
 
     <!-- CHANGE ME: replace these numbers with your real figures -->
@@ -402,5 +412,6 @@
 <a class="fab" href="https://wa.me/923001234567" target="_blank" rel="noopener" aria-label="WhatsApp">&#9990;</a>
 
 <script src="script.js"></script>
+<script src="pwa.js"></script>
 </body>
 </html>
