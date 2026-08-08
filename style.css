@@ -180,23 +180,3 @@ form .btn{width:100%}
 @media all and (display-mode:standalone){
   .btn--install{display:none!important}
 }
-
-
-/* ============ CAMERA ============ */
-[hidden]{display:none!important}
-button.btn{font-family:inherit}
-.camera{padding:34px 0 70px}
-.camera h2{font-size:26px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
-.camera .cam-lead{color:var(--muted);margin-bottom:20px}
-.camera .cam-urdu{direction:rtl;color:var(--muted);font-size:14px;margin-bottom:20px}
-.cam{max-width:520px}
-.cam-stage{position:relative;width:100%;aspect-ratio:3/4;background:#14171a;border-radius:var(--radius);overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
-.cam-stage video,.cam-stage img{width:100%;height:100%;object-fit:cover;display:block}
-.cam-msg{color:#c8cdd3;font-size:14px;line-height:1.5;text-align:center;padding:0 24px}
-.cam-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
-.cam-controls .btn{padding:12px 22px;font-size:14px}
-.btn--line{background:#fff;border-color:var(--line);color:var(--ink)}
-.btn--line:hover{background:var(--bg-soft)}
-@media (max-width:520px){
-  .cam-controls .btn{flex:1 1 46%}
-}
