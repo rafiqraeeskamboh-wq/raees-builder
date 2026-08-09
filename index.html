@@ -30,6 +30,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="app/app.css">
 </head>
 <body>
 
@@ -59,12 +60,26 @@
 </header>
 
 <!-- ============================================================
-All other sections (top bar, hero, services, why us, process,
-gallery, FAQs, contact form, footer, WhatsApp button) were
-removed on request. The full previous version is still safe in
-this repository's commit history if it is ever needed again.
-New content goes below this comment.
+     CHATAI SALE &amp; STOCK APP
+     The whole app is rendered by React inside #rb-root below.
+     Source files live in the /app folder of this repository.
 ============================================================ -->
+<main id="rb-root">
+  <div class="rb-loading">Loading...</div>
+</main>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
+
+<script src="app/i18n.js"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/lib.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/sale.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/stock.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/pass.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/dues.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/settings.jsx"></script>
+<script type="text/babel" data-presets="react" data-type="script" src="app/main.jsx"></script>
 
 <script src="script.js"></script>
 <script src="pwa.js"></script>
