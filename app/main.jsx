@@ -1,7 +1,11 @@
 /* Raees Builder App - shell, tabs and mount */
 
+RB.PHONE = "03416106462";
+
+RB.P.phone = "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z";
+
 RB.App = function () {
-  var settings = RB.usePersist("settings", { lang: "ur", shopName: "Raees Builder", phone: "", addr: "" });
+  var settings = RB.usePersist("settings", { lang: "ur", shopName: "Raees Builder", phone: RB.PHONE, addr: "" });
   var items = RB.usePersist("items", []);
   var sales = RB.usePersist("sales", []);
   var passes = RB.usePersist("passes", []);
@@ -13,9 +17,13 @@ RB.App = function () {
 
   React.useEffect(function () {
     if (!items[0] || items[0].length === 0) items[1](RB.seed());
+    if (!settings[0].phone) {
+      settings[1](function (o) { return Object.assign({}, o, { phone: RB.PHONE }); });
+    }
   }, []);
 
   var t = RB.T[settings[0].lang] || RB.T.en;
+  var tel = settings[0].phone || RB.PHONE;
 
   var addLog = function (text) {
     log[1](function (a) {
@@ -54,6 +62,14 @@ RB.App = function () {
   else if (tab[0] === "dues") body = <RB.DuesTab {...c} />;
   else body = <RB.SettingsTab {...c} />;
 
+  var telStyle = {
+    display: "inline-flex", alignItems: "center", gap: "6px",
+    background: "rgba(255,255,255,.18)", color: "#fff",
+    border: "1px solid rgba(255,255,255,.35)", borderRadius: "999px",
+    padding: "6px 12px", fontSize: "13px", fontWeight: 700,
+    textDecoration: "none", direction: "ltr", whiteSpace: "nowrap"
+  };
+
   return (
     <div className="rb-app" dir={t.dir}>
       <div className="rb-top rb-noprint">
@@ -62,6 +78,10 @@ RB.App = function () {
           <small>{t.sub}</small>
         </div>
         <div className="rb-top__acts">
+          <a href={"tel:" + tel} style={telStyle} title={tel}>
+            <RB.Ic n="phone" s={15} />
+            <span>{tel}</span>
+          </a>
           <RB.Btn sm icon="globe" title={t.language}
             onClick={function () {
               settings[1](function (o) {
