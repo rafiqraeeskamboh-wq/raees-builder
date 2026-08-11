@@ -72,9 +72,9 @@ var TRANSLATIONS = {
   en: {
     appName: "Raees Builder", tagline: "Chatai Sale & Inventory",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
-    saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Farmaish Sale",
+    saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Pemaishi Sale",
     customerName: "Customer name", date: "Date", addItem: "Add item",
-    chooseCategory: "Choose category", garden: "Garden", slab: "Slab",
+    chooseCategory: "Choose category", garden: "Garder", slab: "Slab",
     inStock: "in stock", qty: "Qty", length: "Length", width: "Width",
     sqft: "Sqft", rate: "Rate", amount: "Amount", description: "Description",
     noItemsYet: "No items added yet", tapAddItem: "Tap Add item to start the bill",
@@ -131,9 +131,9 @@ var TRANSLATIONS = {
   ur: {
     appName: "رئیس بلڈر", tagline: "چھتائی سیل اینڈ انوینٹری",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
-    saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "فرمائش سیل",
+    saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
     customerName: "گاہک کا نام", date: "تاریخ", addItem: "آئٹم شامل کریں",
-    chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈن", slab: "سلیب",
+    chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈر", slab: "سلیب",
     inStock: "اسٹاک میں", qty: "تعداد", length: "لمبائی", width: "چوڑائی",
     sqft: "مربع فٹ", rate: "ریٹ", amount: "رقم", description: "تفصیل",
     noItemsYet: "ابھی کوئی آئٹم شامل نہیں", tapAddItem: "بل شروع کرنے کے لیے آئٹم شامل کریں",
