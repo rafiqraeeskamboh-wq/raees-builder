@@ -634,6 +634,12 @@ function RaeesBuilderApp() {
   }
 
   function clearAllData() {
+    if (role !== "admin") return;
+    if (window.RB_ASK_ADMIN_PIN) { window.RB_ASK_ADMIN_PIN(doClearAllData); return; }
+    doClearAllData();
+  }
+
+  function doClearAllData() {
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); setCustomVariants({ garden: [], slab: [] }); setActivityLog([]);
     showToast(t("clearData"));
