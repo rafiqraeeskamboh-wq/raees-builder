@@ -34,7 +34,7 @@
   var B1 = "width:100%;padding:12px;margin-bottom:8px;border:0;border-radius:8px;background:#c0392b;color:#fff;font-weight:700;font-size:15px;cursor:pointer";
   var B2 = "width:100%;padding:10px;margin-bottom:8px;border:1px solid #555;border-radius:8px;background:transparent;color:#ccc;font-size:14px;cursor:pointer";
 
-  function card(html) {
+  function card(html, scroll) {
     var w = document.createElement("div");
     w.id = "rb-lock";
     w.style.cssText = CARD;
@@ -42,6 +42,7 @@
       + html
       + '<div id="lkErr" style="margin-top:8px;color:#ff8a80;font-size:13px;min-height:18px"></div>';
     root.parentNode.insertBefore(w, root);
+    if (scroll) { try { w.scrollIntoView({ block: "center" }); } catch (err) {} }
     return w;
   }
   function clearCard() { var e = document.getElementById("rb-lock"); if (e) e.remove(); }
@@ -118,7 +119,7 @@
 
   /* ---------- PIN settings (sirf admin) ---------- */
   function pinMenu(back) {
-    var w = card(msg("PIN settings") + btn("lkA", "Admin PIN change", B1) + btn("lkB", "Accountant PIN set / change", B1) + btn("lkX", "Wapas", B2));
+    var w = card(msg("PIN settings") + btn("lkA", "Admin PIN change", B1) + btn("lkB", "Accountant PIN set / change", B1) + btn("lkX", "Wapas", B2), true);
     w.querySelector("#lkA").onclick = function () { clearCard(); changePin("admin", back); };
     w.querySelector("#lkB").onclick = function () { clearCard(); changePin("accountant", back); };
     w.querySelector("#lkX").onclick = function () { clearCard(); back(); };
@@ -126,7 +127,7 @@
 
   function changePin(which, back) {
     var label = which === "admin" ? "ADMIN" : "ACCOUNTANT";
-    var w = card(msg(label + " ka naya PIN") + inp("lkOld", "Admin PIN (tasdeeq)") + inp("lkP1", "Naya PIN") + inp("lkP2", "PIN dobara") + btn("lkGo", "Save", B1) + btn("lkX", "Cancel", B2));
+    var w = card(msg(label + " ka naya PIN") + inp("lkOld", "Admin PIN (tasdeeq)") + inp("lkP1", "Naya PIN") + inp("lkP2", "PIN dobara") + btn("lkGo", "Save", B1) + btn("lkX", "Cancel", B2), true);
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     go.onclick = function () {
       var v = w.querySelector("#lkP1").value.trim();
@@ -154,9 +155,9 @@
     if (document.getElementById("lkBar")) return;
     var bar = document.createElement("div");
     bar.id = "lkBar";
-    bar.style.cssText = "max-width:480px;margin:10px auto 24px;display:flex;gap:8px;justify-content:center;font-family:system-ui,sans-serif";
-    var BS = "padding:6px 12px;border:1px solid #555;border-radius:8px;background:transparent;color:#888;font-size:12px;cursor:pointer";
-    bar.innerHTML = '<span style="padding:6px 12px;border-radius:8px;background:#2a2a2a;color:#bbb;font-size:12px">' + (role === "admin" ? "ADMIN" : "ACCOUNTANT") + '</span>'
+    bar.style.cssText = "position:fixed;right:10px;bottom:76px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end;font-family:system-ui,sans-serif";
+    var BS = "padding:7px 12px;border:1px solid #666;border-radius:8px;background:#242424;color:#eee;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45)";
+    bar.innerHTML = '<span style="padding:6px 12px;border-radius:8px;background:#2a2a2a;color:#bbb;font-size:11px;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,.45)">' + (role === "admin" ? "ADMIN" : "ACCOUNTANT") + '</span>'
       + (role === "admin" ? '<button id="lkPins" style="' + BS + '">PIN settings</button>' : "")
       + '<button id="lkOut" style="' + BS + '">Logout</button>';
     root.parentNode.insertBefore(bar, root.nextSibling);
@@ -177,7 +178,7 @@
     root.style.display = "none";
     if (bar) bar.style.display = "none";
     function back() { root.style.display = ""; if (bar) bar.style.display = "flex"; }
-    var w = card(msg("Ye kaam sirf Admin kar sakta hai - Admin PIN daalein") + inp("lkOld", "Admin PIN") + btn("lkGo", "Confirm", B1) + btn("lkX", "Cancel", B2));
+    var w = card(msg("Ye kaam sirf Admin kar sakta hai - Admin PIN daalein") + inp("lkOld", "Admin PIN") + btn("lkGo", "Confirm", B1) + btn("lkX", "Cancel", B2), true);
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     go.onclick = function () {
       e.textContent = "";
