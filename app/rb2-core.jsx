@@ -36,6 +36,13 @@ function isoOf(d) {
 }
 function rbToday() { return isoOf(new Date()); }
 function rbUid() { return Math.random().toString(36).slice(2, 10); }
+function rbDate(d) {
+  var s = String(d || "");
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return s;
+  return m[3] + "/" + m[2] + "/" + m[1].slice(2);
+}
+function roleName(t, r) { return r === "accountant" ? t("accountant") : (r === "admin" ? t("admin") : "-"); }
 function rbMoney(n) {
   var v = Number(n) || 0;
   return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -75,6 +82,8 @@ var TRANSLATIONS = {
     saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Pemaishi Sale",
     customerName: "Customer name", date: "Date", addItem: "Add item",
     chooseCategory: "Choose category", garden: "Garder", slab: "Slab",
+    discount: "Discount", preparedBy: "Prepared by", returnLabel: "Return", returnItems: "Return items",
+    returnQty: "Return qty", returnReason: "Reason (optional)", returnSaved: "Return saved", returnTotal: "Return total",
     inStock: "in stock", qty: "Qty", length: "Length", width: "Width",
     sqft: "Sqft", rate: "Rate", amount: "Amount", description: "Description",
     noItemsYet: "No items added yet", tapAddItem: "Tap Add item to start the bill",
@@ -134,6 +143,8 @@ var TRANSLATIONS = {
     saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
     customerName: "گاہک کا نام", date: "تاریخ", addItem: "آئٹم شامل کریں",
     chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈر", slab: "سلیب",
+    discount: "رعایت", preparedBy: "تیار کنندہ", returnLabel: "واپسی", returnItems: "مال واپسی",
+    returnQty: "واپسی تعداد", returnReason: "وجہ (اختیاری)", returnSaved: "واپسی محفوظ ہو گئی", returnTotal: "کل واپسی",
     inStock: "اسٹاک میں", qty: "تعداد", length: "لمبائی", width: "چوڑائی",
     sqft: "مربع فٹ", rate: "ریٹ", amount: "رقم", description: "تفصیل",
     noItemsYet: "ابھی کوئی آئٹم شامل نہیں", tapAddItem: "بل شروع کرنے کے لیے آئٹم شامل کریں",
