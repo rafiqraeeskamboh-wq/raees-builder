@@ -928,6 +928,7 @@ function SettingsTab(p) {
         </div>
       </SettingsBlock>
 
+      {window.RB_LOCK_ROLE ? null : (
       <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("role")}>
         <div style={{ display: "flex", gap: 8 }}>
           {[["admin", t("admin")], ["accountant", t("accountant")]].map(function (o) {
@@ -942,6 +943,7 @@ function SettingsTab(p) {
           })}
         </div>
       </SettingsBlock>
+      )}
 
       {role === "admin" ? (
         <SettingsBlock icon={<Ico name="history" size={16} color={TC.cream} />} title={t("activityLog")}>
@@ -970,6 +972,7 @@ function SettingsTab(p) {
 
       <div style={{ background: TC.appBg2, borderRadius: 8, padding: 12, fontSize: 11.5, color: "#A39C8A" }}>{t("dataShared")}</div>
 
+      {role !== "admin" ? null : (
       <div>
         {!confirming ? (
           <button onClick={function () { setConfirming(true); }} style={{
@@ -989,6 +992,7 @@ function SettingsTab(p) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
