@@ -139,6 +139,7 @@ function NewSaleTab(p) {
   var g = React.useState(""), labourRate = g[0], setLabourRate = g[1];
   var h = React.useState(false), paidInFull = h[0], setPaidInFull = h[1];
   var i = React.useState(""), advanceInput = i[0], setAdvanceInput = i[1];
+  var dsc = React.useState(""), discountInput = dsc[0], setDiscountInput = dsc[1];
   var j = React.useState(false), submitting = j[0], setSubmitting = j[1];
   var mode = saleType === "cash" ? "piece" : "area";
   var isEditing = !!editingSale;
@@ -154,6 +155,7 @@ function NewSaleTab(p) {
       setLabourRate(editingSale.roofLabourRate ? String(editingSale.roofLabourRate) : "");
       setPaidInFull(editingSale.paidInFull);
       setAdvanceInput(String(editingSale.advance || 0));
+      setDiscountInput(String(editingSale.discount || 0));
     }
   }, [editingSale]);
 
@@ -163,7 +165,8 @@ function NewSaleTab(p) {
     return sum + sq * (Number(r.rate) || 0);
   }, 0);
   var labourTotal = saleType === "cash" ? (Number(labourRate) || 0) : 0;
-  var totalBill = itemsTotal + labourTotal;
+  var discount = Math.max(0, Math.min(itemsTotal + labourTotal, Number(discountInput) || 0));
+  var totalBill = itemsTotal + labourTotal - discount;
   var advance = paidInFull ? totalBill : Math.min(totalBill, Number(advanceInput) || 0);
   var dues = Math.max(0, totalBill - advance);
 
@@ -184,7 +187,7 @@ function NewSaleTab(p) {
   function removeRow(id) { setRows(function (r) { return r.filter(function (row) { return row.id !== id; }); }); }
   function resetForm() {
     setCustomerName(""); setMobile(""); setRows([]); setLabourRate("");
-    setPaidInFull(false); setAdvanceInput(""); setDate(rbToday());
+    setPaidInFull(false); setAdvanceInput(""); setDiscountInput(""); setDate(rbToday());
   }
   var canSave = customerName.trim() && rows.length > 0 && !submitting;
 
@@ -200,7 +203,7 @@ function NewSaleTab(p) {
       type: saleType, customerName: customerName.trim(), mobile: mobile.trim(), date: date, items: items,
       roofLabourRate: saleType === "cash" ? (Number(labourRate) || 0) : 0,
       labourTotal: labourTotal, itemsTotal: itemsTotal, totalBill: totalBill,
-      advance: advance, dues: dues, paidInFull: paidInFull
+      discount: discount, advance: advance, dues: dues, paidInFull: paidInFull
     };
     if (isEditing) payload.editId = editingSale.id;
     onSave(payload);
@@ -291,6 +294,9 @@ function NewSaleTab(p) {
         )}
 
         <div style={{ marginTop: 16, borderTop: "2px dashed " + TC.paperLine, paddingTop: 12 }}>
+          <Field label={t("discount")}>
+            <input type="number" inputMode="decimal" value={discountInput} onChange={function (ev) { setDiscountInput(ev.target.value); }} placeholder="0" style={rbInput()} />
+          </Field>
           <TotalRow label={t("totalBill")} value={rbMoney(totalBill)} bold />
           <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0", cursor: "pointer" }}>
             <input type="checkbox" checked={paidInFull} onChange={function (ev) { setPaidInFull(ev.target.checked); }} style={{ width: 16, height: 16, accentColor: TC.success }} />
@@ -344,7 +350,7 @@ function StockSummaryCard(p) {
           {sorted.map(function (e) {
             return (
               <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}>
-                <span>{e.date} · {variantLabel(t, e.category, e.variant)}</span>
+                <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
                 <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span>
               </div>
             );
@@ -525,7 +531,7 @@ function WastageSummaryCard(p) {
             return (
               <div key={e.id} style={{ padding: "3px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: TC.inkSoft }}>
-                  <span>{e.date} · {variantLabel(t, e.category, e.variant)}</span>
+                  <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
                   <span className="rb-mono" style={{ fontWeight: 700, color: TC.stamp }}>-{e.qty}</span>
                 </div>
                 {e.reason ? <div style={{ fontSize: 10, color: TC.concrete, marginTop: 1 }}>{e.reason}</div> : null}
@@ -692,7 +698,7 @@ function PaymentsSummaryCard(p) {
           {sorted.map(function (x, i) {
             return (
               <div key={x.id || i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}>
-                <span>{x.date} · {x.customerName}</span>
+                <span>{rbDate(x.date)} · {x.customerName}</span>
                 <span className="rb-mono" style={{ fontWeight: 700, color: TC.success }}>Rs {rbMoney(x.amount)}</span>
               </div>
             );
@@ -709,7 +715,9 @@ function CollectPaymentModal(p) {
   var t = p.t, sale = p.sale;
   var a = React.useState(String(sale.dues || 0)), amount = a[0], setAmount = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
-  var canSave = Number(amount) > 0 && Number(amount) <= sale.dues + 0.001;
+  var dsc = React.useState(""), discountInput = dsc[0], setDiscountInput = dsc[1];
+  var discAmt = Math.max(0, Number(discountInput) || 0);
+  var canSave = (Number(amount) > 0 || discAmt > 0) && (Number(amount) || 0) + discAmt <= sale.dues + 0.001;
   return (
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
@@ -723,7 +731,10 @@ function CollectPaymentModal(p) {
       <Field label={t("date")}>
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
-      <button disabled={!canSave} onClick={function () { p.onCollect(amount, date); }} style={{
+      <Field label={t("discount")}>
+        <input type="number" inputMode="decimal" value={discountInput} onChange={function (e) { setDiscountInput(e.target.value); }} placeholder="0" style={rbInput()} />
+      </Field>
+      <button disabled={!canSave} onClick={function () { p.onCollect(amount, date, discountInput); }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.success : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
         cursor: canSave ? "pointer" : "not-allowed"
@@ -742,10 +753,10 @@ function DuesTab(p) {
     if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false;
     return true;
   });
-  function handleCollect(amount, date) {
-    var updated = onCollect(collectingFor.id, amount, date);
+  function handleCollect(amount, date, discount) {
+    var updated = onCollect(collectingFor.id, amount, date, discount);
     setCollectingFor(null);
-    if (updated) onReceipt({ sale: updated, amount: Number(amount), date: date });
+    if (updated) onReceipt({ sale: updated, amount: Number(amount) || 0, date: date, discount: Number(discount) || 0 });
   }
   return (
     <div style={{ padding: "14px 14px 4px" }}>
@@ -778,7 +789,7 @@ function DuesTab(p) {
                   <div>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</div>
                     <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>
-                      #{s.serial} · {s.date} · {s.type === "cash" ? t("cashSale") : t("customizedSale")}
+                      #{s.serial} · {rbDate(s.date)} · {s.type === "cash" ? t("cashSale") : t("customizedSale")}
                     </div>
                   </div>
                   <div style={{ textAlign: "end" }}>
@@ -883,7 +894,7 @@ function GatePassTab(p) {
                       background: g.type === "cash" ? TC.stamp : TC.slab, color: TC.cream
                     }}>{g.type === "cash" ? t("cashSale") : t("customizedSale")}</span>
                   </div>
-                  <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{g.serial} · {g.date} · {(g.items || []).length} {t("items")}</div>
+                  <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{g.serial} · {rbDate(g.date)} · {(g.items || []).length} {t("items")}</div>
                 </div>
                 <Ico name="chev" size={17} color={TC.concrete} />
               </div>
@@ -969,7 +980,7 @@ function SettingsTab(p) {
                     </div>
                     <div style={{ textAlign: "end" }}>
                       <div style={{ fontSize: 9, fontWeight: 700, color: e.role === "admin" ? TC.stamp : TC.slab }}>{e.role === "admin" ? t("admin") : t("accountant")}</div>
-                      <div style={{ fontSize: 9, color: "#6B6656", marginTop: 1 }}>{e.date}</div>
+                      <div style={{ fontSize: 9, color: "#6B6656", marginTop: 1 }}>{rbDate(e.date)}</div>
                     </div>
                   </div>
                 );
