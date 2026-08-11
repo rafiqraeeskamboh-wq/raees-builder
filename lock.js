@@ -158,7 +158,6 @@
     bar.style.cssText = "position:fixed;right:10px;bottom:76px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end;font-family:system-ui,sans-serif";
     var BS = "padding:7px 12px;border:1px solid #666;border-radius:8px;background:#242424;color:#eee;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45)";
     bar.innerHTML = '<span style="padding:6px 12px;border-radius:8px;background:#2a2a2a;color:#bbb;font-size:11px;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,.45)">' + (role === "admin" ? "ADMIN" : "ACCOUNTANT") + '</span>'
-      + (role === "admin" ? '<button id="lkPins" style="' + BS + '">PIN settings</button>' : "")
       + '<button id="lkOut" style="' + BS + '">Logout</button>';
     root.parentNode.insertBefore(bar, root.nextSibling);
     bar.querySelector("#lkOut").onclick = function () { sessionStorage.removeItem(SESSION); location.reload(); };
@@ -192,6 +191,14 @@
     w.querySelector("#lkX").onclick = function () { clearCard(); back(); };
     w.querySelector("#lkOld").focus();
     w.addEventListener("keydown", function (ev) { if (ev.key === "Enter") go.click(); });
+  };
+
+  window.RB_PIN_SETTINGS = function (which) {
+    var bar = document.getElementById("lkBar");
+    root.style.display = "none";
+    if (bar) bar.style.display = "none";
+    function back() { root.style.display = ""; if (bar) bar.style.display = "flex"; }
+    changePin(which === "accountant" ? "accountant" : "admin", back);
   };
 
   var session = sessionStorage.getItem(SESSION);
