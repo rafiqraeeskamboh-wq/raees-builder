@@ -1,10 +1,11 @@
 /* Raees Builder - service worker */
-const CACHE = 'raees-builder-v7';
+const CACHE = 'raees-builder-v8';
 
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
+  './lock.js',
   './script.js',
   './pwa.js',
   './logo.png',
