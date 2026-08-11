@@ -945,6 +945,15 @@ function SettingsTab(p) {
       </SettingsBlock>
       )}
 
+      {role === "admin" && window.RB_PIN_SETTINGS ? (
+        <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN / PASSWORD">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button onClick={function () { window.RB_PIN_SETTINGS("admin"); }} style={{ padding: "10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>Admin PIN change</button>
+            <button onClick={function () { window.RB_PIN_SETTINGS("accountant"); }} style={{ padding: "10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>Accountant PIN set / change</button>
+          </div>
+        </SettingsBlock>
+      ) : null}
+
       {role === "admin" ? (
         <SettingsBlock icon={<Ico name="history" size={16} color={TC.cream} />} title={t("activityLog")}>
           {activityLog.length === 0 ? (
