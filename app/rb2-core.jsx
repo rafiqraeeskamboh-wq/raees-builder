@@ -79,6 +79,8 @@ var TRANSLATIONS = {
   en: {
     appName: "Raees Builder", tagline: "Chatai Sale & Inventory",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
+    navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
+    billsTotal: "Total amount", billsReceived: "Received", noBills: "No bills yet.",
     saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Pemaishi Sale",
     customerName: "Customer name", date: "Date", addItem: "Add item",
     chooseCategory: "Choose category", garden: "Garder", slab: "Slab",
@@ -140,6 +142,8 @@ var TRANSLATIONS = {
   ur: {
     appName: "رئیس بلڈر", tagline: "چھتائی سیل اینڈ انوینٹری",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
+    navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
+    billsTotal: "کل رقم", billsReceived: "وصول شدہ", noBills: "ابھی تک کوئی بل نہیں۔",
     saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
     customerName: "گاہک کا نام", date: "تاریخ", addItem: "آئٹم شامل کریں",
     chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈر", slab: "سلیب",
@@ -387,6 +391,7 @@ function AppHeader(p) {
 function TabBar(p) {
   var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount;
   var tabs = [{ id: "sale", label: t("navSale"), icon: "receipt" }];
+  tabs.push({ id: "bills", label: t("navBills"), icon: "history" });
   if (role === "admin") {
     tabs.push({ id: "stock", label: t("navStock"), icon: "pkg" });
     tabs.push({ id: "wastage", label: t("navWastage"), icon: "trash" });
@@ -409,7 +414,7 @@ function TabBar(p) {
             cursor: "pointer", position: "relative"
           }}>
             <Ico name={it.icon} size={19} color={active ? TC.stamp : "#8B8577"} strokeWidth={active ? 2.4 : 2} />
-            <span style={{ fontSize: 10.5, color: active ? TC.cream : "#8B8577", fontWeight: active ? 600 : 500 }}>{it.label}</span>
+            <span style={{ fontSize: 9.5, color: active ? TC.cream : "#8B8577", fontWeight: active ? 600 : 500, whiteSpace: "nowrap" }}>{it.label}</span>
             {it.badge ? (
               <span style={{
                 position: "absolute", top: 0, right: "26%", background: TC.amber, color: TC.ink,
