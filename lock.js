@@ -84,7 +84,7 @@
 
   /* ---------- pehli baar ---------- */
   function setupAdmin() {
-    var w = card(msg("Pehli baar: ADMIN ka PIN set karein") + inp("lkP1", "Admin PIN") + inp("lkP2", "Confirm Admin PIN") + btn("lkGo", "Save Admin PIN", B1));
+    var w = card(inp("lkP1", "Admin PIN") + inp("lkP2", "Confirm Admin PIN") + btn("lkGo", "Save Admin PIN", B1));
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     go.onclick = function () {
       var v = w.querySelector("#lkP1").value.trim();
