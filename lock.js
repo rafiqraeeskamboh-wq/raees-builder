@@ -84,7 +84,7 @@
 
   /* ---------- pehli baar ---------- */
   function setupAdmin() {
-    var w = card(msg("Pehli baar: ADMIN ka PIN set karein") + inp("lkP1", "Admin PIN") + inp("lkP2", "PIN dobara") + btn("lkGo", "Save Admin PIN", B1));
+    var w = card(msg("Pehli baar: ADMIN ka PIN set karein") + inp("lkP1", "Admin PIN") + inp("lkP2", "Confirm Admin PIN") + btn("lkGo", "Save Admin PIN", B1));
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     go.onclick = function () {
       var v = w.querySelector("#lkP1").value.trim();
@@ -98,7 +98,7 @@
   }
 
   function setupAcct() {
-    var w = card(msg("Ab ACCOUNTANT ka PIN set karein (baad mein bhi ho sakta hai)") + inp("lkP1", "Accountant PIN") + inp("lkP2", "PIN dobara") + btn("lkGo", "Save Accountant PIN", B1) + btn("lkSkip", "Abhi nahi", B2));
+    var w = card(msg("Ab ACCOUNTANT ka PIN set karein (baad mein bhi ho sakta hai)") + inp("lkP1", "Accountant PIN") + inp("lkP2", "Confirm Accountant PIN") + btn("lkGo", "Save Accountant PIN", B1) + btn("lkSkip", "Abhi nahi", B2));
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     function done() { sessionStorage.setItem(SESSION, "admin"); setPrefsRole("admin"); location.reload(); }
     go.onclick = function () {
@@ -127,7 +127,7 @@
 
   function changePin(which, back) {
     var label = which === "admin" ? "ADMIN" : "ACCOUNTANT";
-    var w = card(msg(label + " ka naya PIN") + inp("lkOld", "Admin PIN (tasdeeq)") + inp("lkP1", "Naya PIN") + inp("lkP2", "PIN dobara") + btn("lkGo", "Save", B1) + btn("lkX", "Cancel", B2), true);
+    var w = card(msg(label + " ka naya PIN") + inp("lkOld", "Admin PIN (tasdeeq)") + inp("lkP1", "Naya PIN") + inp("lkP2", "Confirm New PIN") + btn("lkGo", "Save", B1) + btn("lkX", "Cancel", B2), true);
     var e = w.querySelector("#lkErr"), go = w.querySelector("#lkGo");
     go.onclick = function () {
       var v = w.querySelector("#lkP1").value.trim();
