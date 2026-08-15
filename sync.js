@@ -236,7 +236,7 @@
           begin(db, auth);
         } else {
           running = false;
-          loginCard(auth);
+          auth.signInWithEmailAndPassword("raees@raees.local", "161064").catch(function () { loginCard(auth); });
         }
       });
     })
