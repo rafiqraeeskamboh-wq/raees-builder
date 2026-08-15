@@ -1,17 +1,16 @@
 /* Raees Builder App v2 - bill / gate pass / receipt modals + app shell */
 
 function BillModal(p) {
-  var t = p.t, role = p.role, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass;
+  var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass;
   var isPaid = (sale.dues || 0) <= 0;
   var isCash = sale.type === "cash";
-  var canEdit = role === "admin" && !isCash;
+  var canEdit = hasPerm(role, permissions, "editSale") && !isCash;
   var headers = isCash
     ? [t("sr"), t("description"), t("qty"), t("rate"), t("amount")]
     : [t("sr"), t("description"), t("qty"), t("length"), t("width"), t("sqft"), t("rate"), t("amount")];
   var waText = t("appName") + NL + (isCash ? t("billNo") : t("gatePassNo")) + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName
-    + NL + t("date") + ": " + rbDate(sale.date)
-    + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
+var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;    + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
     + NL + t("advance") + ": Rs " + rbMoney(sale.advance)
     + NL + t("dues") + ": Rs " + rbMoney(sale.dues);
   return (
@@ -22,7 +21,7 @@ function BillModal(p) {
             <Ico name="arrowleft" size={16} /> {t("back")}
           </button>
           <div style={{ display: "flex", gap: 8 }}>
-            {(role === "admin" && p.onReturn) ? (
+            {(canEdit && p.onReturn) ? (
               <button onClick={function () { p.onReturn(sale); }} style={{ background: "transparent", border: "1.5px solid " + TC.stamp, color: TC.stamp, padding: "6px 12px", borderRadius: 7, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
                 {t("returnLabel")}
               </button>
@@ -259,8 +258,8 @@ function GatePassBuilderModal(p) {
 }
 
 function GatePassModal(p) {
-  var t = p.t, role = p.role, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;
-  var canEdit = role === "admin" && !!onEdit;
+  var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;
+  var canEdit = hasPerm(role, permissions, "gatePass") && !!onEdit;
   var lines = items.map(function (it, i) { return (i + 1) + ". " + (it.desc || "—") + " — " + t("qty") + ": " + it.qty; }).join(NL);
   var waText = t("appName") + NL + t("gatePassTitle") + NL + t("gatePassNo") + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName + NL + t("date") + ": " + rbDate(sale.date) + NL + NL + lines;
@@ -479,7 +478,7 @@ function ReturnModal(p) {
 
 function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) { var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor; var a = React.useState("garden"), cat = a[0], setCat = a[1]; var b = React.useState(function () { var src = p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)); return src.map(function (it) { return Object.assign({}, it); }); }); var cart = b[0], setCart = b[1]; var c = React.useState(null), active = c[0], setActive = c[1]; var d = React.useState(""), qtyInput = d[0], setQtyInput = d[1]; var ce = React.useState(""), customDescInput = ce[0], setCustomDescInput = ce[1]; var urdu = lang === "ur"; var variants = variantsFor(cat); function cartQtyFor(category, variant) { return cart.filter(function (x) { return x.category === category && x.variant === variant; }) .reduce(function (s, x) { return s + Number(x.qty || 0); }, 0); } function openPrompt(category, variant) { setActive({ category: category, variant: variant }); setQtyInput(""); } function openCustomPrompt() { setActive({ category: "custom", variant: null }); setQtyInput(""); setCustomDescInput(""); } function confirmAdd() { var q = Number(qtyInput); if (!q || q <= 0) return; var category = active.category, variant = active.variant; if (category === "custom") { var customDesc = customDescInput.trim(); if (!customDesc) return; setCart(function (prev) { return prev.concat([{ id: rbUid(), category: "custom", variant: null, qty: q, desc: customDesc }]); }); setActive(null); setQtyInput(""); setCustomDescInput(""); return; } var desc = variantLabel(t, category, variant); setCart(function (prev) { var idx = -1; prev.forEach(function (x, i) { if (x.category === category && x.variant === variant) idx = i; }); if (idx >= 0) { var next = prev.slice(); next[idx] = Object.assign({}, next[idx], { qty: Number(next[idx].qty) + q }); return next; } return prev.concat([{ id: rbUid(), category: category, variant: variant, qty: q, desc: desc }]); }); setActive(null); setQtyInput(""); } function removeFromCart(id) { setCart(function (x) { return x.filter(function (y) { return y.id !== id; }); }); } var totalPieces = cart.reduce(function (s, x) { return s + Number(x.qty || 0); }, 0); var title = (p.isEdit ? t("edit") : t("makeGatePass")) + " — " + sale.customerName; return ( <ModalShell onClose={p.onClose} title={title}> {active ? ( <div style={{ textAlign: "center", padding: "10px 4px" }}> <div style={{ fontSize: 15, fontWeight: 700, color: TC.cream, marginBottom: 14 }}>{active.category === "custom" ? t("customItem") : variantLabel(t, active.category, active.variant)}</div> {active.category === "custom" ? ( <input value={customDescInput} autoFocus onChange={function (e) { setCustomDescInput(e.target.value); }} placeholder={t("description")} style={Object.assign({}, rbInput(), { marginBottom: 10 })} /> ) : null} <input type="number" inputMode="numeric" autoFocus={active.category !== "custom"} value={qtyInput} onChange={function (e) { setQtyInput(e.target.value); }} onKeyDown={function (e) { if (e.key === "Enter") confirmAdd(); }} placeholder={t("enterQty")} style={Object.assign({}, rbInput(), { fontSize: 22, textAlign: "center", padding: "14px", marginBottom: 14 })} /> <div style={{ display: "flex", gap: 8 }}> <button onClick={function () { setActive(null); }} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("cancel")}</button> <button disabled={!(Number(qtyInput) > 0) || (active.category === "custom" && !customDescInput.trim())} onClick={confirmAdd} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: (Number(qtyInput) > 0 && !(active.category === "custom" && !customDescInput.trim())) ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13, fontWeight: 700, cursor: (Number(qtyInput) > 0 && !(active.category === "custom" && !customDescInput.trim())) ? "pointer" : "not-allowed" }}>{t("add")}</button> </div> </div> ) : ( <div> <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }} className={urdu ? "rb-urdu" : ""}>{t("selectItemsToTake")}</div> <div style={{ display: "flex", gap: 8, marginBottom: 14 }}> {[["garden", t("garden"), TC.garden, "sprout"], ["slab", t("slab"), TC.slab, "grid"]].map(function (o) { var id = o[0], label = o[1], color = o[2], icon = o[3], on = cat === id; return ( <button key={id} onClick={function () { setCat(id); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? color : "#3A362C"), background: on ? color : "transparent", color: on ? TC.cream : "#A39C8A", fontSize: 13, fontWeight: 600, cursor: "pointer" }} className={urdu ? "rb-urdu" : ""}> <Ico name={icon} size={15} /> {label} </button> ); })} </div> <div style={{ marginBottom: 14 }}> <button onClick={openCustomPrompt} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1.5px dashed #6B6656", background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} className={urdu ? "rb-urdu" : ""}> <Ico name="plus" size={14} /> {t("customItem")} </button> </div> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 14 }}> {variants.map(function (v) { var inCart = cartQtyFor(cat, v); var remaining = remainingFor(cat, v) - inCart; return ( <button key={v} onClick={function () { openPrompt(cat, v); }} style={{ textAlign: "start", padding: "10px 12px", borderRadius: 8, border: "1.5px solid " + (inCart > 0 ? TC.garden : "#3A362C"), background: TC.appBg2, cursor: "pointer", position: "relative" }}> <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{v}{cat === "garden" ? " ft" : ""}</div> <div style={{ fontSize: 10.5, color: remaining > 0 ? "#9FBE8A" : TC.stamp, marginTop: 2 }}>{remaining} {t("inStock")}</div> {inCart > 0 ? ( <span style={{ position: "absolute", top: 6, right: 6, background: TC.garden, color: TC.cream, fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px" }}>+{inCart}</span> ) : null} </button> ); })} </div> {cart.length > 0 ? ( <div style={{ marginBottom: 14 }}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 6, fontWeight: 600 }}>{t("selected")} ({totalPieces})</div> <div style={{ display: "flex", flexDirection: "column", gap: 6 }}> {cart.map(function (x) { return ( <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: TC.appBg2, borderRadius: 7, padding: "7px 10px" }}> <span style={{ fontSize: 12.5, color: TC.cream }}>{x.desc}</span> <div style={{ display: "flex", alignItems: "center", gap: 8 }}> <span className="rb-mono" style={{ fontSize: 12.5, color: "#9FBE8A", fontWeight: 700 }}>x{x.qty}</span> <button onClick={function () { removeFromCart(x.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}> <Ico name="x" size={14} /> </button> </div> </div> ); })} </div> </div> ) : null} <button disabled={cart.length === 0} onClick={function () { p.onCreate(cart); }} style={{ width: "100%", padding: "13px", borderRadius: 8, border: "none", background: cart.length > 0 ? TC.slab : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700, cursor: cart.length > 0 ? "pointer" : "not-allowed" }} className={urdu ? "rb-urdu" : ""}>{p.isEdit ? t("updateGatePass") : t("makeGatePass")}</button> </div> )} </ModalShell> ); } function RaeesBuilderApp() {
   var la = React.useState(function () { var pr = rbGet("prefs", {}); return pr.lang || "en"; }), lang = la[0], setLang = la[1];
-  var ro = React.useState(function () { var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1];
+  var ro = React.useState(function () { var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1]; var pm = React.useState(function () { var pr = rbGet("prefs", {}); return Object.assign({}, DEFAULT_PERMISSIONS, pr.permissions || {}); }), permissions = pm[0], setPermissions = pm[1]; function can(feature) { return hasPerm(role, permissions, feature); } function togglePermission(feature, value) { setPermissions(function (prev) { var next = Object.assign({}, prev); next[feature] = value; return next; }); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
   var sl = React.useState(function () { return rbGet("stock-log", []); }), stockLog = sl[0], setStockLog = sl[1];
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
@@ -500,7 +499,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   var ts = React.useState(""), toast = ts[0], setToast = ts[1];
   var toastRef = React.useRef(0);
 
-  React.useEffect(function () { rbSet("prefs", { lang: lang, role: role }); }, [lang, role]);
+  React.useEffect(function () { rbSet("prefs", { lang: lang, role: role, permissions: permissions }); }, [lang, role, permissions]);
   React.useEffect(function () { rbSet("stock-log", stockLog); }, [stockLog]);
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
@@ -764,14 +763,12 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} />; } else if (tab === "stock") {
-    body = role === "admin"
-      ? <StockTab t={t} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+  } else if (tab === "bills") { body = <BillsTab t={t} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} />; } else if (tab === "stock") {
+    body = can("stock") ? <StockTab t={t} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
-    body = role === "admin"
-      ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}
+    body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}
           wastageLog={wastageLog} onLogWastage={addWastageEntry} onConvertStock={addConversionEntry} />
       : <EmptyState icon={<Ico name="trash" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "gatepass") {
@@ -781,7 +778,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   } else if (tab === "dues") {
     body = <DuesTab t={t} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} />;
   } else if (tab === "settings") {
-    body = <SettingsTab t={t} lang={lang} role={role} onLang={setLang} onRole={handleRoleChange}
+    body = <SettingsTab t={t} lang={lang} role={role} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} activityLog={activityLog} />;
   }
 
@@ -791,7 +788,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: TC.appBg, display: "flex", flexDirection: "column" }}>
         <AppHeader t={t} role={role} />
         <div style={{ flex: 1, paddingBottom: 88 }}>{body}</div>
-        <TabBar t={t} tab={tab} setTab={setTab} role={role} duesCount={duesCount} />
+        <TabBar t={t} tab={tab} setTab={setTab} role={role} permissions={permissions} duesCount={duesCount} />
       </div>
 
       {returnFor ? (
@@ -799,7 +796,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
       ) : null}
 
       {viewingBill ? (
-        <BillModal t={t} lang={lang} role={role} sale={viewingBill} onClose={function () { setViewingBill(null); }}
+        <BillModal t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} onClose={function () { setViewingBill(null); }}
           onEdit={startEditSale}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
           onViewGatePass={function (sale) {
@@ -826,7 +823,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
       ) : null}
 
       {viewingGatePass ? (
-        <GatePassModal t={t} lang={lang} role={role} sale={viewingGatePass.sale} items={viewingGatePass.items} entry={viewingGatePass.entry}
+        <GatePassModal t={t} lang={lang} role={role} permissions={permissions} sale={viewingGatePass.sale} items={viewingGatePass.items} entry={viewingGatePass.entry}
           onClose={function () { setViewingGatePass(null); }}
           onEdit={viewingGatePass.entry ? function () { setGatePassEditTarget(viewingGatePass.entry); setViewingGatePass(null); } : undefined} />
       ) : null}
