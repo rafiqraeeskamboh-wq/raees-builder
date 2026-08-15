@@ -239,7 +239,7 @@ function NewSaleTab(p) {
       <div style={{ background: TC.paper, borderRadius: 10, padding: 16, boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, borderBottom: "2px dashed " + TC.paperLine, paddingBottom: 10 }}>
           <div className="rb-display" style={{ color: TC.ink, fontSize: 15, fontWeight: 600 }}>{saleType === "cash" ? t("billNo") : t("gatePassNo")}</div>
-          <div className="rb-mono" style={{ color: TC.stamp, fontSize: 13, fontWeight: 700 }}>#â</div>
+          <div className="rb-mono" style={{ color: TC.stamp, fontSize: 13, fontWeight: 700 }}>#—</div>
         </div>
 
         <Field label={t("customerName")} className={urdu ? "rb-urdu" : ""}>
@@ -328,7 +328,7 @@ function NewSaleTab(p) {
   );
 }
 /* ---------------- stock ---------------- */
-function BillsSummaryCard(p) { var t = p.t, sales = p.sales; var totalBill = sales.reduce(function (s, x) { return s + Number(x.totalBill || 0); }, 0); var totalReceived = sales.reduce(function (s, x) { return s + Number(x.advance || 0); }, 0); return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("billsSummary")}</div> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}> <StatBlock label={t("billsCount")} value={sales.length} bold /> <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalBill)} bold /> <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(totalReceived)} bold color={TC.success} /> </div> </div> ); } function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, onOpen = p.onOpen, onMakeGatePass = p.onMakeGatePass; var a = React.useState("all"), filter = a[0], setFilter = a[1]; var b = React.useState(""), query = b[0], setQuery = b[1]; var gatePassBySale = {}; gatePasses.forEach(function (g) { if (g.saleId) gatePassBySale[g.saleId] = true; }); function needsGatePass(s) { return s.type !== "cash" && !gatePassBySale[s.id]; } var filtered = sales.filter(function (s) { if (filter === "missing" && !needsGatePass(s)) return false; if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false; return true; }); return ( <div style={{ padding: "14px 14px 4px" }}> <BillsSummaryCard t={t} sales={sales} /> <div style={{ position: "relative", marginBottom: 10 }}> <span style={{ position: "absolute", left: 12, top: 11, color: TC.concrete }}><Ico name="search" size={15} /></span> <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={t("searchCustomer")} style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", paddingInlineStart: 34 })} /> </div> <div style={{ display: "flex", gap: 8, marginBottom: 12 }}> {[["all", t("allSales")], ["missing", t("makeGatePass")]].map(function (o) { var id = o[0], label = o[1], on = filter === id; return ( <button key={id} onClick={function () { setFilter(id); }} style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{label}</button> ); })} </div> {filtered.length === 0 ? ( <EmptyState icon={<Ico name="history" size={28} color={TC.concrete} />} text={sales.length === 0 ? t("noBills") : t("searchNoResults")} /> ) : ( <div style={{ display: "flex", flexDirection: "column", gap: 8 }}> {filtered.map(function (s) { var missing = needsGatePass(s); return ( <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}> <div onClick={function () { onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}> <div> <div style={{ display: "flex", alignItems: "center", gap: 6 }}> <span style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</span> {missing ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.amber, color: TC.ink }}>{t("makeGatePass")}</span> ) : null} </div> <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}> #{s.serial} Â· {rbDate(s.date)} Â· {s.type === "cash" ? t("cashSale") : t("customizedSale")} </div> </div> <div style={{ textAlign: "end" }}> <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</div> <div style={{ fontSize: 10, color: (s.dues || 0) > 0 ? TC.stamp : TC.success, marginTop: 2 }}>{(s.dues || 0) > 0 ? t("due") : t("paid")}</div> </div> </div> {missing ? ( <button onClick={function () { onMakeGatePass(s); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("makeGatePass")}</button> ) : null} </div> ); })} </div> )} </div> ); } function StockSummaryCard(p) {
+function BillsSummaryCard(p) { var t = p.t, sales = p.sales; var totalBill = sales.reduce(function (s, x) { return s + Number(x.totalBill || 0); }, 0); var totalReceived = sales.reduce(function (s, x) { return s + Number(x.advance || 0); }, 0); return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("billsSummary")}</div> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}> <StatBlock label={t("billsCount")} value={sales.length} bold /> <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalBill)} bold /> <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(totalReceived)} bold color={TC.success} /> </div> </div> ); } function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, onOpen = p.onOpen, onMakeGatePass = p.onMakeGatePass; var a = React.useState("all"), filter = a[0], setFilter = a[1]; var b = React.useState(""), query = b[0], setQuery = b[1]; var gatePassBySale = {}; gatePasses.forEach(function (g) { if (g.saleId) gatePassBySale[g.saleId] = true; }); function needsGatePass(s) { return s.type !== "cash" && !gatePassBySale[s.id]; } var filtered = sales.filter(function (s) { if (filter === "missing" && !needsGatePass(s)) return false; if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false; return true; }); return ( <div style={{ padding: "14px 14px 4px" }}> <BillsSummaryCard t={t} sales={sales} /> <div style={{ position: "relative", marginBottom: 10 }}> <span style={{ position: "absolute", left: 12, top: 11, color: TC.concrete }}><Ico name="search" size={15} /></span> <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={t("searchCustomer")} style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", paddingInlineStart: 34 })} /> </div> <div style={{ display: "flex", gap: 8, marginBottom: 12 }}> {[["all", t("allSales")], ["missing", t("makeGatePass")]].map(function (o) { var id = o[0], label = o[1], on = filter === id; return ( <button key={id} onClick={function () { setFilter(id); }} style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{label}</button> ); })} </div> {filtered.length === 0 ? ( <EmptyState icon={<Ico name="history" size={28} color={TC.concrete} />} text={sales.length === 0 ? t("noBills") : t("searchNoResults")} /> ) : ( <div style={{ display: "flex", flexDirection: "column", gap: 8 }}> {filtered.map(function (s) { var missing = needsGatePass(s); return ( <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}> <div onClick={function () { onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}> <div> <div style={{ display: "flex", alignItems: "center", gap: 6 }}> <span style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</span> {missing ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.amber, color: TC.ink }}>{t("makeGatePass")}</span> ) : null} </div> <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}> #{s.serial} · {rbDate(s.date)} · {s.type === "cash" ? t("cashSale") : t("customizedSale")} </div> </div> <div style={{ textAlign: "end" }}> <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</div> <div style={{ fontSize: 10, color: (s.dues || 0) > 0 ? TC.stamp : TC.success, marginTop: 2 }}>{(s.dues || 0) > 0 ? t("due") : t("paid")}</div> </div> </div> {missing ? ( <button onClick={function () { onMakeGatePass(s); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("makeGatePass")}</button> ) : null} </div> ); })} </div> )} </div> ); } function StockSummaryCard(p) {
   var t = p.t, stockLog = p.stockLog;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
   var r = resolveRange(range);
@@ -350,7 +350,7 @@ function BillsSummaryCard(p) { var t = p.t, sales = p.sales; var totalBill = sal
           {sorted.map(function (e) {
             return (
               <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}>
-                <span>{rbDate(e.date)} Â· {variantLabel(t, e.category, e.variant)}</span>
+                <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
                 <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span>
               </div>
             );
@@ -363,7 +363,7 @@ function BillsSummaryCard(p) { var t = p.t, sales = p.sales; var totalBill = sal
   );
 }
 
-function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} Â· {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function AddStockModal(p) {
+function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function AddStockModal(p) {
   var t = p.t;
   var a = React.useState(""), qty = a[0], setQty = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
@@ -492,7 +492,7 @@ function StockTab(p) {
         background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6
       }}>
-        <Ico name="plus" size={14} /> {t("addNewSize")} â {cat === "garden" ? t("garden") : t("slab")}
+        <Ico name="plus" size={14} /> {t("addNewSize")} — {cat === "garden" ? t("garden") : t("slab")}
       </button>
 
       {addingFor !== null ? (
@@ -531,7 +531,7 @@ function WastageSummaryCard(p) {
             return (
               <div key={e.id} style={{ padding: "3px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: TC.inkSoft }}>
-                  <span>{rbDate(e.date)} Â· {variantLabel(t, e.category, e.variant)}</span>
+                  <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
                   <span className="rb-mono" style={{ fontWeight: 700, color: TC.stamp }}>-{e.qty}</span>
                 </div>
                 {e.reason ? <div style={{ fontSize: 10, color: TC.concrete, marginTop: 1 }}>{e.reason}</div> : null}
@@ -590,7 +590,7 @@ function ConvertStockModal(p) {
       </Field>
       <Field label={t("convertTo")}>
         <select value={toVariant} onChange={function (e) { setToVariant(e.target.value); }} style={rbInput()}>
-          <option value="">â</option>
+          <option value="">—</option>
           {options.map(function (v) {
             return <option key={v} value={v}>{p.category === "garden" ? v + " ft" : v} ({p.remainingFor(p.category, v)} {t("inStock")})</option>;
           })}
@@ -698,7 +698,7 @@ function PaymentsSummaryCard(p) {
           {sorted.map(function (x, i) {
             return (
               <div key={x.id || i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}>
-                <span>{rbDate(x.date)} Â· {x.customerName}</span>
+                <span>{rbDate(x.date)} · {x.customerName}</span>
                 <span className="rb-mono" style={{ fontWeight: 700, color: TC.success }}>Rs {rbMoney(x.amount)}</span>
               </div>
             );
@@ -722,7 +722,7 @@ function CollectPaymentModal(p) {
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: TC.cream }}>{sale.customerName}</div>
-        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>#{sale.serial} Â· {t("dues")}: Rs {rbMoney(sale.dues)}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>#{sale.serial} · {t("dues")}: Rs {rbMoney(sale.dues)}</div>
       </div>
       <Field label={t("amountReceived")}>
         <input type="number" inputMode="decimal" autoFocus value={amount} onChange={function (e) { setAmount(e.target.value); }}
@@ -789,7 +789,7 @@ function DuesTab(p) {
                   <div>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</div>
                     <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>
-                      #{s.serial} Â· {rbDate(s.date)} Â· {s.type === "cash" ? t("cashSale") : t("customizedSale")}
+                      #{s.serial} · {rbDate(s.date)} · {s.type === "cash" ? t("cashSale") : t("customizedSale")}
                     </div>
                   </div>
                   <div style={{ textAlign: "end" }}>
@@ -894,7 +894,7 @@ function GatePassTab(p) {
                       background: g.type === "cash" ? TC.stamp : TC.slab, color: TC.cream
                     }}>{g.type === "cash" ? t("cashSale") : t("customizedSale")}</span>
                   </div>
-                  <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{g.serial} Â· {rbDate(g.date)} Â· {(g.items || []).length} {t("items")}</div>
+                  <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{g.serial} · {rbDate(g.date)} · {(g.items || []).length} {t("items")}</div>
                 </div>
                 <Ico name="chev" size={17} color={TC.concrete} />
               </div>
@@ -927,7 +927,7 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
     <div style={{ padding: "14px 14px 4px", display: "flex", flexDirection: "column", gap: 18 }}>
       <SettingsBlock icon={<Ico name="globe" size={16} color={TC.cream} />} title={t("language")}>
         <div style={{ display: "flex", gap: 8 }}>
-          {[["en", "English"], ["ur", "Ø§Ø±Ø¯Ù"]].map(function (o) {
+          {[["en", "English"], ["ur", "اردو"]].map(function (o) {
             var id = o[0], label = o[1], on = lang === id;
             return (
               <button key={id} onClick={function () { onLang(id); }} style={{
