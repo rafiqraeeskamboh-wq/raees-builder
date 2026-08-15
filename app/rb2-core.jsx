@@ -54,6 +54,9 @@ function rbWa(mobile, message) {
 }
 
 var RB2_PRE = "rb2:";
+/* per-login-session role marker (sessionStorage, not localStorage) - cleared when the
+   browser tab / installed app is closed, so every fresh open re-asks for a PIN */
+var RB_SESSION_ROLE_KEY = "rb2-session-role";
 function rbGet(key, def) {
   try {
     var r = localStorage.getItem(RB2_PRE + key);
@@ -378,15 +381,19 @@ function AppHeader(p) {
           <div className="rb-display" style={{ color: TC.cream, fontSize: 21, fontWeight: 700 }}>{t("appName")}</div>
           <div style={{ color: "#B4AC98", fontSize: 11.5, marginTop: 2 }}>{t("tagline")}</div>
         </div>
-        <div style={{
-          background: role === "admin" ? TC.stamp : TC.slab, color: TC.cream,
-          fontSize: 10.5, fontWeight: 700, padding: "5px 10px", borderRadius: 5,
-          textTransform: "uppercase", letterSpacing: "0.05em"
-        }}>{role === "admin" ? t("admin") : t("accountant")}</div>
-      </div>
-    </div>
-  );
-}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            background: role === "admin" ? TC.stamp : TC.slab, color: TC.cream,
+            fontSize: 10.5, fontWeight: 700, padding: "5px 10px", borderRadius: 5,
+            textTransform: "uppercase", letterSpacing: "0.05em"
+          }}>{role === "admin" ? t("admin") : t("accountant")}</div>
+          {p.onLogout ? (
+            <button onClick={p.onLogout} style={{
+              background: "transparent", border: "1.5px solid #6B6656", color: "#D8CDA9",
+              fontSize: 10, fontWeight: 700, padding: "5px 9px", borderRadius: 5, cursor: "pointer"
+            }}>Logout</button>
+          ) : null}
+        </div>
 
 function TabBar(p) {
   var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount, permissions = p.permissions;
