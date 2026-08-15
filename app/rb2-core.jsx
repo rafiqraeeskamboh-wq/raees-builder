@@ -99,7 +99,7 @@ var TRANSLATIONS = {
     setRate: "Rate / sqft", duesList: "Dues", allSales: "All sales",
     duesOnly: "Dues only", searchCustomer: "Search customer...",
     markPaid: "Mark as paid", settings: "Settings", language: "Language",
-    role: "Role", admin: "Admin", accountant: "Accountant",
+    role: "Role", admin: "Admin", accountant: "User", permissions: "Permissions", permissionsHint: "Choose which features the User role can access.", userCanStock: "Stock tab", userCanWastage: "Wastage tab", userCanEditSale: "Edit sales & returns", userCanGatePass: "Create / edit gate pass",
     clearData: "Clear all data",
     clearDataConfirm: "This deletes all stock, sales and payment records saved on this device. Are you sure?",
     noDues: "No pending dues — all clear.", paid: "Paid", due: "Due",
@@ -162,7 +162,7 @@ var TRANSLATIONS = {
     setRate: "ریٹ / مربع فٹ", duesList: "بقایا جات", allSales: "تمام سیلز",
     duesOnly: "صرف بقایا", searchCustomer: "گاہک تلاش کریں...",
     markPaid: "ادا شدہ نشان زد کریں", settings: "ترتیبات", language: "زبان",
-    role: "کردار", admin: "ایڈمن", accountant: "اکاؤنٹنٹ",
+    role: "کردار", admin: "ایڈمن", accountant: "صارف", permissions: "اختیارات", permissionsHint: "منتخب کریں کہ صارف کس فیچر تک رسائی رکھے۔", userCanStock: "اسٹاک ٹیب", userCanWastage: "ضائع شدہ مال ٹیب", userCanEditSale: "سیل و واپسی میں تبدیلی", userCanGatePass: "گیٹ پاس بنانا / تبدیل کرنا",
     clearData: "تمام ڈیٹا صاف کریں",
     clearDataConfirm: "اس سے اس ڈیوائس کا تمام اسٹاک، سیلز اور ادائیگی کا ریکارڈ ختم ہو جائے گا۔ کیا آپ مطمئن ہیں؟",
     noDues: "کوئی بقایا نہیں — سب کلیئر۔", paid: "ادا شدہ", due: "بقایا دار",
@@ -218,7 +218,7 @@ function resolveRange(range) {
 function inDateRange(d, from, to) {
   return (!from || d >= from) && (!to || d <= to);
 }
-/* ---------------- icons ---------------- */
+var DEFAULT_PERMISSIONS = { stock: false, wastage: false, editSale: false, gatePass: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; } /* ---------------- icons ---------------- */
 var ICON_PATHS = {
   receipt: <g><path d="M5 3h14v18l-3-2-3 2-3-2-3 2Z" /><path d="M8 8h8" /><path d="M8 12h8" /></g>,
   pkg: <g><path d="M21 8v8l-9 5-9-5V8l9-5 9 5Z" /><path d="M3.3 7.5 12 12l8.7-4.5" /><path d="M12 12v9" /></g>,
@@ -389,12 +389,12 @@ function AppHeader(p) {
 }
 
 function TabBar(p) {
-  var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount;
+  var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount, permissions = p.permissions;
   var tabs = [{ id: "sale", label: t("navSale"), icon: "receipt" }];
   tabs.push({ id: "bills", label: t("navBills"), icon: "history" });
-  if (role === "admin") {
+  if (hasPerm(role, permissions, "stock")) {
     tabs.push({ id: "stock", label: t("navStock"), icon: "pkg" });
-    tabs.push({ id: "wastage", label: t("navWastage"), icon: "trash" });
+    } if (hasPerm(role, permissions, "wastage")) { tabs.push({ id: "wastage", label: t("navWastage"), icon: "trash" });
   }
   tabs.push({ id: "gatepass", label: t("navGatePass"), icon: "truck" });
   tabs.push({ id: "dues", label: t("navDues"), icon: "wallet", badge: duesCount });
