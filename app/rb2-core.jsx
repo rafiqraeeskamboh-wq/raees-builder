@@ -394,6 +394,10 @@ function AppHeader(p) {
             }}>Logout</button>
           ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
 
 function TabBar(p) {
   var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount, permissions = p.permissions;
