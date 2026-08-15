@@ -779,7 +779,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
     body = <DuesTab t={t} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} />;
   } else if (tab === "settings") {
     body = <SettingsTab t={t} lang={lang} role={role} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
-      onClear={clearAllData} activityLog={activityLog} />;
+      onClear={clearAllData} activityLog={activityLog}  />;
   }
 
   return (
