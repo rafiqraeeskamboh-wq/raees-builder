@@ -921,7 +921,7 @@ function SettingsBlock(p) { return (
 function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function AdminPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.adminPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "Admin PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi Admin PIN set nahi - naye mobile par Admin bhi bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); }
 
   function SettingsTab(p) {
-  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var onSetAdminPin = p.onSetAdminPin;
+  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
   return (
     <div style={{ padding: "14px 14px 4px", display: "flex", flexDirection: "column", gap: 18 }}>
@@ -964,6 +964,26 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
             <UserPinSetter security={security} onSetPin={onSetUserPin} />
             
           </div>
+        </SettingsBlock>
+      ) : null}
+
+            {role === "admin" && onLockDevice ? (
+        <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Device Security">
+          {security.adminPin ? (
+            <div>
+              <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>
+                Ye phone jis worker ke pas rahega, us pe Admin access poori tarah band karne ke liye ye device lock kar dein — is ke baad is phone par sirf User PIN kaam karega, Admin PIN nahi (Admin PIN se bhi wapas unlock kiya ja sakta hai).
+              </div>
+              <button onClick={function () { if (window.confirm("Is device ko sirf User tak mehdood kar dein? Is phone par Admin PIN se login nahi ho sakega jab tak aap Admin PIN se dobara unlock na karein.")) onLockDevice(); }} style={{
+                width: "100%", padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.stamp,
+                background: "transparent", color: TC.stamp, fontSize: 12.5, fontWeight: 600, cursor: "pointer"
+              }}>Is device ko sirf User tak mehdood karein</button>
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, color: "#A39C8A" }}>
+              Pehle upar Admin PIN set karein — device lock karne ke baad usi Admin PIN se dobara unlock hota hai, is liye PIN set kiye baghair lock karna mumkin nahi.
+            </div>
+          )}
         </SettingsBlock>
       ) : null}
 
