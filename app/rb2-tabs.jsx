@@ -919,8 +919,8 @@ function SettingsBlock(p) {
   );
 }
 
-function SettingsTab(p) {
-  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog;
+function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function SettingsTab(p) {
+  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
   return (
     <div style={{ padding: "14px 14px 4px", display: "flex", flexDirection: "column", gap: 18 }}>
@@ -956,7 +956,7 @@ function SettingsTab(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" && window.RB_PIN_SETTINGS ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStock")} checked={permissions.stock} onChange={function (v) { onTogglePermission("stock", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" && window.RB_PIN_SETTINGS ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN / PASSWORD">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <button onClick={function () { window.RB_PIN_SETTINGS("admin"); }} style={{ padding: "10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>Admin PIN change</button>
