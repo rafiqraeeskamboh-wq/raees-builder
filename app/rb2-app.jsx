@@ -764,7 +764,7 @@ function RaeesBuilderApp() {
   if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} />; } else if (tab === "stock") {
     body = role === "admin"
       ? <StockTab t={t} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} />
