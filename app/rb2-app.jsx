@@ -10,7 +10,7 @@ function BillModal(p) {
     : [t("sr"), t("description"), t("qty"), t("length"), t("width"), t("sqft"), t("rate"), t("amount")];
   var waText = t("appName") + NL + (isCash ? t("billNo") : t("gatePassNo")) + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName
-var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;    + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
+    + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
     + NL + t("advance") + ": Rs " + rbMoney(sale.advance)
     + NL + t("dues") + ": Rs " + rbMoney(sale.dues);
   return (
