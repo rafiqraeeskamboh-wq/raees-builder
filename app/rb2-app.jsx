@@ -709,14 +709,14 @@ function RaeesBuilderApp() {
     return added + cIn - sold - wasted - cOut;
   }
 
-  function uniqSorted(base, extra) {
+  function uniqSorted(category, base, extra) {
     var all = base.concat(extra || []);
     var out = [];
     all.forEach(function (v) { if (out.indexOf(v) < 0) out.push(v); });
-    return out.sort(function (a, b) { var na = Number(a), nb = Number(b); var aNum = !isNaN(na), bNum = !isNaN(nb); if (aNum && bNum) return na - nb; if (aNum && !bNum) return -1; if (!aNum && bNum) return 1; return String(a).localeCompare(String(b)); });
+    return out.sort(function (a, b) { var aLabeled = !!variantCustomLabel(category, a); var bLabeled = !!variantCustomLabel(category, b); if (aLabeled !== bLabeled) return aLabeled ? 1 : -1; return Number(a) - Number(b); });
   }
-  var gardenVariants = uniqSorted(GARDEN_LENGTHS, customVariants.garden);
-  var slabVariants = uniqSorted(SLAB_SIZES, customVariants.slab);
+  var gardenVariants = uniqSorted("garden", GARDEN_LENGTHS, customVariants.garden);
+  var slabVariants = uniqSorted("slab", SLAB_SIZES, customVariants.slab);
   function variantsFor(category) { return category === "garden" ? gardenVariants : slabVariants; }
 
   function upsertGatePass(sale, items, type, listOverride) {
