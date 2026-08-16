@@ -83,7 +83,7 @@ var TRANSLATIONS = {
     appName: "Raees Builder", tagline: "Chatai Sale & Inventory",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
     navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
-    billsTotal: "Total amount", billsReceived: "Received", noBills: "No bills yet.",
+    billsTotal: "Total amount", billsReceived: "Received", billsDue: "Balance (Baqi)", noBills: "No bills yet.",
     saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Pemaishi Sale",
     customerName: "Customer name", date: "Date", addItem: "Add item",
     chooseCategory: "Choose category", garden: "Garder", slab: "Slab",
@@ -102,7 +102,7 @@ var TRANSLATIONS = {
     setRate: "Rate / sqft", duesList: "Dues", allSales: "All sales",
     duesOnly: "Dues only", searchCustomer: "Search customer...",
     markPaid: "Mark as paid", settings: "Settings", language: "Language",
-    role: "Role", admin: "Admin", accountant: "User", permissions: "Permissions", permissionsHint: "Choose which features the User role can access.", userCanStock: "Stock tab", userCanWastage: "Wastage tab", userCanEditSale: "Edit sales & returns", userCanGatePass: "Create / edit gate pass",
+    role: "Role", admin: "Admin", accountant: "User", permissions: "Permissions", permissionsHint: "Choose which features the User role can access.", userCanStock: "Stock tab", userCanWastage: "Wastage tab", userCanEditSale: "Edit sales & returns", userCanGatePass: "Create / edit gate pass", userCanBillsSummary: "See Bills totals (Total / Received / Baqi)",
     clearData: "Clear all data",
     clearDataConfirm: "This deletes all stock, sales and payment records saved on this device. Are you sure?",
     noDues: "No pending dues — all clear.", paid: "Paid", due: "Due",
@@ -146,7 +146,7 @@ var TRANSLATIONS = {
     appName: "رئیس بلڈر", tagline: "چھتائی سیل اینڈ انوینٹری",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
-    billsTotal: "کل رقم", billsReceived: "وصول شدہ", noBills: "ابھی تک کوئی بل نہیں۔",
+    billsTotal: "کل رقم", billsReceived: "وصول شدہ", billsDue: "باقی رقم", noBills: "ابھی تک کوئی بل نہیں۔",
     saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
     customerName: "گاہک کا نام", date: "تاریخ", addItem: "آئٹم شامل کریں",
     chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈر", slab: "سلیب",
@@ -165,7 +165,7 @@ var TRANSLATIONS = {
     setRate: "ریٹ / مربع فٹ", duesList: "بقایا جات", allSales: "تمام سیلز",
     duesOnly: "صرف بقایا", searchCustomer: "گاہک تلاش کریں...",
     markPaid: "ادا شدہ نشان زد کریں", settings: "ترتیبات", language: "زبان",
-    role: "کردار", admin: "ایڈمن", accountant: "صارف", permissions: "اختیارات", permissionsHint: "منتخب کریں کہ صارف کس فیچر تک رسائی رکھے۔", userCanStock: "اسٹاک ٹیب", userCanWastage: "ضائع شدہ مال ٹیب", userCanEditSale: "سیل و واپسی میں تبدیلی", userCanGatePass: "گیٹ پاس بنانا / تبدیل کرنا",
+    role: "کردار", admin: "ایڈمن", accountant: "صارف", permissions: "اختیارات", permissionsHint: "منتخب کریں کہ صارف کس فیچر تک رسائی رکھے۔", userCanStock: "اسٹاک ٹیب", userCanWastage: "ضائع شدہ مال ٹیب", userCanEditSale: "سیل و واپسی میں تبدیلی", userCanGatePass: "گیٹ پاس بنانا / تبدیل کرنا", userCanBillsSummary: "بلوں کے کل اعداد دیکھیں (کل / وصول شدہ / باقی)",
     clearData: "تمام ڈیٹا صاف کریں",
     clearDataConfirm: "اس سے اس ڈیوائس کا تمام اسٹاک، سیلز اور ادائیگی کا ریکارڈ ختم ہو جائے گا۔ کیا آپ مطمئن ہیں؟",
     noDues: "کوئی بقایا نہیں — سب کلیئر۔", paid: "ادا شدہ", due: "بقایا دار",
@@ -221,7 +221,7 @@ function resolveRange(range) {
 function inDateRange(d, from, to) {
   return (!from || d >= from) && (!to || d <= to);
 }
-var DEFAULT_PERMISSIONS = { stock: false, wastage: false, editSale: false, gatePass: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; } /* ---------------- icons ---------------- */
+var DEFAULT_PERMISSIONS = { stock: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; } /* ---------------- icons ---------------- */
 var ICON_PATHS = {
   receipt: <g><path d="M5 3h14v18l-3-2-3 2-3-2-3 2Z" /><path d="M8 8h8" /><path d="M8 12h8" /></g>,
   pkg: <g><path d="M21 8v8l-9 5-9-5V8l9-5 9 5Z" /><path d="M3.3 7.5 12 12l8.7-4.5" /><path d="M12 12v9" /></g>,
