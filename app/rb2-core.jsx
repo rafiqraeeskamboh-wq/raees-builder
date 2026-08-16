@@ -68,6 +68,12 @@ function rbSet(key, val) {
   catch (e) { return false; }
 }
 
+function variantCustomLabel(category, variant) {
+  var labels = rbGet("variant-labels", {});
+  var catLabels = labels[category] || {};
+  return catLabels[variant] || "";
+}
+
 var ACTION_LABELS = {
   sale_created: "actionSaleCreated",
   sale_edited: "actionSaleEdited",
@@ -129,7 +135,7 @@ var TRANSLATIONS = {
     stockSummary: "Stock summary", paymentsSummary: "Payments received", today: "Today",
     last7Days: "7 days", last30Days: "30 days", allTime: "All time", customRange: "Custom",
     totalReceived: "Total received", noEntriesRange: "Nothing in this range.",
-    addNewSize: "Add new size", enterNewSize: "New size", invalidSize: "Enter a valid size",
+    addNewSize: "Add new size", enterNewSize: "New size", sizeLabelOptional: "Label (optional)", sizeLabelPlaceholder: "e.g. Grey", invalidSize: "Enter a valid size",
     duplicateSize: "This size already exists", sizeAdded: "Size added",
     navWastage: "Wastage", logWastage: "Log wastage", wastageSummary: "Wastage summary",
     wasted: "Wasted", reason: "Reason (optional)", gatePassSummary: "Gate pass summary",
@@ -192,7 +198,7 @@ var TRANSLATIONS = {
     stockSummary: "اسٹاک کا خلاصہ", paymentsSummary: "ادائیگیوں کا خلاصہ", today: "آج",
     last7Days: "7 دن", last30Days: "30 دن", allTime: "تمام وقت", customRange: "مخصوص",
     totalReceived: "کل موصول شدہ", noEntriesRange: "اس مدت میں کچھ نہیں۔",
-    addNewSize: "نیا سائز شامل کریں", enterNewSize: "نیا سائز", invalidSize: "درست سائز درج کریں",
+    addNewSize: "نیا سائز شامل کریں", enterNewSize: "نیا سائز", sizeLabelOptional: "لیبل (اختیاری)", sizeLabelPlaceholder: "مثلاً Grey", invalidSize: "درست سائز درج کریں",
     duplicateSize: "یہ سائز پہلے سے موجود ہے", sizeAdded: "سائز شامل ہو گیا",
     navWastage: "خراب مال", logWastage: "خراب مال درج کریں", wastageSummary: "خراب مال کا خلاصہ",
     wasted: "خراب", reason: "وجہ (اختیاری)", gatePassSummary: "گیٹ پاس کا خلاصہ",

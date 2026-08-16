@@ -808,7 +808,7 @@ function editStockEntry(id, qty, date) {
     logActivity("stock_converted", variantLabel(t, category, fromVariant) + " → " + toVariant + " (" + entry.qty + ")");
   }
 
-  function addCustomVariant(category, value) {
+  function addCustomVariant(category, value, label) {
     var v = Number(value);
     if (!v || v <= 0) { showToast(t("invalidSize")); return; }
     var base = category === "garden" ? GARDEN_LENGTHS : SLAB_SIZES;
@@ -817,7 +817,16 @@ function editStockEntry(id, qty, date) {
     var next = Object.assign({}, customVariants);
     next[category] = existing.concat([v]);
     setCustomVariants(next);
-    logActivity("size_added", (category === "garden" ? t("garden") : t("slab")) + " " + v + (category === "garden" ? " ft" : ""));
+    var lbl = String(label || "").trim();
+    if (lbl) {
+      var allLabels = rbGet("variant-labels", {});
+      var catLabels = Object.assign({}, allLabels[category] || {});
+      catLabels[v] = lbl;
+      var nextLabels = Object.assign({}, allLabels);
+      nextLabels[category] = catLabels;
+      rbSet("variant-labels", nextLabels);
+    }
+    logActivity("size_added", (category === "garden" ? t("garden") : t("slab")) + " " + v + (category === "garden" ? " ft" : "") + (lbl ? " " + lbl : ""));
     showToast(t("sizeAdded"));
   }
 
