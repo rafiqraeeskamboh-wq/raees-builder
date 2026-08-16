@@ -713,7 +713,7 @@ function RaeesBuilderApp() {
     var all = base.concat(extra || []);
     var out = [];
     all.forEach(function (v) { if (out.indexOf(v) < 0) out.push(v); });
-    return out.sort(function (a, b) { return a - b; });
+    return out.sort(function (a, b) { var na = Number(a), nb = Number(b); var aNum = !isNaN(na), bNum = !isNaN(nb); if (aNum && bNum) return na - nb; if (aNum && !bNum) return -1; if (!aNum && bNum) return 1; return String(a).localeCompare(String(b)); });
   }
   var gardenVariants = uniqSorted(GARDEN_LENGTHS, customVariants.garden);
   var slabVariants = uniqSorted(SLAB_SIZES, customVariants.slab);
