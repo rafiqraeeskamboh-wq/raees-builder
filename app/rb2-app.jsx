@@ -137,6 +137,27 @@ function BillModal(p) {
           </div>
         </div>
 
+        {(sale.payments && sale.payments.length > 0) ? (
+          <div className="no-print" style={{ textAlign: "center", margin: "16px 0 10px", color: "#8B8577", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: 1, borderTop: "1px dashed #6B6656" }} />
+            <Ico name="history" size={13} /> {t("paymentHistory")}
+            <span style={{ flex: 1, borderTop: "1px dashed #6B6656" }} />
+          </div>
+        ) : null}
+
+        {(sale.payments && sale.payments.length > 0) ? (
+          <div style={{ background: TC.paper, borderRadius: 10, padding: 16, position: "relative", marginTop: 8 }}>
+            {sale.payments.map(function (pay, i) {
+              return (
+                <div key={pay.id || i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 4px", borderBottom: i < sale.payments.length - 1 ? "1px dashed " + TC.paperLine : "none" }}>
+                  <div className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{rbDate(pay.date)}</div>
+                  <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: TC.success }}>Rs {rbMoney(pay.amount)}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
         {gatePassEntry ? (
           <div className="no-print" style={{ textAlign: "center", margin: "16px 0 10px", color: "#8B8577", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ flex: 1, borderTop: "1px dashed #6B6656" }} />
