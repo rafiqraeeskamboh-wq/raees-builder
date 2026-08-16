@@ -781,7 +781,19 @@ function RaeesBuilderApp() {
     showToast(t("stockUpdated"));
     logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty);
   }
+function editStockEntry(id, qty, date) {
+    setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { qty: Number(qty) || 0, date: date || e.date }) : e; }); });
+    showToast(t("stockUpdated"));
+    logActivity("stock_edited", id);
+  }
 
+  function deleteStockEntry(id) {
+    setStockLog(function (a) { return a.filter(function (e) { return e.id !== id; }); });
+    showToast(t("stockUpdated"));
+    logActivity("stock_deleted", id);
+  }
+
+  
   function addWastageEntry(category, variant, qty, date, reason) {
     var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday(), reason: String(reason || "").trim() };
     setWastageLog(function (a) { return [entry].concat(a); });
@@ -895,7 +907,7 @@ function RaeesBuilderApp() {
       editingSale={editingSale} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} />
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
     body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}

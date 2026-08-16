@@ -407,11 +407,74 @@ function AddVariantModal(p) {
   );
 }
 
+function StockHistoryModal(p) {
+  var t = p.t;
+  var entries = p.entries;
+  var e = React.useState(null), editingId = e[0], setEditingId = e[1];
+  var f = React.useState(""), editQty = f[0], setEditQty = f[1];
+  var g = React.useState(""), editDate = g[0], setEditDate = g[1];
+  function startEdit(entry) {
+    setEditingId(entry.id); setEditQty(String(entry.qty)); setEditDate(entry.date);
+  }
+  function saveEdit() {
+    var q = Number(editQty);
+    if (!(q > 0)) return;
+    p.onEdit(editingId, q, editDate || rbToday());
+    setEditingId(null);
+  }
+  function doDelete(entry) {
+    if (window.confirm(t("confirmDeleteStockEntry"))) { p.onDelete(entry.id); }
+  }
+  return (
+    <ModalShell onClose={p.onClose} title={t("stockHistory")}>
+      <div style={{ marginBottom: 12, fontSize: 13, color: TC.cream, fontWeight: 600 }}>{variantLabel(t, p.category, p.variant)}</div>
+      {entries.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noStockYet")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {entries.map(function (entry) {
+            var isEditing = editingId === entry.id;
+            return (
+              <div key={entry.id} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px" }}>
+                {isEditing ? (
+                  <div>
+                    <Field label={t("qty")}>
+                      <input type="number" inputMode="numeric" autoFocus value={editQty} onChange={function (ev) { setEditQty(ev.target.value); }} style={rbInput()} />
+                    </Field>
+                    <Field label={t("date")}>
+                      <input type="date" value={editDate} onChange={function (ev) { setEditDate(ev.target.value); }} style={rbInput()} />
+                    </Field>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={saveEdit} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: TC.garden, color: TC.cream, fontWeight: 700, cursor: "pointer" }}>{t("save")}</button>
+                      <button onClick={function () { setEditingId(null); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, fontWeight: 700, cursor: "pointer" }}>{t("cancel")}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div className="rb-mono" style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{entry.qty}</div>
+                      <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{rbDate(entry.date)}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={function () { startEdit(entry); }} style={{ width: 30, height: 30, borderRadius: 6, border: "none", background: TC.paperDark, color: TC.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico name="pencil" size={14} /></button>
+                      <button onClick={function () { doDelete(entry); }} style={{ width: 30, height: 30, borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico name="trash" size={14} /></button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </ModalShell>
+  );
+}
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
-  var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant;
+  var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
   var a = React.useState("garden"), cat = a[0], setCat = a[1];
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
+  var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
   var c = React.useState(false), addingVariant = c[0], setAddingVariant = c[1];
   var variants = variantsFor(cat);
   var anyStock = Object.keys(stockTotals.added.garden).length > 0 || Object.keys(stockTotals.added.slab).length > 0;
@@ -482,6 +545,12 @@ function StockTab(p) {
               }}>
                 <Ico name="plus" size={17} />
               </button>
+              <button onClick={function () { setHistoryFor(v); }} style={{
+                width: 32, height: 32, borderRadius: 8, border: "none", background: TC.paperDark,
+                color: TC.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
+                <Ico name="history" size={17} />
+              </button>
             </div>
           );
         })}
@@ -499,6 +568,13 @@ function StockTab(p) {
         <AddStockModal t={t} category={cat} variant={addingFor}
           onClose={function () { setAddingFor(null); }}
           onSave={function (qty, date) { onAddStock(cat, addingFor, qty, date); setAddingFor(null); }} />
+      ) : null}
+      {historyFor !== null ? (
+        <StockHistoryModal t={t} category={cat} variant={historyFor}
+          entries={stockLog.filter(function (e) { return e.category === cat && e.variant === historyFor; }).sort(function (x, y) { return (y.date || "").localeCompare(x.date || ""); })}
+          onClose={function () { setHistoryFor(null); }}
+          onEdit={function (id, qty, date) { onEditStock(id, qty, date); }}
+          onDelete={function (id) { onDeleteStock(id); }} />
       ) : null}
       {addingVariant ? (
         <AddVariantModal t={t} category={cat} onClose={function () { setAddingVariant(false); }}
