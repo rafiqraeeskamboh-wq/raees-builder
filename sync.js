@@ -134,14 +134,22 @@
     var col = db.collection("rb");
     var timers = {};
     var first = true;
+    /* Guards against a real data-loss bug: the app can render (and write its
+       empty starting state to localStorage) before this function's very
+       first Firestore snapshot has come back and corrected local storage
+       with the real cloud data. Until that first snapshot has been
+       processed, local writes must NOT be pushed up - otherwise a fresh
+       device/tab can silently overwrite everyone's real data with an empty
+       one. Flips to true once, right after the first snapshot is handled. */
+    var readyToPush = false;
 
     localStorage.setItem = function (k, v) {
       rawSet(k, v);
-      if (isShared(k)) push(k);
+      if (isShared(k) && readyToPush) push(k);
     };
     localStorage.removeItem = function (k) {
       rawDel(k);
-      if (isShared(k)) push(k);
+      if (isShared(k) && readyToPush) push(k);
     };
 
     function push(k) {
@@ -190,6 +198,7 @@
       if (first) {
         first = false;
         if (snap.empty) uploadAll();
+        readyToPush = true;
         logoutBtn(auth);
         showApp();
         if (changed) location.reload();
