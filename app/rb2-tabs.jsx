@@ -132,6 +132,8 @@ function ItemPickerModal(p) {
 function NewSaleTab(p) {
   var t = p.t, lang = p.lang, remainingFor = p.remainingFor, variantsFor = p.variantsFor;
   var onSave = p.onSave, editingSale = p.editingSale, onCancelEdit = p.onCancelEdit;
+  var nextSerial = p.nextSerial;
+  var sn = React.useState(null), serialEdit = sn[0], setSerialEdit = sn[1];
   var a = React.useState("cash"), saleType = a[0], setSaleType = a[1];
   var b = React.useState(""), customerName = b[0], setCustomerName = b[1];
   var c = React.useState(""), mobile = c[0], setMobile = c[1];
@@ -145,6 +147,7 @@ function NewSaleTab(p) {
   var j = React.useState(false), submitting = j[0], setSubmitting = j[1];
   var mode = saleType === "cash" ? "piece" : "area";
   var isEditing = !!editingSale;
+  var effSerial = serialEdit === null ? String((isEditing && editingSale ? editingSale.serial : nextSerial) || 1) : serialEdit;
   var urdu = lang === "ur";
 
   React.useEffect(function () {
@@ -159,6 +162,7 @@ function NewSaleTab(p) {
       setAdvanceInput(String(editingSale.advance || 0));
       setDiscountInput(String(editingSale.discount || 0));
     }
+    setSerialEdit(null);
   }, [editingSale]);
 
   var itemsTotal = rows.reduce(function (sum, r) {
@@ -189,12 +193,12 @@ function NewSaleTab(p) {
   function removeRow(id) { setRows(function (r) { return r.filter(function (row) { return row.id !== id; }); }); }
   function resetForm() {
     setCustomerName(""); setMobile(""); setRows([]); setLabourRate("");
-    setPaidInFull(false); setAdvanceInput(""); setDiscountInput(""); setDate(rbToday());
+    setPaidInFull(false); setAdvanceInput(""); setDiscountInput(""); setDate(rbToday()); setSerialEdit(null);
   }
   /* Rs 0 ka bill save nahi hona chahiye - har item ka rate zaroori hai */
   var hasZeroRate = rows.some(function (r) { return !(Number(r.rate) > 0); });
   var amountInvalid = rows.length > 0 && (hasZeroRate || !(totalBill > 0));
-  var canSave = customerName.trim() && rows.length > 0 && !amountInvalid && !submitting;
+  var canSave = customerName.trim() && rows.length > 0 && !amountInvalid && Number(effSerial) > 0 && !submitting;
 
   function handleSave() {
     if (!canSave) return;
@@ -205,7 +209,7 @@ function NewSaleTab(p) {
       return Object.assign({}, r, { sqft: sq, amount: sq * (Number(r.rate) || 0) });
     });
     var payload = {
-      type: saleType, customerName: customerName.trim(), mobile: mobile.trim(), date: date, items: items,
+      type: saleType, customerName: customerName.trim(), mobile: mobile.trim(), date: date, items: items, serial: Number(effSerial) || 0,
       roofLabourRate: saleType === "cash" ? (Number(labourRate) || 0) : 0,
       labourTotal: labourTotal, itemsTotal: itemsTotal, totalBill: totalBill,
       discount: discount, advance: advance, dues: dues, paidInFull: paidInFull
@@ -244,7 +248,7 @@ function NewSaleTab(p) {
       <div style={{ background: TC.paper, borderRadius: 10, padding: 16, boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, borderBottom: "2px dashed " + TC.paperLine, paddingBottom: 10 }}>
           <div className="rb-display" style={{ color: TC.ink, fontSize: 15, fontWeight: 600 }}>{saleType === "cash" ? t("billNo") : t("gatePassNo")}</div>
-          <div className="rb-mono" style={{ color: TC.stamp, fontSize: 13, fontWeight: 700 }}>#—</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}><span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>#</span><input type="number" inputMode="numeric" value={effSerial} onChange={function (ev) { setSerialEdit(ev.target.value); }} className="rb-mono" style={{ width: 74, padding: "4px 6px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.stamp, fontSize: 14, fontWeight: 700, textAlign: "center" }} /></div>
         </div>
 
         <Field label={t("customerName")} className={urdu ? "rb-urdu" : ""}>
@@ -1121,11 +1125,31 @@ function SettingsBlock(p) { return (
 
 function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function AdminPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.adminPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "Admin PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi Admin PIN set nahi - naye mobile par Admin bhi bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); }
 
+function NextSerialSetter(p) {
+  var t = p.t;
+  var a = React.useState(""), val = a[0], setVal = a[1];
+  var n = Number(val);
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{t("nextBillNo")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>#{p.nextSerial}</span></div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input type="number" inputMode="numeric" value={val} onChange={function (e) { setVal(e.target.value.replace(/[^0-9]/g, "")); }} placeholder={String(p.nextSerial || 1)}
+          style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} />
+        <button onClick={function () { if (n > 0) { p.onSet(n); setVal(""); } }} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: n > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: n > 0 ? "pointer" : "not-allowed" }}>{t("setBtn")}</button>
+      </div>
+    </div>
+  );
+}
   function SettingsTab(p) {
-  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
+  var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var nextSerial = p.nextSerial, onSetNextSerial = p.onSetNextSerial; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
   return (
     <div style={{ padding: "14px 14px 4px", display: "flex", flexDirection: "column", gap: 18 }}>
+      {role === "admin" && onSetNextSerial ? (
+        <SettingsBlock icon={<Ico name="receipt" size={16} color={TC.cream} />} title={t("nextBillNo")}>
+          <NextSerialSetter t={t} nextSerial={nextSerial} onSet={onSetNextSerial} />
+        </SettingsBlock>
+      ) : null}
       <SettingsBlock icon={<Ico name="globe" size={16} color={TC.cream} />} title={t("language")}>
         <div style={{ display: "flex", gap: 8 }}>
           {[["en", "English"], ["ur", "اردو"]].map(function (o) {

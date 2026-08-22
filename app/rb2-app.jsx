@@ -862,6 +862,11 @@ function editStockEntry(id, qty, date) {
   }
 
   function saveSale(sale) {
+    var wantSerial = Number(sale.serial) || 0;
+    if (wantSerial > 0) {
+      var clash = sales.some(function (x) { return x.id !== sale.editId && Number(x.serial) === wantSerial; });
+      if (clash) { showToast(t("dupBillNo")); return; }
+    }
     if (sale.editId) {
       var updated = null;
       var nextSales = sales.map(function (s) {
@@ -871,30 +876,39 @@ function editStockEntry(id, qty, date) {
           roofLabourRate: sale.roofLabourRate, labourTotal: sale.labourTotal,
           itemsTotal: sale.itemsTotal, totalBill: sale.totalBill, discount: sale.discount,
           verified: false, verifiedBy: null, verifiedAt: null,
-          advance: sale.advance, dues: sale.dues, paidInFull: sale.paidInFull
+          advance: sale.advance, dues: sale.dues, paidInFull: sale.paidInFull,
+          serial: wantSerial > 0 ? wantSerial : s.serial
         });
         return updated;
       });
       setSales(nextSales);
       setEditingSale(null);
       showToast(t("billUpdated"));
+      if (updated && Number(updated.serial) >= nextSerial) setNextSerial(Number(updated.serial) + 1);
       if (updated) {
         /* cash bill edit hone par uska gate pass bhi update ho jaye */
         if (updated.type === "cash") {
           upsertGatePass(updated, updated.items.map(function (it) {
             return { id: it.id, category: it.category, variant: it.variant, qty: it.qty, desc: it.desc };
           }), "cash");
+        } else {
+          var uu = updated;
+          setGatePasses(function (prev) {
+            return prev.map(function (g2) {
+              return g2.saleId === uu.id ? Object.assign({}, g2, { serial: uu.serial, customerName: uu.customerName, date: uu.date, mobile: uu.mobile }) : g2;
+            });
+          });
         }
         setViewingBill(updated);
         logActivity("sale_edited", updated.customerName + " — #" + updated.serial);
       }
       return;
     }
-    var serial = nextSerial;
+    var serial = wantSerial > 0 ? wantSerial : nextSerial;
     var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date }] : [];
     var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdAt: new Date().toISOString() });
     setSales([full].concat(sales));
-    setNextSerial(serial + 1);
+    setNextSerial(Math.max(nextSerial, serial + 1));
     showToast(t("saleSaved"));
     logActivity("sale_created", full.customerName + " — #" + full.serial);
     if (full.type === "customized") {
@@ -945,7 +959,7 @@ function editStockEntry(id, qty, date) {
   var body = null;
   if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
-      editingSale={editingSale} onCancelEdit={function () { setEditingSale(null); }} />;
+      editingSale={editingSale} nextSerial={nextSerial} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} />
@@ -961,7 +975,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "dues") {
     body = <DuesTab t={t} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} />;
   } else if (tab === "settings") {
-    body = <SettingsTab t={t} lang={lang} role={role} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
+    body = <SettingsTab t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onLockDevice={lockDeviceToUser} />;
   }
 
