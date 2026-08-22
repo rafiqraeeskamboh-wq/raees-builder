@@ -603,6 +603,7 @@ function RaeesBuilderApp() {
   var sup = React.useState(function () { return rbGet("suppliers", []); }), suppliers = sup[0], setSuppliers = sup[1];
   var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
+  var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
   var ns = React.useState(function () { return rbGet("next-serial", 1); }), nextSerial = ns[0], setNextSerial = ns[1];
   var gpS = React.useState(function () { return rbGet("gate-passes", []); }), gatePasses = gpS[0], setGatePasses = gpS[1];
@@ -628,6 +629,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("suppliers", suppliers); }, [suppliers]);
   React.useEffect(function () { rbSet("purchases", purchases); }, [purchases]);
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
+  React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
   React.useEffect(function () { rbSet("gate-passes", gatePasses); }, [gatePasses]);
@@ -759,6 +761,16 @@ function RaeesBuilderApp() {
     logActivity("cement_bought", b + " " + t("cementBags"));
   }
 
+  function addExpense(detail, amount, date) {
+    var amt = Number(amount) || 0;
+    var d = String(detail || "").trim();
+    if (amt <= 0 || !d) return;
+    var entry = { id: rbUid(), detail: d, amount: amt, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    setExpenses(function (a) { return [entry].concat(a); });
+    showToast(t("addExpense"));
+    logActivity("expense_added", d + " — Rs " + rbMoney(amt));
+  }
+
   function addSupplierPayment(supplierId, amount, date) {
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
@@ -848,7 +860,7 @@ function RaeesBuilderApp() {
     }
     sessionStorage.setItem(RB_SESSION_ROLE_KEY, r);
     setRole(r);
-    if (r === "accountant" && tab === "wastage") setTab("sale");
+    if (r === "accountant" && (tab === "wastage" || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
 
   function addStockEntry(category, variant, qty, date, cementBags) {
@@ -1032,6 +1044,11 @@ function editStockEntry(id, qty, date) {
     body = <GatePassTab t={t} gatePasses={gatePasses} onOpen={function (g) {
       setViewingGatePass({ sale: { customerName: g.customerName, date: g.date, serial: g.serial, type: g.type, mobile: g.mobile }, items: g.items, entry: g });
     }} />;
+  } else if (tab === "book") {
+    body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={purchases} supplierPayments={supplierPayments}
+      suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
+      canAddExpense={role === "admin"} onAddExpense={addExpense} />
+      : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} />;
   } else if (tab === "settings") {

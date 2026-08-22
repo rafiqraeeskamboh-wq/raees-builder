@@ -1292,6 +1292,124 @@ function NextSerialSetter(p) {
     </div>
   );
 }
+function ReportsTab(p) {
+  var t = p.t;
+  var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
+  var v = React.useState("book"), view = v[0], setView = v[1];
+  var e1 = React.useState(""), expDetail = e1[0], setExpDetail = e1[1];
+  var e2 = React.useState(""), expAmt = e2[0], setExpAmt = e2[1];
+  var e3 = React.useState(rbToday()), expDate = e3[0], setExpDate = e3[1];
+  var r = resolveRange(range);
+  function inR(d) { return inDateRange(d, r.from, r.to); }
+  var supName = {};
+  (p.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
+
+  var sales = (p.sales || []).filter(function (x) { return inR(x.date); });
+  var payments = [];
+  (p.sales || []).forEach(function (s) {
+    (s.payments || []).forEach(function (pay) {
+      if (inR(pay.date)) payments.push({ date: pay.date, amount: Number(pay.amount) || 0, name: s.customerName, serial: s.serial });
+    });
+  });
+  var purchases = (p.purchases || []).filter(function (x) { return inR(x.date); });
+  var supPays = (p.supplierPayments || []).filter(function (x) { return inR(x.date); });
+  var stockAdds = (p.stockLog || []).filter(function (x) { return inR(x.date); });
+  var wast = (p.wastageLog || []).filter(function (x) { return inR(x.date); });
+  var exps = (p.expenses || []).filter(function (x) { return inR(x.date); });
+
+  var salesTotal = sales.reduce(function (n, x) { return n + (Number(x.totalBill) || 0); }, 0);
+  var received = payments.reduce(function (n, x) { return n + x.amount; }, 0);
+  var cementCost = purchases.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+  var expTotal = exps.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+  var paidOut = supPays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+  var net = salesTotal - cementCost - expTotal;
+
+  var rows = [];
+  sales.forEach(function (x) { rows.push({ id: "s" + x.id, date: x.date, kind: t("saleAmount"), title: x.customerName + " · #" + x.serial, val: Number(x.totalBill) || 0, dir: "in", soft: true }); });
+  payments.forEach(function (x, i) { rows.push({ id: "p" + i + x.date, date: x.date, kind: t("receivedAmount"), title: x.name + " · #" + x.serial, val: x.amount, dir: "in" }); });
+  purchases.forEach(function (x) { rows.push({ id: "c" + x.id, date: x.date, kind: t("buyCement"), title: (supName[x.supplierId] || "-") + " · " + x.bags + " " + t("cementBags"), val: Number(x.amount) || 0, dir: "out", soft: true }); });
+  supPays.forEach(function (x) { rows.push({ id: "sp" + x.id, date: x.date, kind: t("payToSupplier"), title: supName[x.supplierId] || "-", val: Number(x.amount) || 0, dir: "out" }); });
+  exps.forEach(function (x) { rows.push({ id: "e" + x.id, date: x.date, kind: t("expenses"), title: x.detail || "-", val: Number(x.amount) || 0, dir: "out" }); });
+  stockAdds.forEach(function (x) { rows.push({ id: "st" + x.id, date: x.date, kind: t("stockMade"), title: variantLabel(t, x.category, x.variant) + " +" + x.qty + ((Number(x.cementBags) || 0) > 0 ? " · " + t("cement") + " " + x.cementBags : ""), val: null }); });
+  wast.forEach(function (x) { rows.push({ id: "w" + x.id, date: x.date, kind: t("wastageOut"), title: variantLabel(t, x.category, x.variant) + " -" + x.qty, val: null }); });
+  rows.sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
+
+  return (
+    <div style={{ padding: "14px 14px 4px" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[["book", t("dayBook")], ["pl", t("profitLoss")]].map(function (o) {
+          var id = o[0], label = o[1], on = view === id;
+          return (
+            <button key={id} onClick={function () { setView(id); }} style={{
+              flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"),
+              background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A",
+              fontSize: 13, fontWeight: 700, cursor: "pointer"
+            }}>{label}</button>
+          );
+        })}
+      </div>
+
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
+        <RangeFilter t={t} range={range} onChange={setRange} />
+        {view === "pl" ? (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 8 }}>
+              <StatBlock label={t("saleAmount")} value={"Rs " + rbMoney(salesTotal)} bold />
+              <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
+              <StatBlock label={t("buyCement")} value={"Rs " + rbMoney(cementCost)} color={TC.stamp} />
+              <StatBlock label={t("expenses")} value={"Rs " + rbMoney(expTotal)} color={TC.stamp} />
+            </div>
+            <div style={{ borderTop: "2px dashed " + TC.paperLine, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span className="rb-display" style={{ fontSize: 13, fontWeight: 700, color: TC.inkSoft }}>{net >= 0 ? t("netProfit") : t("netLoss")}</span>
+              <span className="rb-mono" style={{ fontSize: 17, fontWeight: 700, color: net >= 0 ? TC.success : TC.stamp }}>Rs {rbMoney(Math.abs(net))}</span>
+            </div>
+            <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("buyCement")} &minus; {t("expenses")}</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+            <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
+            <StatBlock label={t("expenseTotal")} value={"Rs " + rbMoney(expTotal + paidOut)} bold color={TC.stamp} />
+            <StatBlock label={t("saleAmount")} value={"Rs " + rbMoney(salesTotal)} bold />
+          </div>
+        )}
+      </div>
+
+      {p.canAddExpense ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("addExpense")}</div>
+          <input value={expDetail} onChange={function (ev) { setExpDetail(ev.target.value); }} placeholder={t("expenseDetail")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="number" inputMode="numeric" value={expAmt} onChange={function (ev) { setExpAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
+            <input type="date" value={expDate} onChange={function (ev) { setExpDate(ev.target.value); }} style={{ flex: 1, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
+          </div>
+          <button disabled={!(Number(expAmt) > 0 && expDetail.trim())} onClick={function () { p.onAddExpense(expDetail, expAmt, expDate); setExpDetail(""); setExpAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(expAmt) > 0 && expDetail.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: (Number(expAmt) > 0 && expDetail.trim()) ? "pointer" : "not-allowed" }}>{t("addExpense")}</button>
+        </div>
+      ) : null}
+
+      {rows.length === 0 ? (
+        <EmptyState icon={<Ico name="grid" size={28} color={TC.concrete} />} text={t("noEntriesRange")} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {rows.map(function (x) {
+            return (
+              <div key={x.id} style={{ background: TC.paper, borderRadius: 8, padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink }}>{x.kind}</div>
+                  <div style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(x.date)} &middot; {x.title}</div>
+                </div>
+                {x.val === null ? null : (
+                  <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", color: x.dir === "in" ? (x.soft ? TC.inkSoft : TC.success) : TC.stamp }}>
+                    {x.dir === "in" ? "+" : "-"}{rbMoney(x.val)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
   function SettingsTab(p) {
   var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var nextSerial = p.nextSerial, onSetNextSerial = p.onSetNextSerial; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
@@ -1334,7 +1452,7 @@ function NextSerialSetter(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
