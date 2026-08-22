@@ -129,7 +129,7 @@ var TRANSLATIONS = {
     gatePassTitle: "Gate Pass", paymentHistory: "Payment History", stockHistory: "Stock History", confirmDeleteStockEntry: "Delete this stock entry?", edit: "Edit", editingBill: "Editing bill",
     cancelEdit: "Cancel edit", viewGatePass: "View gate pass",
     navGatePass: "Gate Pass", noGatePasses: "No gate passes yet.",
-    navBook: "Hisab", dayBook: "Day book", profitLoss: "Nafa / Nuqsan", expenses: "Kharche", addExpense: "Kharcha likhein", expenseDetail: "Tafseel (mazdoori waghera)", income: "Aamdani", expenseTotal: "Kul kharcha", netProfit: "Nafa", netLoss: "Nuqsan", saleAmount: "Sale", receivedAmount: "Wasooli", stockMade: "Stock bana", wastageOut: "Zaya", supplier: "Supplier", suppliers: "Suppliers", addSupplier: "Naya supplier", supplierName: "Supplier ka naam", noSuppliers: "Abhi koi supplier nahi", cement: "Cement", cementBags: "Cement (bag)", bagsAdded: "Aayi", bagsUsed: "Kharch", bagsLeft: "Baqi", buyCement: "Cement kharid", payToSupplier: "Adaigi", purchases: "Kharid", supplierBaqi: "Baqi raqam", cementLowNote: "Cement stock kam ho raha hai", billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
+    whatsappImage: "WhatsApp par bill bhejein", shareBusy: "Bill ki tasveer ban rahi hai...", shareFail: "Tasveer nahi ban saki - internet check karein", navBook: "Hisab", dayBook: "Day book", profitLoss: "Nafa / Nuqsan", expenses: "Kharche", addExpense: "Kharcha likhein", expenseDetail: "Tafseel (mazdoori waghera)", income: "Aamdani", expenseTotal: "Kul kharcha", netProfit: "Nafa", netLoss: "Nuqsan", saleAmount: "Sale", receivedAmount: "Wasooli", stockMade: "Stock bana", wastageOut: "Zaya", supplier: "Supplier", suppliers: "Suppliers", addSupplier: "Naya supplier", supplierName: "Supplier ka naam", noSuppliers: "Abhi koi supplier nahi", cement: "Cement", cementBags: "Cement (bag)", bagsAdded: "Aayi", bagsUsed: "Kharch", bagsLeft: "Baqi", buyCement: "Cement kharid", payToSupplier: "Adaigi", purchases: "Kharid", supplierBaqi: "Baqi raqam", cementLowNote: "Cement stock kam ho raha hai", billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
     tapToAddQty: "Tap an item, then enter how many", add: "Add", selected: "Selected",
     mobileNumber: "Mobile number", whatsapp: "Share on WhatsApp",
     stockSummary: "Stock summary", paymentsSummary: "Payments received", today: "Today",
@@ -192,7 +192,7 @@ var TRANSLATIONS = {
     gatePassTitle: "گیٹ پاس", paymentHistory: "ادائیگیوں کی تفصیل", stockHistory: "اسٹاک کی تاریخ", confirmDeleteStockEntry: "کیا یہ اسٹاک اندراج حذف کریں؟", edit: "ترمیم", editingBill: "بل میں ترمیم",
     cancelEdit: "ترمیم منسوخ کریں", viewGatePass: "گیٹ پاس دیکھیں",
     navGatePass: "گیٹ پاس", noGatePasses: "ابھی تک کوئی گیٹ پاس نہیں۔",
-    navBook: "حساب", dayBook: "ڈے بک", profitLoss: "نفع / نقصان", expenses: "خرچے", addExpense: "خرچہ لکھیں", expenseDetail: "تفصیل (مزدوری وغیرہ)", income: "آمدنی", expenseTotal: "کل خرچہ", netProfit: "نفع", netLoss: "نقصان", saleAmount: "سیل", receivedAmount: "وصولی", stockMade: "اسٹاک بنا", wastageOut: "ضائع", supplier: "سپلائر", suppliers: "سپلائرز", addSupplier: "نیا سپلائر", supplierName: "سپلائر کا نام", noSuppliers: "ابھی کوئی سپلائر نہیں", cement: "سیمنٹ", cementBags: "سیمنٹ (بوری)", bagsAdded: "آئی", bagsUsed: "خرچ", bagsLeft: "باقی", buyCement: "سیمنٹ خرید", payToSupplier: "ادائیگی", purchases: "خرید", supplierBaqi: "باقی رقم", cementLowNote: "سیمنٹ اسٹاک کم ہو رہا ہے", billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
+    whatsappImage: "واٹس ایپ پر بل بھیجیں", shareBusy: "بل کی تصویر بن رہی ہے...", shareFail: "تصویر نہیں بن سکی - انٹرنیٹ چیک کریں", navBook: "حساب", dayBook: "ڈے بک", profitLoss: "نفع / نقصان", expenses: "خرچے", addExpense: "خرچہ لکھیں", expenseDetail: "تفصیل (مزدوری وغیرہ)", income: "آمدنی", expenseTotal: "کل خرچہ", netProfit: "نفع", netLoss: "نقصان", saleAmount: "سیل", receivedAmount: "وصولی", stockMade: "اسٹاک بنا", wastageOut: "ضائع", supplier: "سپلائر", suppliers: "سپلائرز", addSupplier: "نیا سپلائر", supplierName: "سپلائر کا نام", noSuppliers: "ابھی کوئی سپلائر نہیں", cement: "سیمنٹ", cementBags: "سیمنٹ (بوری)", bagsAdded: "آئی", bagsUsed: "خرچ", bagsLeft: "باقی", buyCement: "سیمنٹ خرید", payToSupplier: "ادائیگی", purchases: "خرید", supplierBaqi: "باقی رقم", cementLowNote: "سیمنٹ اسٹاک کم ہو رہا ہے", billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
     tapToAddQty: "کوئی آئٹم دبائیں، پھر تعداد درج کریں", add: "شامل کریں", selected: "منتخب شدہ",
     mobileNumber: "موبائل نمبر", whatsapp: "واٹس ایپ پر بھیجیں",
     stockSummary: "اسٹاک کا خلاصہ", paymentsSummary: "ادائیگیوں کا خلاصہ", today: "آج",
@@ -266,6 +266,30 @@ var ICON_PATHS = {
   history: <g><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 8v5l4 2" /></g>,
   swap: <g><path d="M3 8h14l-3-3" /><path d="M21 16H7l3 3" /></g>
 };
+
+/* bill/gate pass ko tasveer bana kar WhatsApp (ya kisi bhi app) par bhejna */
+function rbShareNode(node, filename, text, phone, onNote) {
+  if (!node) return;
+  if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
+  if (onNote) onNote("busy");
+  window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false }).then(function (canvas) {
+    canvas.toBlob(function (blob) {
+      if (!blob) { if (onNote) onNote("fail"); return; }
+      var file = null;
+      try { file = new File([blob], filename, { type: "image/png" }); } catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        navigator.share({ files: [file], text: text || "" }).catch(function () {});
+        return;
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      window.open(rbWa(phone, text), "_blank");
+    }, "image/png");
+  }).catch(function () { if (onNote) onNote("fail"); });
+}
 
 function Ico(p) {
   var size = p.size || 18;

@@ -2,6 +2,7 @@
 
 function BillModal(p) {
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass, gatePassEntry = p.gatePassEntry;
+  var shotRef = React.useRef(null);
   var isPaid = (sale.dues || 0) <= 0;
   var isCash = sale.type === "cash";
   var canEdit = hasPerm(role, permissions, "editSale"); /* cash bill bhi edit ho sakta hai (Admin) */
@@ -57,7 +58,15 @@ function BillModal(p) {
           </a>
         ) : null}
 
-        <div className="print-area">
+        <button onClick={function () { rbShareNode(shotRef.current, "bill.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
+          background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <div className="print-area" ref={shotRef}>
         <div style={{
           background: TC.paper, borderRadius: 10, padding: 20, position: "relative", overflow: "hidden",
           backgroundImage: "repeating-linear-gradient(45deg, " + TC.paperDark + " 0, " + TC.paperDark + " 1px, transparent 1px, transparent 14px)"
@@ -338,6 +347,7 @@ function GatePassBuilderModal(p) {
 
 function GatePassModal(p) {
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;
+  var shotRef = React.useRef(null);
   var canEdit = hasPerm(role, permissions, "gatePass") && !!onEdit;
   var lines = items.map(function (it, i) { return (i + 1) + ". " + (it.desc || "—") + " — " + t("qty") + ": " + it.qty; }).join(NL);
   var waText = t("appName") + NL + t("gatePassTitle") + NL + t("gatePassNo") + ": #" + sale.serial
@@ -371,7 +381,15 @@ function GatePassModal(p) {
           </a>
         ) : null}
 
-        <div className="print-area" style={{ background: TC.paper, borderRadius: 10, padding: 20, position: "relative" }}>
+        <button onClick={function () { rbShareNode(shotRef.current, "gate-pass.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
+          background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 20, position: "relative" }}>
           <div style={{ textAlign: "center", marginBottom: 14, borderBottom: "2px solid " + TC.ink, paddingBottom: 10 }}>
             <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.ink }}>{t("appName")}</div>
             <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{t("gatePassTitle")}</div>
@@ -431,6 +449,7 @@ function ReceiptLine(p) {
 }
 
 function PaymentReceiptModal(p) {
+  var shotRef = React.useRef(null);
   var t = p.t, data = p.data, onClose = p.onClose;
   var sale = data.sale, amount = data.amount, date = data.date;
   var isFullyPaid = (sale.dues || 0) <= 0;
@@ -445,7 +464,15 @@ function PaymentReceiptModal(p) {
             <Ico name="printer" size={14} /> {t("print")}
           </button>
         </div>
-        <div className="print-area" style={{ background: TC.paper, borderRadius: 10, padding: 22, position: "relative" }}>
+        <button onClick={function () { rbShareNode(shotRef.current, "receipt.png", t("appName"), (p.data && p.data.mobile) || "", function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
+          background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 22, position: "relative" }}>
           <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "2px solid " + TC.ink, paddingBottom: 10 }}>
             <div className="rb-display" style={{ fontSize: 20, fontWeight: 700, color: TC.ink }}>{t("appName")}</div>
             <div style={{ fontSize: 11, color: TC.inkSoft, marginTop: 3 }}>{t("paymentReceiptTitle")}</div>
