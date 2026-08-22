@@ -361,23 +361,77 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
       </div> ); } function CustomerLedgerModal(p) {
   var t = p.t, name = p.name, onOpen = p.onOpen;
   var list = (p.sales || []).slice().sort(function (x, y) { return String(x.date || "").localeCompare(String(y.date || "")); });
+  var totalAll = 0, receivedAll = 0, duesAll = 0;
+  list.forEach(function (s) { totalAll += Number(s.totalBill || 0); receivedAll += Number(s.advance || 0); duesAll += Number(s.dues || 0); });
+  var goods = {};
+  list.forEach(function (s) {
+    (s.items || []).forEach(function (it) {
+      if (!it.category || it.category === "custom") return;
+      if (it.variant === "" || it.variant === null || it.variant === undefined) return;
+      var k = it.category + "|" + it.variant;
+      goods[k] = (goods[k] || 0) + (Number(it.qty) || 0);
+    });
+  });
+  var goodsList = Object.keys(goods).map(function (k) { var pr = k.split("|"); return { category: pr[0], variant: pr[1], qty: goods[k] }; })
+    .sort(function (m, n) { return String(m.category).localeCompare(String(n.category)) || (Number(m.variant) - Number(n.variant)); });
   return (
     <ModalShell onClose={p.onClose} title={name}>
+      <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+          <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalAll)} bold />
+          <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(receivedAll)} bold color={TC.success} />
+          <StatBlock label={t("dues")} value={"Rs " + rbMoney(duesAll)} bold color={duesAll > 0 ? TC.stamp : TC.success} />
+        </div>
+        <div style={{ fontSize: 10, color: TC.inkSoft, textAlign: "center", marginTop: 6 }}>{list.length} {t("billsCount")}</div>
+      </div>
+
+      {goodsList.length > 0 ? (
+        <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div className="rb-display" style={{ fontSize: 11.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 6 }}>{t("goodsTaken")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 10px" }}>
+            {goodsList.map(function (g) {
+              return (
+                <div key={g.category + g.variant} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, gap: 6 }}>
+                  <span style={{ color: TC.inkSoft }}>{variantLabel(t, g.category, g.variant)}</span>
+                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>{g.qty}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {list.length === 0 ? (
         <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noBills")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {list.map(function (s) {
+            var pays = (s.payments || []).slice().sort(function (x, y) { return String(x.date || "").localeCompare(String(y.date || "")); });
             return (
-              <div key={s.id} onClick={function () { onOpen(s); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                  <span className="rb-mono" style={{ fontSize: 11.5, color: TC.inkSoft }}>#{s.serial} · {rbDate(s.date)}</span>
-                  <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</span>
+              <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px" }}>
+                <div onClick={function () { onOpen(s); }} style={{ cursor: "pointer" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <span className="rb-mono" style={{ fontSize: 11.5, color: TC.inkSoft }}>#{s.serial} · {rbDate(s.date)}</span>
+                    <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 3, gap: 8 }}>
+                    <span style={{ color: TC.inkSoft }}>{s.type === "cash" ? t("cashSale") : t("customizedSale")}</span>
+                    <span style={{ whiteSpace: "nowrap" }}><span style={{ color: TC.success }}>{t("billsReceived")} {rbMoney(s.advance || 0)}</span> <span style={{ color: TC.concrete }}>·</span> <span style={{ color: (s.dues || 0) > 0 ? TC.stamp : TC.inkSoft }}>{t("dues")} {rbMoney(s.dues || 0)}</span></span>
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 3, gap: 8 }}>
-                  <span style={{ color: TC.inkSoft }}>{s.type === "cash" ? t("cashSale") : t("customizedSale")}</span>
-                  <span style={{ whiteSpace: "nowrap" }}><span style={{ color: TC.success }}>{t("billsReceived")} {rbMoney(s.advance || 0)}</span> <span style={{ color: TC.concrete }}>·</span> <span style={{ color: (s.dues || 0) > 0 ? TC.stamp : TC.inkSoft }}>{t("dues")} {rbMoney(s.dues || 0)}</span></span>
-                </div>
+                {pays.length > 0 ? (
+                  <div style={{ marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+                    <div style={{ fontSize: 9.5, color: TC.concrete, fontWeight: 700, marginBottom: 2 }}>{t("paymentsList")}</div>
+                    {pays.map(function (pay, idx) {
+                      return (
+                        <div key={pay.id || idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, padding: "1px 0", gap: 8 }}>
+                          <span className="rb-mono" style={{ color: TC.inkSoft }}>{rbDate(pay.date)}</span>
+                          <span className="rb-mono" style={{ fontWeight: 700, color: TC.success, whiteSpace: "nowrap" }}>+{rbMoney(pay.amount || 0)}{(Number(pay.discount) || 0) > 0 ? " · " + t("discount") + " " + rbMoney(pay.discount) : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             );
           })}
