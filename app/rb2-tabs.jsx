@@ -132,7 +132,8 @@ function ItemPickerModal(p) {
 function NewSaleTab(p) {
   var t = p.t, lang = p.lang, remainingFor = p.remainingFor, variantsFor = p.variantsFor;
   var onSave = p.onSave, editingSale = p.editingSale, onCancelEdit = p.onCancelEdit;
-  var nextSerial = p.nextSerial;
+  var nextSerial = p.nextSerial, saleRole = p.role;
+  var canEditSerial = saleRole === "admin"; /* bill number sirf Admin badal sakta hai */
   var sn = React.useState(null), serialEdit = sn[0], setSerialEdit = sn[1];
   var a = React.useState("cash"), saleType = a[0], setSaleType = a[1];
   var b = React.useState(""), customerName = b[0], setCustomerName = b[1];
@@ -248,7 +249,7 @@ function NewSaleTab(p) {
       <div style={{ background: TC.paper, borderRadius: 10, padding: 16, boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, borderBottom: "2px dashed " + TC.paperLine, paddingBottom: 10 }}>
           <div className="rb-display" style={{ color: TC.ink, fontSize: 15, fontWeight: 600 }}>{saleType === "cash" ? t("billNo") : t("gatePassNo")}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 3 }}><span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>#</span><input type="number" inputMode="numeric" value={effSerial} onChange={function (ev) { setSerialEdit(ev.target.value); }} className="rb-mono" style={{ width: 74, padding: "4px 6px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.stamp, fontSize: 14, fontWeight: 700, textAlign: "center" }} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}><span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>#</span>{canEditSerial ? ( <input type="number" inputMode="numeric" value={effSerial} onChange={function (ev) { setSerialEdit(ev.target.value); }} className="rb-mono" style={{ width: 74, padding: "4px 6px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.stamp, fontSize: 14, fontWeight: 700, textAlign: "center" }} /> ) : ( <span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>{effSerial}</span> )}</div>
         </div>
 
         <Field label={t("customerName")} className={urdu ? "rb-urdu" : ""}>
