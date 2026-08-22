@@ -398,7 +398,7 @@ function AppHeader(p) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div className="rb-display" style={{ color: TC.cream, fontSize: 21, fontWeight: 700 }}>{t("appName")}</div>
-          <div className="rb-urdu" dir="rtl" style={{ color: "#B4AC98", fontSize: 13, lineHeight: 1.9, marginTop: 1, textAlign: "start" }}>{t("tagline")}</div>
+          <div className="rb-urdu" dir="rtl" style={{ color: "#B4AC98", fontSize: 13, lineHeight: 1.9, marginTop: 1, textAlign: "center" }}>{t("tagline")}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
