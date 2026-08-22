@@ -191,7 +191,10 @@ function NewSaleTab(p) {
     setCustomerName(""); setMobile(""); setRows([]); setLabourRate("");
     setPaidInFull(false); setAdvanceInput(""); setDiscountInput(""); setDate(rbToday());
   }
-  var canSave = customerName.trim() && rows.length > 0 && !submitting;
+  /* Rs 0 ka bill save nahi hona chahiye - har item ka rate zaroori hai */
+  var hasZeroRate = rows.some(function (r) { return !(Number(r.rate) > 0); });
+  var amountInvalid = rows.length > 0 && (hasZeroRate || !(totalBill > 0));
+  var canSave = customerName.trim() && rows.length > 0 && !amountInvalid && !submitting;
 
   function handleSave() {
     if (!canSave) return;
@@ -313,6 +316,9 @@ function NewSaleTab(p) {
         </div>
       </div>
 
+      {amountInvalid ? (
+        <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: "rgba(192,57,43,0.15)", border: "1px solid " + TC.stamp, color: TC.stamp, fontSize: 12, fontWeight: 600, textAlign: "center" }}>{t("rateRequired")}</div>
+      ) : null}
       <button onClick={handleSave} disabled={!canSave} style={{
         width: "100%", marginTop: 16, padding: "14px", borderRadius: 10, border: "none",
         background: canSave ? TC.stamp : "#4A4638", color: TC.cream, fontSize: 14.5, fontWeight: 700,
@@ -417,6 +423,7 @@ function AddVariantModal(p) {
 function StockHistoryModal(p) {
   var t = p.t;
   var entries = p.entries;
+  var canEdit = p.canEdit !== false;
   var e = React.useState(null), editingId = e[0], setEditingId = e[1];
   var f = React.useState(""), editQty = f[0], setEditQty = f[1];
   var g = React.useState(""), editDate = g[0], setEditDate = g[1];
@@ -462,10 +469,12 @@ function StockHistoryModal(p) {
                       <div className="rb-mono" style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{entry.qty}</div>
                       <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{rbDate(entry.date)}</div>
                     </div>
+                    {canEdit ? (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={function () { startEdit(entry); }} style={{ width: 30, height: 30, borderRadius: 6, border: "none", background: TC.paperDark, color: TC.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico name="pencil" size={14} /></button>
                       <button onClick={function () { doDelete(entry); }} style={{ width: 30, height: 30, borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico name="trash" size={14} /></button>
                     </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -479,6 +488,7 @@ function StockHistoryModal(p) {
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
   var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
+  var canEdit = p.canEdit !== false; /* sirf admin stock add/edit/delete kar sakta hai */
   var a = React.useState("garden"), cat = a[0], setCat = a[1];
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
@@ -546,12 +556,14 @@ function StockTab(p) {
                 <StatBlock label={t("sold")} value={sold} />
                 <StatBlock label={t("remaining")} value={remaining} bold color={remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft)} />
               </div>
+              {canEdit ? (
               <button onClick={function () { setAddingFor(v); }} style={{
                 width: 32, height: 32, borderRadius: 8, border: "none", background: TC.garden,
                 color: TC.cream, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
               }}>
                 <Ico name="plus" size={17} />
               </button>
+              ) : null}
               <button onClick={function () { setHistoryFor(v); }} style={{
                 width: 32, height: 32, borderRadius: 8, border: "none", background: TC.paperDark,
                 color: TC.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
@@ -563,6 +575,7 @@ function StockTab(p) {
         })}
       </div>
 
+      {canEdit ? (
       <button onClick={function () { setAddingVariant(true); }} style={{
         width: "100%", marginTop: 10, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete,
         background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
@@ -570,6 +583,7 @@ function StockTab(p) {
       }}>
         <Ico name="plus" size={14} /> {t("addNewSize")} — {cat === "garden" ? t("garden") : t("slab")}
       </button>
+      ) : null}
 
       {addingFor !== null ? (
         <AddStockModal t={t} category={cat} variant={addingFor}
@@ -577,7 +591,7 @@ function StockTab(p) {
           onSave={function (qty, date) { onAddStock(cat, addingFor, qty, date); setAddingFor(null); }} />
       ) : null}
       {historyFor !== null ? (
-        <StockHistoryModal t={t} category={cat} variant={historyFor}
+        <StockHistoryModal t={t} canEdit={canEdit} category={cat} variant={historyFor}
           entries={stockLog.filter(function (e) { return e.category === cat && e.variant === historyFor; }).sort(function (x, y) { return (y.date || "").localeCompare(x.date || ""); })}
           onClose={function () { setHistoryFor(null); }}
           onEdit={function (id, qty, date) { onEditStock(id, qty, date); }}
@@ -1040,7 +1054,7 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStock")} checked={permissions.stock} onChange={function (v) { onTogglePermission("stock", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />

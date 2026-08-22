@@ -129,7 +129,7 @@ var TRANSLATIONS = {
     gatePassTitle: "Gate Pass", paymentHistory: "Payment History", stockHistory: "Stock History", confirmDeleteStockEntry: "Delete this stock entry?", edit: "Edit", editingBill: "Editing bill",
     cancelEdit: "Cancel edit", viewGatePass: "View gate pass",
     navGatePass: "Gate Pass", noGatePasses: "No gate passes yet.",
-    billUpdated: "Bill updated", updateBill: "Update bill",
+    billUpdated: "Bill updated", updateBill: "Update bill", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
     tapToAddQty: "Tap an item, then enter how many", add: "Add", selected: "Selected",
     mobileNumber: "Mobile number", whatsapp: "Share on WhatsApp",
     stockSummary: "Stock summary", paymentsSummary: "Payments received", today: "Today",
@@ -192,7 +192,7 @@ var TRANSLATIONS = {
     gatePassTitle: "گیٹ پاس", paymentHistory: "ادائیگیوں کی تفصیل", stockHistory: "اسٹاک کی تاریخ", confirmDeleteStockEntry: "کیا یہ اسٹاک اندراج حذف کریں؟", edit: "ترمیم", editingBill: "بل میں ترمیم",
     cancelEdit: "ترمیم منسوخ کریں", viewGatePass: "گیٹ پاس دیکھیں",
     navGatePass: "گیٹ پاس", noGatePasses: "ابھی تک کوئی گیٹ پاس نہیں۔",
-    billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں",
+    billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
     tapToAddQty: "کوئی آئٹم دبائیں، پھر تعداد درج کریں", add: "شامل کریں", selected: "منتخب شدہ",
     mobileNumber: "موبائل نمبر", whatsapp: "واٹس ایپ پر بھیجیں",
     stockSummary: "اسٹاک کا خلاصہ", paymentsSummary: "ادائیگیوں کا خلاصہ", today: "آج",
@@ -227,7 +227,7 @@ function resolveRange(range) {
 function inDateRange(d, from, to) {
   return (!from || d >= from) && (!to || d <= to);
 }
-var DEFAULT_PERMISSIONS = { stock: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; } /* ---------------- icons ---------------- */
+var DEFAULT_PERMISSIONS = { stock: true, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; } /* ---------------- icons ---------------- */
 var ICON_PATHS = {
   receipt: <g><path d="M5 3h14v18l-3-2-3 2-3-2-3 2Z" /><path d="M8 8h8" /><path d="M8 12h8" /></g>,
   pkg: <g><path d="M21 8v8l-9 5-9-5V8l9-5 9 5Z" /><path d="M3.3 7.5 12 12l8.7-4.5" /><path d="M12 12v9" /></g>,
