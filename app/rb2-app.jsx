@@ -600,6 +600,9 @@ function RaeesBuilderApp() {
   function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
   var sl = React.useState(function () { return rbGet("stock-log", []); }), stockLog = sl[0], setStockLog = sl[1];
+  var sup = React.useState(function () { return rbGet("suppliers", []); }), suppliers = sup[0], setSuppliers = sup[1];
+  var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
+  var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
   var ns = React.useState(function () { return rbGet("next-serial", 1); }), nextSerial = ns[0], setNextSerial = ns[1];
   var gpS = React.useState(function () { return rbGet("gate-passes", []); }), gatePasses = gpS[0], setGatePasses = gpS[1];
@@ -622,6 +625,9 @@ function RaeesBuilderApp() {
   /* permissions alag key mein - ye dono mobile par sync hoti hain */
   React.useEffect(function () { rbSet("permissions", permissions); }, [permissions]);
   React.useEffect(function () { rbSet("stock-log", stockLog); }, [stockLog]);
+  React.useEffect(function () { rbSet("suppliers", suppliers); }, [suppliers]);
+  React.useEffect(function () { rbSet("purchases", purchases); }, [purchases]);
+  React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
   React.useEffect(function () { rbSet("gate-passes", gatePasses); }, [gatePasses]);
@@ -719,6 +725,49 @@ function RaeesBuilderApp() {
   }
   var gardenVariants = uniqSorted("garden", GARDEN_LENGTHS, customVariants.garden);
   var slabVariants = uniqSorted("slab", SLAB_SIZES, customVariants.slab);
+  /* ---------------- supplier / cement ---------------- */
+  var cementTotals = (function () {
+    var added = purchases.reduce(function (n, x) { return n + (Number(x.bags) || 0); }, 0);
+    var used = stockLog.reduce(function (n, e) { return n + (Number(e.cementBags) || 0); }, 0);
+    return { added: added, used: used, remaining: added - used };
+  })();
+
+  function supplierTotals(supplierId) {
+    var bought = purchases.filter(function (x) { return x.supplierId === supplierId; });
+    var paid = supplierPayments.filter(function (x) { return x.supplierId === supplierId; });
+    var amount = bought.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    var bags = bought.reduce(function (n, x) { return n + (Number(x.bags) || 0); }, 0);
+    var given = paid.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    return { bags: bags, amount: amount, paid: given, dues: amount - given, purchases: bought, payments: paid };
+  }
+
+  function addSupplier(name, mobile) {
+    var nm = String(name || "").trim();
+    if (!nm) return;
+    var entry = { id: rbUid(), name: nm, mobile: String(mobile || "").trim(), createdAt: new Date().toISOString() };
+    setSuppliers(function (a) { return a.concat([entry]); });
+    showToast(t("addSupplier"));
+    logActivity("supplier_added", nm);
+  }
+
+  function addPurchase(supplierId, bags, rate, date) {
+    var b = Number(bags) || 0, r = Number(rate) || 0;
+    if (!supplierId || b <= 0) return;
+    var entry = { id: rbUid(), supplierId: supplierId, bags: b, rate: r, amount: b * r, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    setPurchases(function (a) { return [entry].concat(a); });
+    showToast(t("buyCement"));
+    logActivity("cement_bought", b + " " + t("cementBags"));
+  }
+
+  function addSupplierPayment(supplierId, amount, date) {
+    var amt = Number(amount) || 0;
+    if (!supplierId || amt <= 0) return;
+    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    setSupplierPayments(function (a) { return [entry].concat(a); });
+    showToast(t("payToSupplier"));
+    logActivity("supplier_paid", "Rs " + rbMoney(amt));
+  }
+
   function variantsFor(category) { return category === "garden" ? gardenVariants : slabVariants; }
 
   function upsertGatePass(sale, items, type, listOverride) {
@@ -802,16 +851,25 @@ function RaeesBuilderApp() {
     if (r === "accountant" && tab === "wastage") setTab("sale");
   }
 
-  function addStockEntry(category, variant, qty, date) {
-    var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday() };
+  function addStockEntry(category, variant, qty, date, cementBags) {
+    var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday(), cementBags: Math.max(0, Number(cementBags) || 0),
+      by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null };
     setStockLog(function (a) { return [entry].concat(a); });
     showToast(t("stockUpdated"));
     logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty);
   }
 function editStockEntry(id, qty, date) {
-    setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { qty: Number(qty) || 0, date: date || e.date }) : e; }); });
+    setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { qty: Number(qty) || 0, date: date || e.date, verified: role === "admin", verifiedBy: role === "admin" ? role : null }) : e; }); });
     showToast(t("stockUpdated"));
     logActivity("stock_edited", id);
+  }
+
+  /* Admin verify: User ne jo stock add kiya, Admin us ki tasdeeq kare (bill jaisa nizam) */
+  function verifyStockEntry(id) {
+    if (role !== "admin") return;
+    setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { verified: true, verifiedBy: role, verifiedAt: new Date().toISOString() }) : e; }); });
+    showToast(t("gpVerifiedTag"));
+    logActivity("stock_verified", id);
   }
 
   function deleteStockEntry(id) {
@@ -963,8 +1021,8 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} />
+    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
     body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}

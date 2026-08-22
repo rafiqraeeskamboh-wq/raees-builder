@@ -108,7 +108,7 @@ var TRANSLATIONS = {
     setRate: "Rate / sqft", duesList: "Dues", allSales: "All sales",
     duesOnly: "Dues only", searchCustomer: "Search customer...",
     markPaid: "Mark as paid", settings: "Settings", language: "Language",
-    role: "Role", admin: "Admin", accountant: "User", permissions: "Permissions", permissionsHint: "Choose which features the User role can access.", userCanStock: "Stock tab", userCanStockAdd: "Stock add karna", userCanWastage: "Wastage tab", userCanEditSale: "Edit sales & returns", userCanGatePass: "Create / edit gate pass", userCanBillsSummary: "See Bills totals (Total / Received / Baqi)",
+    role: "Role", admin: "Admin", accountant: "User", permissions: "Permissions", permissionsHint: "Choose which features the User role can access.", userCanStock: "Stock tab", userCanStockAdd: "Stock add karna", userCanSupplier: "Supplier hisab", userCanWastage: "Wastage tab", userCanEditSale: "Edit sales & returns", userCanGatePass: "Create / edit gate pass", userCanBillsSummary: "See Bills totals (Total / Received / Baqi)",
     clearData: "Clear all data",
     clearDataConfirm: "This deletes all stock, sales and payment records saved on this device. Are you sure?",
     noDues: "No pending dues — all clear.", paid: "Paid", due: "Due",
@@ -129,7 +129,7 @@ var TRANSLATIONS = {
     gatePassTitle: "Gate Pass", paymentHistory: "Payment History", stockHistory: "Stock History", confirmDeleteStockEntry: "Delete this stock entry?", edit: "Edit", editingBill: "Editing bill",
     cancelEdit: "Cancel edit", viewGatePass: "View gate pass",
     navGatePass: "Gate Pass", noGatePasses: "No gate passes yet.",
-    billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
+    supplier: "Supplier", suppliers: "Suppliers", addSupplier: "Naya supplier", supplierName: "Supplier ka naam", noSuppliers: "Abhi koi supplier nahi", cement: "Cement", cementBags: "Cement (bag)", bagsAdded: "Aayi", bagsUsed: "Kharch", bagsLeft: "Baqi", buyCement: "Cement kharid", payToSupplier: "Adaigi", purchases: "Kharid", supplierBaqi: "Baqi raqam", cementLowNote: "Cement stock kam ho raha hai", billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
     tapToAddQty: "Tap an item, then enter how many", add: "Add", selected: "Selected",
     mobileNumber: "Mobile number", whatsapp: "Share on WhatsApp",
     stockSummary: "Stock summary", paymentsSummary: "Payments received", today: "Today",
@@ -171,7 +171,7 @@ var TRANSLATIONS = {
     setRate: "ریٹ / مربع فٹ", duesList: "بقایا جات", allSales: "تمام سیلز",
     duesOnly: "صرف بقایا", searchCustomer: "گاہک تلاش کریں...",
     markPaid: "ادا شدہ نشان زد کریں", settings: "ترتیبات", language: "زبان",
-    role: "کردار", admin: "ایڈمن", accountant: "صارف", permissions: "اختیارات", permissionsHint: "منتخب کریں کہ صارف کس فیچر تک رسائی رکھے۔", userCanStock: "اسٹاک ٹیب", userCanStockAdd: "اسٹاک شامل کرنا", userCanWastage: "ضائع شدہ مال ٹیب", userCanEditSale: "سیل و واپسی میں تبدیلی", userCanGatePass: "گیٹ پاس بنانا / تبدیل کرنا", userCanBillsSummary: "بلوں کے کل اعداد دیکھیں (کل / وصول شدہ / باقی)",
+    role: "کردار", admin: "ایڈمن", accountant: "صارف", permissions: "اختیارات", permissionsHint: "منتخب کریں کہ صارف کس فیچر تک رسائی رکھے۔", userCanStock: "اسٹاک ٹیب", userCanStockAdd: "اسٹاک شامل کرنا", userCanSupplier: "سپلائر حساب", userCanWastage: "ضائع شدہ مال ٹیب", userCanEditSale: "سیل و واپسی میں تبدیلی", userCanGatePass: "گیٹ پاس بنانا / تبدیل کرنا", userCanBillsSummary: "بلوں کے کل اعداد دیکھیں (کل / وصول شدہ / باقی)",
     clearData: "تمام ڈیٹا صاف کریں",
     clearDataConfirm: "اس سے اس ڈیوائس کا تمام اسٹاک، سیلز اور ادائیگی کا ریکارڈ ختم ہو جائے گا۔ کیا آپ مطمئن ہیں؟",
     noDues: "کوئی بقایا نہیں — سب کلیئر۔", paid: "ادا شدہ", due: "بقایا دار",
@@ -192,7 +192,7 @@ var TRANSLATIONS = {
     gatePassTitle: "گیٹ پاس", paymentHistory: "ادائیگیوں کی تفصیل", stockHistory: "اسٹاک کی تاریخ", confirmDeleteStockEntry: "کیا یہ اسٹاک اندراج حذف کریں؟", edit: "ترمیم", editingBill: "بل میں ترمیم",
     cancelEdit: "ترمیم منسوخ کریں", viewGatePass: "گیٹ پاس دیکھیں",
     navGatePass: "گیٹ پاس", noGatePasses: "ابھی تک کوئی گیٹ پاس نہیں۔",
-    billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
+    supplier: "سپلائر", suppliers: "سپلائرز", addSupplier: "نیا سپلائر", supplierName: "سپلائر کا نام", noSuppliers: "ابھی کوئی سپلائر نہیں", cement: "سیمنٹ", cementBags: "سیمنٹ (بوری)", bagsAdded: "آئی", bagsUsed: "خرچ", bagsLeft: "باقی", buyCement: "سیمنٹ خرید", payToSupplier: "ادائیگی", purchases: "خرید", supplierBaqi: "باقی رقم", cementLowNote: "سیمنٹ اسٹاک کم ہو رہا ہے", billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
     tapToAddQty: "کوئی آئٹم دبائیں، پھر تعداد درج کریں", add: "شامل کریں", selected: "منتخب شدہ",
     mobileNumber: "موبائل نمبر", whatsapp: "واٹس ایپ پر بھیجیں",
     stockSummary: "اسٹاک کا خلاصہ", paymentsSummary: "ادائیگیوں کا خلاصہ", today: "آج",
@@ -227,7 +227,7 @@ function resolveRange(range) {
 function inDateRange(d, from, to) {
   return (!from || d >= from) && (!to || d <= to);
 }
-var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
+var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
 /* ---- gate pass vs bill check: gate pass mein bill se ziada maal to nahi ja raha ---- */
 function rbItemKey(it) { return String(it.category || "") + "|" + String(it.variant || ""); }
 function gpExtraOverBill(sale, gp) {

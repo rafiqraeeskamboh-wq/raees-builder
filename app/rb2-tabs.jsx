@@ -199,7 +199,8 @@ function NewSaleTab(p) {
   /* Rs 0 ka bill save nahi hona chahiye - har item ka rate zaroori hai */
   var hasZeroRate = rows.some(function (r) { return !(Number(r.rate) > 0); });
   var amountInvalid = rows.length > 0 && (hasZeroRate || !(totalBill > 0));
-  var canSave = customerName.trim() && rows.length > 0 && !amountInvalid && Number(effSerial) > 0 && !submitting;
+  var amountBlocked = amountInvalid && !canEditSerial; /* Rs 0 ka bill sirf Admin save kar sakta hai */
+  var canSave = customerName.trim() && rows.length > 0 && !amountBlocked && Number(effSerial) > 0 && !submitting;
 
   function handleSave() {
     if (!canSave) return;
@@ -468,7 +469,7 @@ function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, 
             return (
               <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}>
                 <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
-                <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span>
+                <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>{e.verified ? "" : "• "}+{e.qty}</span>
               </div>
             );
           })}
@@ -484,7 +485,10 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
   var t = p.t;
   var a = React.useState(""), qty = a[0], setQty = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
-  var canSave = Number(qty) > 0;
+  var c = React.useState(""), cem = c[0], setCem = c[1];
+  var cemOk = cem !== "" && Number(cem) >= 0;
+  var canSave = Number(qty) > 0 && cemOk;
+  var left = (p.cementLeft === null || p.cementLeft === undefined) ? null : p.cementLeft;
   return (
     <ModalShell onClose={p.onClose} title={t("addStock")}>
       <div style={{ marginBottom: 12, fontSize: 13, color: TC.cream, fontWeight: 600 }}>{variantLabel(t, p.category, p.variant)}</div>
@@ -492,10 +496,19 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
         <input type="number" inputMode="numeric" autoFocus value={qty} onChange={function (e) { setQty(e.target.value); }}
           placeholder={t("enterQty")} style={Object.assign({}, rbInput(), { fontSize: 16 })} />
       </Field>
+      <Field label={t("cementBags")}>
+        <input type="number" inputMode="numeric" value={cem} onChange={function (e) { setCem(e.target.value); }}
+          placeholder="0" style={Object.assign({}, rbInput(), { fontSize: 16, borderColor: cemOk ? undefined : TC.stamp })} />
+      </Field>
+      {left !== null ? (
+        <div style={{ fontSize: 10.5, color: (Number(cem) || 0) > left ? TC.stamp : "#A39C8A", marginTop: -6, marginBottom: 10 }}>
+          {t("cement")} {t("bagsLeft")}: <span className="rb-mono" style={{ fontWeight: 700 }}>{left}</span>
+        </div>
+      ) : null}
       <Field label={t("date")}>
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
-      <button disabled={!canSave} onClick={function () { p.onSave(qty, date); }} style={{
+      <button disabled={!canSave} onClick={function () { p.onSave(qty, date, Number(cem) || 0); }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
         cursor: canSave ? "pointer" : "not-allowed"
@@ -573,11 +586,17 @@ function StockHistoryModal(p) {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <div>
-                      <div className="rb-mono" style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{entry.qty}</div>
+                      <div className="rb-mono" style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{entry.qty}{(Number(entry.cementBags) || 0) > 0 ? <span style={{ fontSize: 10, fontWeight: 600, color: TC.inkSoft }}>  ·  {t("cement")} {entry.cementBags}</span> : null}</div>
                       <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{rbDate(entry.date)}</div>
                     </div>
+                    {(canEdit && !entry.verified && p.onVerifyStock) ? (
+                      <button onClick={function () { p.onVerifyStock(entry.id); }} style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: TC.success, color: TC.cream, fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>{t("verifyGp")}</button>
+                    ) : null}
+                    {entry.verified ? (
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.success, color: TC.cream }}>{t("gpVerifiedTag")}</span>
+                    ) : null}
                     {canEdit ? (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={function () { startEdit(entry); }} style={{ width: 30, height: 30, borderRadius: 6, border: "none", background: TC.paperDark, color: TC.ink, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico name="pencil" size={14} /></button>
@@ -594,11 +613,124 @@ function StockHistoryModal(p) {
     </ModalShell>
   );
 }
+function SupplierModal(p) {
+  var t = p.t, suppliers = p.suppliers || [], supplierTotals = p.supplierTotals;
+  var a = React.useState(null), openId = a[0], setOpenId = a[1];
+  var b = React.useState(false), adding = b[0], setAdding = b[1];
+  var n1 = React.useState(""), nm = n1[0], setNm = n1[1];
+  var n2 = React.useState(""), mob = n2[0], setMob = n2[1];
+  var c1 = React.useState(""), pBags = c1[0], setPBags = c1[1];
+  var c2 = React.useState(""), pRate = c2[0], setPRate = c2[1];
+  var c3 = React.useState(rbToday()), pDate = c3[0], setPDate = c3[1];
+  var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
+  var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
+  var current = null;
+  suppliers.forEach(function (x) { if (x.id === openId) current = x; });
+
+  if (current) {
+    var tot = supplierTotals(current.id);
+    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: x.bags, rate: x.rate, amount: x.amount }; })
+      .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount }; }))
+      .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+    return (
+      <ModalShell onClose={p.onClose} title={current.name}>
+        <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
+        <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
+            <StatBlock label={t("cementBags")} value={tot.bags} bold />
+            <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(tot.amount)} bold />
+            <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
+            <StatBlock label={t("supplierBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
+          </div>
+        </div>
+
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyCement")}</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input type="number" inputMode="numeric" value={pBags} onChange={function (e) { setPBags(e.target.value); }} placeholder={t("cementBags")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+            <input type="number" inputMode="numeric" value={pRate} onChange={function (e) { setPRate(e.target.value); }} placeholder={t("rate")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+          </div>
+          <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 6 }} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{t("total")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>Rs {rbMoney((Number(pBags) || 0) * (Number(pRate) || 0))}</span></div>
+          <button disabled={!(Number(pBags) > 0)} onClick={function () { p.onAddPurchase(current.id, pBags, pRate, pDate); setPBags(""); setPRate(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: Number(pBags) > 0 ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyCement")}</button>
+        </div>
+
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("payToSupplier")}</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="number" inputMode="numeric" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+            <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+          </div>
+          <button disabled={!(Number(payAmt) > 0)} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate); setPayAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: Number(payAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("payToSupplier")}</button>
+        </div>
+
+        {rows.length === 0 ? (
+          <div style={{ fontSize: 11.5, color: "#A39C8A", textAlign: "center", padding: "10px 0" }}>{t("noEntriesRange")}</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.map(function (r) {
+              return (
+                <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? t("buyCement") : t("payToSupplier")}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " \u00d7 " + rbMoney(r.rate) : ""}</div>
+                  </div>
+                  <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </ModalShell>
+    );
+  }
+
+  return (
+    <ModalShell onClose={p.onClose} title={t("suppliers")}>
+      {adding ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("supplierName")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
+          <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function () { p.onAddSupplier(nm, mob); setNm(""); setMob(""); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
+            <button onClick={function () { setAdding(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addSupplier")}</button>
+      )}
+
+      {suppliers.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noSuppliers")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {suppliers.map(function (sp) {
+            var tt = supplierTotals(sp.id);
+            return (
+              <div key={sp.id} onClick={function () { setOpenId(sp.id); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{sp.name}</span>
+                  <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
+                  <span style={{ color: TC.inkSoft }}>{tt.bags} {t("cementBags")}</span>
+                  <span style={{ color: TC.inkSoft }}>{t("billsTotal")} {rbMoney(tt.amount)} · {t("billsReceived")} {rbMoney(tt.paid)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </ModalShell>
+  );
+}
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
   var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
   var canEdit = p.canEdit !== false; /* sirf admin: size add, edit, delete */
   var canAdd = p.canAdd === undefined ? canEdit : !!p.canAdd; /* stock add karna - admin ya ijazat wala user */
+  var cementTotals = p.cementTotals || { added: 0, used: 0, remaining: 0 };
+  var sm = React.useState(false), supplierOpen = sm[0], setSupplierOpen = sm[1];
   var a = React.useState("garden"), cat = a[0], setCat = a[1];
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
@@ -619,6 +751,18 @@ function StockTab(p) {
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <StockSummaryCard t={t} stockLog={stockLog} />
+
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
+        <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("cement")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+          <StatBlock label={t("bagsAdded")} value={cementTotals.added} />
+          <StatBlock label={t("bagsUsed")} value={cementTotals.used} />
+          <StatBlock label={t("bagsLeft")} value={cementTotals.remaining} bold color={cementTotals.remaining > 0 ? TC.success : (cementTotals.remaining < 0 ? TC.stamp : TC.inkSoft)} />
+        </div>
+        {p.canSupplier ? (
+          <button onClick={function () { setSupplierOpen(true); }} style={{ width: "100%", marginTop: 10, padding: "9px", borderRadius: 7, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("suppliers")}</button>
+        ) : null}
+      </div>
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {["garden", "slab"].map(function (cc) {
@@ -696,20 +840,26 @@ function StockTab(p) {
       ) : null}
 
       {addingFor !== null ? (
-        <AddStockModal t={t} category={cat} variant={addingFor}
+        <AddStockModal t={t} category={cat} variant={addingFor} cementLeft={cementTotals.remaining}
           onClose={function () { setAddingFor(null); }}
-          onSave={function (qty, date) { onAddStock(cat, addingFor, qty, date); setAddingFor(null); }} />
+          onSave={function (qty, date, cem) { onAddStock(cat, addingFor, qty, date, cem); setAddingFor(null); }} />
       ) : null}
       {historyFor !== null ? (
         <StockHistoryModal t={t} canEdit={canEdit} category={cat} variant={historyFor}
           entries={stockLog.filter(function (e) { return e.category === cat && e.variant === historyFor; }).sort(function (x, y) { return (y.date || "").localeCompare(x.date || ""); })}
           onClose={function () { setHistoryFor(null); }}
+          onVerifyStock={p.onVerifyStock}
           onEdit={function (id, qty, date) { onEditStock(id, qty, date); }}
           onDelete={function (id) { onDeleteStock(id); }} />
       ) : null}
       {addingVariant ? (
         <AddVariantModal t={t} category={cat} onClose={function () { setAddingVariant(false); }}
           onSave={function (v, label) { onAddVariant(cat, v, label); setAddingVariant(false); }} />
+      ) : null}
+      {supplierOpen ? (
+        <SupplierModal t={t} suppliers={p.suppliers} supplierTotals={p.supplierTotals}
+          onAddSupplier={p.onAddSupplier} onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier}
+          onClose={function () { setSupplierOpen(false); }} />
       ) : null}
     </div>
   );
@@ -1184,7 +1334,7 @@ function NextSerialSetter(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
