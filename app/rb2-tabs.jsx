@@ -622,6 +622,12 @@ function SupplierModal(p) {
   var c1 = React.useState(""), pBags = c1[0], setPBags = c1[1];
   var c2 = React.useState(""), pRate = c2[0], setPRate = c2[1];
   var c3 = React.useState(rbToday()), pDate = c3[0], setPDate = c3[1];
+  var m1 = React.useState("cement"), pMat = m1[0], setPMat = m1[1];
+  var m2 = React.useState(false), addMat = m2[0], setAddMat = m2[1];
+  var m3 = React.useState(""), matName = m3[0], setMatName = m3[1];
+  var m4 = React.useState(""), matUnit = m4[0], setMatUnit = m4[1];
+  var mats = p.materials || [];
+  var curMat = null; mats.forEach(function (x) { if (x.id === pMat) curMat = x; });
   var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
   var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
   var current = null;
@@ -629,7 +635,7 @@ function SupplierModal(p) {
 
   if (current) {
     var tot = supplierTotals(current.id);
-    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: x.bags, rate: x.rate, amount: x.amount }; })
+    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: rbQtyOf(x), unit: x.unit || "", matName: x.materialName || "", rate: x.rate, amount: x.amount }; })
       .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount }; }))
       .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
     return (
@@ -645,14 +651,17 @@ function SupplierModal(p) {
         </div>
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyCement")}</div>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyMaterial")}</div>
+          <select value={pMat} onChange={function (e) { setPMat(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13, marginBottom: 6 }}>
+            {mats.map(function (m) { return <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>; })}
+          </select>
           <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <input type="number" inputMode="numeric" value={pBags} onChange={function (e) { setPBags(e.target.value); }} placeholder={t("cementBags")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+            <input type="number" inputMode="numeric" value={pBags} onChange={function (e) { setPBags(e.target.value); }} placeholder={curMat ? curMat.unit : t("qty")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
             <input type="number" inputMode="numeric" value={pRate} onChange={function (e) { setPRate(e.target.value); }} placeholder={t("rate")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
           </div>
           <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 6 }} />
           <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{t("total")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>Rs {rbMoney((Number(pBags) || 0) * (Number(pRate) || 0))}</span></div>
-          <button disabled={!(Number(pBags) > 0)} onClick={function () { p.onAddPurchase(current.id, pBags, pRate, pDate); setPBags(""); setPRate(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: Number(pBags) > 0 ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyCement")}</button>
+          <button disabled={!(Number(pBags) > 0)} onClick={function () { p.onAddPurchase(current.id, pBags, pRate, pDate, pMat); setPBags(""); setPRate(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: Number(pBags) > 0 ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyMaterial")}</button>
         </div>
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
@@ -672,8 +681,8 @@ function SupplierModal(p) {
               return (
                 <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? t("buyCement") : t("payToSupplier")}</div>
-                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " \u00d7 " + rbMoney(r.rate) : ""}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? (r.matName || t("buyMaterial")) : t("payToSupplier")}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") + " \u00d7 " + rbMoney(r.rate) : ""}</div>
                   </div>
                   <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
                 </div>
@@ -699,6 +708,21 @@ function SupplierModal(p) {
       ) : (
         <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addSupplier")}</button>
       )}
+
+      {p.isAdmin ? (addMat ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input value={matName} onChange={function (e) { setMatName(e.target.value); }} placeholder={t("materialLabel")} style={{ flex: 2, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
+            <input value={matUnit} onChange={function (e) { setMatUnit(e.target.value); }} placeholder={t("unitLabel")} style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function () { p.onAddMaterial(matName, matUnit); setMatName(""); setMatUnit(""); setAddMat(false); }} disabled={!matName.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: matName.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: matName.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
+            <button onClick={function () { setAddMat(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={function () { setAddMat(true); }} style={{ width: "100%", marginBottom: 12, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ {t("addMaterial")}</button>
+      )) : null}
 
       {suppliers.length === 0 ? (
         <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noSuppliers")}</div>
@@ -752,17 +776,28 @@ function StockTab(p) {
     <div style={{ padding: "14px 14px 4px" }}>
       <StockSummaryCard t={t} stockLog={stockLog} />
 
+      {p.canSupplier ? (
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
-        <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("cement")}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
-          <StatBlock label={t("bagsAdded")} value={cementTotals.added} />
-          <StatBlock label={t("bagsUsed")} value={cementTotals.used} />
-          <StatBlock label={t("bagsLeft")} value={cementTotals.remaining} bold color={cementTotals.remaining > 0 ? TC.success : (cementTotals.remaining < 0 ? TC.stamp : TC.inkSoft)} />
-        </div>
-        {p.canSupplier ? (
-          <button onClick={function () { setSupplierOpen(true); }} style={{ width: "100%", marginTop: 10, padding: "9px", borderRadius: 7, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("suppliers")}</button>
-        ) : null}
+        <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("materials")}</div>
+        {(p.materials || []).map(function (m) {
+          var mt = p.materialTotals ? p.materialTotals(m.id) : { added: 0, used: 0, remaining: 0 };
+          return (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px dashed " + TC.paperLine }}>
+              <div style={{ minWidth: 74 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>{m.name}</div>
+                <div style={{ fontSize: 9, color: TC.concrete }}>{m.unit}</div>
+              </div>
+              <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+                <StatBlock label={t("bagsAdded")} value={mt.added} />
+                <StatBlock label={t("bagsUsed")} value={mt.used} />
+                <StatBlock label={t("bagsLeft")} value={mt.remaining} bold color={mt.remaining > 0 ? TC.success : (mt.remaining < 0 ? TC.stamp : TC.inkSoft)} />
+              </div>
+            </div>
+          );
+        })}
+        <button onClick={function () { setSupplierOpen(true); }} style={{ width: "100%", marginTop: 10, padding: "9px", borderRadius: 7, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("suppliers")}</button>
       </div>
+      ) : null}
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {["garden", "slab"].map(function (cc) {
@@ -857,7 +892,7 @@ function StockTab(p) {
           onSave={function (v, label) { onAddVariant(cat, v, label); setAddingVariant(false); }} />
       ) : null}
       {supplierOpen ? (
-        <SupplierModal t={t} suppliers={p.suppliers} supplierTotals={p.supplierTotals}
+        <SupplierModal t={t} suppliers={p.suppliers} supplierTotals={p.supplierTotals} materials={p.materials} isAdmin={p.isAdmin} onAddMaterial={p.onAddMaterial}
           onAddSupplier={p.onAddSupplier} onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier}
           onClose={function () { setSupplierOpen(false); }} />
       ) : null}

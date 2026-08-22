@@ -631,6 +631,7 @@ function RaeesBuilderApp() {
   var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
+  var mtl = React.useState(function () { var m = rbGet("materials", null); return (m && m.length) ? m : DEFAULT_MATERIALS.slice(); }), materials = mtl[0], setMaterials = mtl[1];
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
   var ns = React.useState(function () { return rbGet("next-serial", 1); }), nextSerial = ns[0], setNextSerial = ns[1];
   var gpS = React.useState(function () { return rbGet("gate-passes", []); }), gatePasses = gpS[0], setGatePasses = gpS[1];
@@ -657,6 +658,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("purchases", purchases); }, [purchases]);
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
+  React.useEffect(function () { rbSet("materials", materials); }, [materials]);
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
   React.useEffect(function () { rbSet("gate-passes", gatePasses); }, [gatePasses]);
@@ -755,17 +757,27 @@ function RaeesBuilderApp() {
   var gardenVariants = uniqSorted("garden", GARDEN_LENGTHS, customVariants.garden);
   var slabVariants = uniqSorted("slab", SLAB_SIZES, customVariants.slab);
   /* ---------------- supplier / cement ---------------- */
-  var cementTotals = (function () {
-    var added = purchases.reduce(function (n, x) { return n + (Number(x.bags) || 0); }, 0);
-    var used = stockLog.reduce(function (n, e) { return n + (Number(e.cementBags) || 0); }, 0);
+  function materialTotals(materialId) {
+    var added = purchases.reduce(function (n, x) { return rbMaterialOf(x) === materialId ? n + rbQtyOf(x) : n; }, 0);
+    var used = materialId === "cement" ? stockLog.reduce(function (n, e) { return n + (Number(e.cementBags) || 0); }, 0) : 0;
     return { added: added, used: used, remaining: added - used };
-  })();
+  }
+  var cementTotals = materialTotals("cement");
+
+  function addMaterial(name, unit) {
+    var nm = String(name || "").trim();
+    if (!nm) return;
+    var id = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + rbUid().slice(0, 4);
+    setMaterials(function (a) { return a.concat([{ id: id, name: nm, unit: String(unit || "").trim() || "-" }]); });
+    showToast(t("addMaterial"));
+    logActivity("material_added", nm);
+  }
 
   function supplierTotals(supplierId) {
     var bought = purchases.filter(function (x) { return x.supplierId === supplierId; });
     var paid = supplierPayments.filter(function (x) { return x.supplierId === supplierId; });
     var amount = bought.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
-    var bags = bought.reduce(function (n, x) { return n + (Number(x.bags) || 0); }, 0);
+    var bags = bought.reduce(function (n, x) { return n + rbQtyOf(x); }, 0);
     var given = paid.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     return { bags: bags, amount: amount, paid: given, dues: amount - given, purchases: bought, payments: paid };
   }
@@ -779,13 +791,15 @@ function RaeesBuilderApp() {
     logActivity("supplier_added", nm);
   }
 
-  function addPurchase(supplierId, bags, rate, date) {
-    var b = Number(bags) || 0, r = Number(rate) || 0;
+  function addPurchase(supplierId, qty, rate, date, materialId) {
+    var b = Number(qty) || 0, r = Number(rate) || 0;
+    var mid = materialId || "cement";
     if (!supplierId || b <= 0) return;
-    var entry = { id: rbUid(), supplierId: supplierId, bags: b, rate: r, amount: b * r, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    var mm = null; materials.forEach(function (x) { if (x.id === mid) mm = x; });
+    var entry = { id: rbUid(), supplierId: supplierId, material: mid, materialName: mm ? mm.name : mid, unit: mm ? mm.unit : "", qty: b, bags: mid === "cement" ? b : 0, rate: r, amount: b * r, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
     setPurchases(function (a) { return [entry].concat(a); });
-    showToast(t("buyCement"));
-    logActivity("cement_bought", b + " " + t("cementBags"));
+    showToast(t("buyMaterial"));
+    logActivity("material_bought", (mm ? mm.name : mid) + " " + b);
   }
 
   function addExpense(detail, amount, date) {
@@ -1060,7 +1074,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
