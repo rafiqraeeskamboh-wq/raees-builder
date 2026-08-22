@@ -597,7 +597,8 @@ function StockHistoryModal(p) {
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
   var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
-  var canEdit = p.canEdit !== false; /* sirf admin stock add/edit/delete kar sakta hai */
+  var canEdit = p.canEdit !== false; /* sirf admin: size add, edit, delete */
+  var canAdd = p.canAdd === undefined ? canEdit : !!p.canAdd; /* stock add karna - admin ya ijazat wala user */
   var a = React.useState("garden"), cat = a[0], setCat = a[1];
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
@@ -665,7 +666,7 @@ function StockTab(p) {
                 <StatBlock label={t("sold")} value={sold} />
                 <StatBlock label={t("remaining")} value={remaining} bold color={remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft)} />
               </div>
-              {canEdit ? (
+              {canAdd ? (
               <button onClick={function () { setAddingFor(v); }} style={{
                 width: 32, height: 32, borderRadius: 8, border: "none", background: TC.garden,
                 color: TC.cream, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
@@ -1183,7 +1184,7 @@ function NextSerialSetter(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
