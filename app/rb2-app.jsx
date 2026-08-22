@@ -730,17 +730,32 @@ function RaeesBuilderApp() {
       ? list.map(function (g) { return g.saleId === sale.id ? entry : g; })
       : [entry].concat(list);
     setGatePasses(next);
+    if (existing) {
+      setSales(function (prev) {
+        return prev.map(function (x) {
+          return x.id === sale.id ? Object.assign({}, x, { verified: false, verifiedBy: null, verifiedAt: null }) : x;
+        });
+      });
+    }
     return next;
   }
 
-  /* Admin verify: gate pass bill se ziada lage to Admin tasdeeq kar sakta hai */
-  function verifyGatePass(sale, entry) {
-    if (role !== "admin" || !entry) return;
-    setGatePasses(gatePasses.map(function (g) {
-      return g.id === entry.id ? Object.assign({}, g, { verified: true, verifiedBy: role, verifiedAt: new Date().toISOString() }) : g;
-    }));
+  /* Admin verify: har bill par - chahe User ne banaya ho ya Admin ne */
+  function verifyBill(sale) {
+    if (role !== "admin" || !sale) return;
+    var stamp = new Date().toISOString();
+    setSales(function (prev) {
+      return prev.map(function (x) {
+        return x.id === sale.id ? Object.assign({}, x, { verified: true, verifiedBy: role, verifiedAt: stamp }) : x;
+      });
+    });
+    setGatePasses(function (prev) {
+      return prev.map(function (g) {
+        return g.saleId === sale.id ? Object.assign({}, g, { verified: true, verifiedBy: role, verifiedAt: stamp }) : g;
+      });
+    });
     showToast(t("gpVerifiedTag"));
-    logActivity("gatepass_verified", (sale && sale.customerName ? sale.customerName + " — " : "") + "#" + (entry.serial || ""));
+    logActivity("bill_verified", sale.customerName + " — #" + sale.serial);
   }
 
   function createGatePassFromBuilder(sale, items) {
@@ -855,6 +870,7 @@ function editStockEntry(id, qty, date) {
           customerName: sale.customerName, date: sale.date, items: sale.items, mobile: sale.mobile,
           roofLabourRate: sale.roofLabourRate, labourTotal: sale.labourTotal,
           itemsTotal: sale.itemsTotal, totalBill: sale.totalBill, discount: sale.discount,
+          verified: false, verifiedBy: null, verifiedAt: null,
           advance: sale.advance, dues: sale.dues, paidInFull: sale.paidInFull
         });
         return updated;
@@ -930,7 +946,7 @@ function editStockEntry(id, qty, date) {
   if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyGatePass={verifyGatePass} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
