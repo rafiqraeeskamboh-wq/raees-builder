@@ -86,7 +86,7 @@ var ACTION_LABELS = {
 };
 var TRANSLATIONS = {
   en: {
-    appName: "Raees Builder", tagline: "Chatai Sale & Inventory",
+    appName: "Raees Builder", tagline: "جو نام ہے اعتماد کا",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
     navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
     billsTotal: "Total amount", billsReceived: "Received", billsDue: "Balance (Baqi)", noBills: "No bills yet.",
@@ -149,7 +149,7 @@ var TRANSLATIONS = {
     actionStockConverted: "Stock converted"
   },
   ur: {
-    appName: "رئیس بلڈر", tagline: "چھتائی سیل اینڈ انوینٹری",
+    appName: "رئیس بلڈر", tagline: "جو نام ہے اعتماد کا",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
     billsTotal: "کل رقم", billsReceived: "وصول شدہ", billsDue: "باقی رقم", noBills: "ابھی تک کوئی بل نہیں۔",
@@ -398,7 +398,7 @@ function AppHeader(p) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div className="rb-display" style={{ color: TC.cream, fontSize: 21, fontWeight: 700 }}>{t("appName")}</div>
-          <div style={{ color: "#B4AC98", fontSize: 11.5, marginTop: 2 }}>{t("tagline")}</div>
+          <div className="rb-urdu" dir="rtl" style={{ color: "#B4AC98", fontSize: 13, lineHeight: 1.9, marginTop: 1, textAlign: "start" }}>{t("tagline")}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
