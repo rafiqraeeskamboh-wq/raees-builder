@@ -626,6 +626,9 @@ function RaeesBuilderApp() {
   }
   function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
+  var cpo = React.useState(false), cementPromptOpen = cpo[0], setCementPromptOpen = cpo[1];
+  var cnz = React.useState(0), cementSnooze = cnz[0], setCementSnooze = cnz[1];
+  var cnt = React.useState(null), cementNextTab = cnt[0], setCementNextTab = cnt[1];
   var sl = React.useState(function () { return rbGet("stock-log", []); }), stockLog = sl[0], setStockLog = sl[1];
   var sup = React.useState(function () { return rbGet("suppliers", []); }), suppliers = sup[0], setSuppliers = sup[1];
   var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
@@ -904,12 +907,61 @@ function RaeesBuilderApp() {
     if (r === "accountant" && (tab === "wastage" || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
 
-  function addStockEntry(category, variant, qty, date, cementBags) {
-    var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday(), cementBags: Math.max(0, Number(cementBags) || 0),
+  function addStockEntry(category, variant, qty, date) {
+    /* Cement ab yahan nahi - poora stock add hone ke baad ek saath poochi jati hai */
+    var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday(), cementBags: 0, cementPending: true,
       by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null };
     setStockLog(function (a) { return [entry].concat(a); });
     showToast(t("stockUpdated"));
     logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty);
+  }
+
+  /* ---- cement baqi (stock add hone ke baad) ---- */
+  var pendingCement = stockLog.filter(function (e) { return e.cementPending; });
+  var cementGuardOn = pendingCement.length > 0 && (role === "admin" || can("stockAdd"));
+  var cementBlocking = cementGuardOn && cementSnooze >= 2;
+
+  function allocateBags(list, total) {
+    var out = {}, totalQty = list.reduce(function (n, e) { return n + (Number(e.qty) || 0); }, 0);
+    var used = 0, rema = [];
+    list.forEach(function (e, i) {
+      var exact = totalQty > 0 ? total * (Number(e.qty) || 0) / totalQty : (i === 0 ? total : 0);
+      var base = Math.floor(exact);
+      out[e.id] = base; used += base; rema.push({ id: e.id, r: exact - base });
+    });
+    rema.sort(function (x, y) { return y.r - x.r; });
+    var left = total - used;
+    for (var i = 0; i < left && i < rema.length; i++) out[rema[i].id] += 1;
+    return out;
+  }
+
+  function saveCementForPending(vals) {
+    var gList = pendingCement.filter(function (e) { return e.category === "garden"; });
+    var sList = pendingCement.filter(function (e) { return e.category === "slab"; });
+    var alloc = Object.assign({}, allocateBags(gList, Math.max(0, Number(vals.garden) || 0)), allocateBags(sList, Math.max(0, Number(vals.slab) || 0)));
+    setStockLog(function (a) {
+      return a.map(function (e) {
+        return Object.prototype.hasOwnProperty.call(alloc, e.id)
+          ? Object.assign({}, e, { cementBags: (Number(e.cementBags) || 0) + alloc[e.id], cementPending: false })
+          : e;
+      });
+    });
+    setCementPromptOpen(false); setCementSnooze(0);
+    showToast(t("cementSaved"));
+    logActivity("cement_logged", "Garder " + (Number(vals.garden) || 0) + " + Slab " + (Number(vals.slab) || 0) + " bag");
+    if (cementNextTab) { setTab(cementNextTab); setCementNextTab(null); }
+  }
+
+  function laterCement() {
+    setCementSnooze(function (n) { return n + 1; });
+    setCementPromptOpen(false);
+    showToast(t("cementReminderToast"));
+    if (cementNextTab) { setTab(cementNextTab); setCementNextTab(null); }
+  }
+
+  function goTab(next) {
+    if (cementGuardOn && next !== "stock") { setCementNextTab(next); setCementPromptOpen(true); return; }
+    setTab(next);
   }
 function editStockEntry(id, qty, date) {
     setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { qty: Number(qty) || 0, date: date || e.date, verified: role === "admin", verifiedBy: role === "admin" ? role : null }) : e; }); });
@@ -1075,7 +1127,8 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry} />
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
     body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}
@@ -1112,8 +1165,13 @@ function editStockEntry(id, qty, date) {
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: TC.appBg, display: "flex", flexDirection: "column" }}>
         <AppHeader t={t} role={role} onLogout={security.adminPin ? logoutSession : null} />
         <div style={{ flex: 1, paddingBottom: 88 }}>{body}</div>
-        <TabBar t={t} tab={tab} setTab={setTab} role={role} permissions={permissions} duesCount={duesCount} />
+        <TabBar t={t} tab={tab} setTab={goTab} role={role} permissions={permissions} duesCount={duesCount} />
       </div>
+
+      {(cementPromptOpen || cementBlocking) && pendingCement.length > 0 ? (
+        <CementPromptModal t={t} entries={pendingCement} blocking={cementBlocking} cementLeft={cementTotals.remaining}
+          onSave={saveCementForPending} onLater={laterCement} />
+      ) : null}
 
       {pinModalOpen ? (<PinPromptModal title="User PIN darj karein" onSubmit={confirmUserPin} onCancel={function () { setPinModalOpen(false); }} />) : null}{adminPinModalOpen ? (<PinPromptModal title="Admin PIN darj karein" onSubmit={confirmAdminPin} onCancel={function () { setAdminPinModalOpen(false); }} />) : null}{returnFor ? (
         <ReturnModal t={t} sale={returnFor} onClose={function () { setReturnFor(null); }} onSave={saveReturn} />

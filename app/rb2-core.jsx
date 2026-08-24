@@ -86,6 +86,7 @@ var ACTION_LABELS = {
 };
 var TRANSLATIONS = {
   en: {
+    cementPromptTitle: "Cement darj karein", cementPendingBanner: "In stock entries par cement darj nahi hui", cementAskLine: "Ab tak jo stock add hua, us par kitni cement (bag) lagi?", laterBtn: "Baad mein", cementReminderToast: "Yaad dahani: stock ki cement darj karein", cementBlocked: "Reminder ignore ho chuka — cement darj kiye baghair aage kaam nahi ho sakta.", saveCementBtn: "Cement save karein", cementSaved: "Cement darj ho gayi", cementForCat: "Cement (bag)", cementSkipZero: "Agar cement nahi lagi to 0 likhein",
     appName: "Raees Builder", tagline: "جو نام ہے اعتماد کا",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
     navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
@@ -149,6 +150,7 @@ var TRANSLATIONS = {
     actionStockConverted: "Stock converted"
   },
   ur: {
+    cementPromptTitle: "سیمنٹ درج کریں", cementPendingBanner: "ان اسٹاک انٹریوں پر سیمنٹ درج نہیں ہوئی", cementAskLine: "اب تک جو اسٹاک شامل ہوا، اس پر کتنی سیمنٹ (بوری) لگی؟", laterBtn: "بعد میں", cementReminderToast: "یاد دہانی: اسٹاک کی سیمنٹ درج کریں", cementBlocked: "یاد دہانی نظرانداز ہو چکی — سیمنٹ درج کیے بغیر آگے کام نہیں ہو سکتا۔", saveCementBtn: "سیمنٹ محفوظ کریں", cementSaved: "سیمنٹ درج ہو گئی", cementForCat: "سیمنٹ (بوری)", cementSkipZero: "اگر سیمنٹ نہیں لگی تو 0 لکھیں",
     appName: "رئیس بلڈر", tagline: "جو نام ہے اعتماد کا",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",

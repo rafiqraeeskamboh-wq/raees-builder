@@ -485,10 +485,7 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
   var t = p.t;
   var a = React.useState(""), qty = a[0], setQty = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
-  var c = React.useState(""), cem = c[0], setCem = c[1];
-  var cemOk = cem !== "" && Number(cem) >= 0;
-  var canSave = Number(qty) > 0 && cemOk;
-  var left = (p.cementLeft === null || p.cementLeft === undefined) ? null : p.cementLeft;
+  var canSave = Number(qty) > 0;
   return (
     <ModalShell onClose={p.onClose} title={t("addStock")}>
       <div style={{ marginBottom: 12, fontSize: 13, color: TC.cream, fontWeight: 600 }}>{variantLabel(t, p.category, p.variant)}</div>
@@ -496,24 +493,91 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
         <input type="number" inputMode="numeric" autoFocus value={qty} onChange={function (e) { setQty(e.target.value); }}
           placeholder={t("enterQty")} style={Object.assign({}, rbInput(), { fontSize: 16 })} />
       </Field>
-      <Field label={t("cementBags")}>
-        <input type="number" inputMode="numeric" value={cem} onChange={function (e) { setCem(e.target.value); }}
-          placeholder="0" style={Object.assign({}, rbInput(), { fontSize: 16, borderColor: cemOk ? undefined : TC.stamp })} />
-      </Field>
-      {left !== null ? (
-        <div style={{ fontSize: 10.5, color: (Number(cem) || 0) > left ? TC.stamp : "#A39C8A", marginTop: -6, marginBottom: 10 }}>
-          {t("cement")} {t("bagsLeft")}: <span className="rb-mono" style={{ fontWeight: 700 }}>{left}</span>
-        </div>
-      ) : null}
       <Field label={t("date")}>
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
-      <button disabled={!canSave} onClick={function () { p.onSave(qty, date, Number(cem) || 0); }} style={{
+      <button disabled={!canSave} onClick={function () { p.onSave(qty, date); }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
         cursor: canSave ? "pointer" : "not-allowed"
       }}>{t("addStock")}</button>
     </ModalShell>
+  );
+}
+
+/* Stock poora add karne ke baad cement - Garder aur Slab ki alag alag */
+function CementPromptModal(p) {
+  var t = p.t;
+  var entries = p.entries || [];
+  var blocking = !!p.blocking;
+  var g = React.useState(""), gBags = g[0], setGBags = g[1];
+  var sl = React.useState(""), sBags = sl[0], setSBags = sl[1];
+
+  function listOf(cat) { return entries.filter(function (e) { return e.category === cat; }); }
+  var gList = listOf("garden"), sList = listOf("slab");
+  var okG = gList.length === 0 || (gBags !== "" && Number(gBags) >= 0);
+  var okS = sList.length === 0 || (sBags !== "" && Number(sBags) >= 0);
+  var canSave = okG && okS;
+  var left = (p.cementLeft === null || p.cementLeft === undefined) ? null : p.cementLeft;
+  var willUse = (Number(gBags) || 0) + (Number(sBags) || 0);
+
+  function section(cat, list, val, setVal, color) {
+    if (list.length === 0) return null;
+    var totalQty = list.reduce(function (n, e) { return n + (Number(e.qty) || 0); }, 0);
+    return (
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div className="rb-display" style={{ fontSize: 12.5, fontWeight: 700, color: color }}>{t(cat)}</div>
+          <div className="rb-mono" style={{ fontSize: 11.5, fontWeight: 700, color: TC.inkSoft }}>+{totalQty}</div>
+        </div>
+        <div style={{ maxHeight: 108, overflowY: "auto", marginBottom: 8 }}>
+          {list.map(function (e) {
+            return (
+              <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "2px 0", color: TC.inkSoft }}>
+                <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span>
+                <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span>
+              </div>
+            );
+          })}
+        </div>
+        <input type="number" inputMode="numeric" value={val} onChange={function (ev) { setVal(ev.target.value); }}
+          placeholder={t("cementForCat")} style={Object.assign({}, rbInput(), { fontSize: 16 })} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="no-print" style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9200,
+      display: "flex", alignItems: "flex-end", justifyContent: "center"
+    }}>
+      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
+        <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{t("cementPromptTitle")}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t("cementAskLine")}</div>
+        {blocking ? (
+          <div style={{ background: TC.stamp, color: TC.cream, borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 700, marginBottom: 12 }}>{t("cementBlocked")}</div>
+        ) : null}
+        {section("garden", gList, gBags, setGBags, TC.garden)}
+        {section("slab", sList, sBags, setSBags, TC.slab)}
+        <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 10 }}>{t("cementSkipZero")}</div>
+        {left !== null ? (
+          <div style={{ fontSize: 10.5, color: willUse > left ? TC.stamp : "#A39C8A", marginBottom: 10 }}>
+            {t("cement")} {t("bagsLeft")}: <span className="rb-mono" style={{ fontWeight: 700 }}>{left}</span>
+          </div>
+        ) : null}
+        <button disabled={!canSave} onClick={function () { p.onSave({ garden: Number(gBags) || 0, slab: Number(sBags) || 0 }); }} style={{
+          width: "100%", padding: "12px", borderRadius: 8, border: "none",
+          background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
+          cursor: canSave ? "pointer" : "not-allowed"
+        }}>{t("saveCementBtn")}</button>
+        {!blocking ? (
+          <button onClick={p.onLater} style={{
+            width: "100%", marginTop: 8, padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.concrete,
+            background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer"
+          }}>{t("laterBtn")}</button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -776,6 +840,16 @@ function StockTab(p) {
     <div style={{ padding: "14px 14px 4px" }}>
       <StockSummaryCard t={t} stockLog={stockLog} />
 
+      {(p.pendingCement && p.pendingCement.length > 0) ? (
+        <div onClick={p.onOpenCement} style={{
+          background: TC.stamp, color: TC.cream, borderRadius: 10, padding: "10px 12px", marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 8, cursor: "pointer"
+        }}>
+          <div style={{ flex: 1, fontSize: 11.5, fontWeight: 700 }}>{t("cementPendingBanner")} ({p.pendingCement.length})</div>
+          <div style={{ fontSize: 11, fontWeight: 800, background: "rgba(0,0,0,0.22)", padding: "6px 10px", borderRadius: 6 }}>{t("cementPromptTitle")}</div>
+        </div>
+      ) : null}
+
       {p.canSupplier ? (
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("materials")}</div>
@@ -875,9 +949,9 @@ function StockTab(p) {
       ) : null}
 
       {addingFor !== null ? (
-        <AddStockModal t={t} category={cat} variant={addingFor} cementLeft={cementTotals.remaining}
+        <AddStockModal t={t} category={cat} variant={addingFor}
           onClose={function () { setAddingFor(null); }}
-          onSave={function (qty, date, cem) { onAddStock(cat, addingFor, qty, date, cem); setAddingFor(null); }} />
+          onSave={function (qty, date) { onAddStock(cat, addingFor, qty, date); setAddingFor(null); }} />
       ) : null}
       {historyFor !== null ? (
         <StockHistoryModal t={t} canEdit={canEdit} category={cat} variant={historyFor}
