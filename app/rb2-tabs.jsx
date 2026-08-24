@@ -485,18 +485,75 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
   var t = p.t;
   var a = React.useState(""), qty = a[0], setQty = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
-  var canSave = Number(qty) > 0;
+  var s1 = React.useState(""), supId = s1[0], setSupId = s1[1];
+  var s2 = React.useState(""), rate = s2[0], setRate = s2[1];
+  var s3 = React.useState(""), amount = s3[0], setAmount = s3[1];
+  var s4 = React.useState(false), addingSup = s4[0], setAddingSup = s4[1];
+  var s5 = React.useState(""), newSup = s5[0], setNewSup = s5[1];
+  var suppliers = p.suppliers || [];
+  var q = Number(qty) || 0;
+  var canSave = q > 0;
+  var bought = !!supId;
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function onQty(v) { setQty(v); var qq = Number(v) || 0; if (rate !== "") setAmount(String(round2((Number(rate) || 0) * qq))); }
+  function onRate(v) { setRate(v); setAmount(v === "" ? "" : String(round2((Number(v) || 0) * q))); }
+  function onAmount(v) { setAmount(v); setRate((v === "" || q <= 0) ? "" : String(round2((Number(v) || 0) / q))); }
+  function pickSup(v) {
+    if (v === "__new") { setAddingSup(true); return; }
+    setSupId(v); setAddingSup(false);
+    if (!v) { setRate(""); setAmount(""); }
+  }
+  var selStyle = Object.assign({}, rbInput(), { fontSize: 14 });
   return (
     <ModalShell onClose={p.onClose} title={t("addStock")}>
       <div style={{ marginBottom: 12, fontSize: 13, color: TC.cream, fontWeight: 600 }}>{variantLabel(t, p.category, p.variant)}</div>
       <Field label={t("qty")}>
-        <input type="number" inputMode="numeric" autoFocus value={qty} onChange={function (e) { setQty(e.target.value); }}
+        <input type="number" inputMode="numeric" autoFocus value={qty} onChange={function (e) { onQty(e.target.value); }}
           placeholder={t("enterQty")} style={Object.assign({}, rbInput(), { fontSize: 16 })} />
       </Field>
+      {p.canSupplier ? (
+        <Field label={t("purchasedFrom")}>
+          <select value={supId} onChange={function (e) { pickSup(e.target.value); }} style={selStyle}>
+            <option value="">{t("ownFactory")}</option>
+            {suppliers.map(function (s) { return <option key={s.id} value={s.id}>{s.name}</option>; })}
+            <option value="__new">+ {t("addSupplier")}</option>
+          </select>
+        </Field>
+      ) : null}
+      {addingSup ? (
+        <div style={{ display: "flex", gap: 6, marginTop: -6, marginBottom: 10 }}>
+          <input value={newSup} onChange={function (e) { setNewSup(e.target.value); }} placeholder={t("newSupplierName")}
+            style={Object.assign({}, rbInput(), { flex: 1, marginBottom: 0 })} />
+          <button disabled={!newSup.trim()} onClick={function () {
+            var id = p.onAddSupplier ? p.onAddSupplier(newSup, "") : null;
+            if (id) setSupId(id);
+            setNewSup(""); setAddingSup(false);
+          }} style={{ padding: "0 14px", borderRadius: 8, border: "none", background: newSup.trim() ? TC.garden : "#4A4638", color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("add")}</button>
+        </div>
+      ) : null}
+      {bought ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: "#A39C8A", marginBottom: 4 }}>{t("ratePerPiece")}</div>
+              <input type="number" inputMode="decimal" value={rate} onChange={function (e) { onRate(e.target.value); }}
+                placeholder="0" style={Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0 })} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: "#A39C8A", marginBottom: 4 }}>{t("purchaseTotal")}</div>
+              <input type="number" inputMode="decimal" value={amount} onChange={function (e) { onAmount(e.target.value); }}
+                placeholder="0" style={Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0 })} />
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: "#A39C8A", marginTop: 8 }}>{t("purchaseNote")}</div>
+        </div>
+      ) : null}
       <Field label={t("date")}>
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
-      <button disabled={!canSave} onClick={function () { p.onSave(qty, date); }} style={{
+      <button disabled={!canSave} onClick={function () {
+        p.onSave(qty, date, bought ? { supplierId: supId, amount: Number(amount) || 0 } : null);
+      }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
         cursor: canSave ? "pointer" : "not-allowed"
@@ -707,7 +764,7 @@ function SupplierModal(p) {
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
         <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
-            <StatBlock label={t("cementBags")} value={tot.bags} bold />
+            <StatBlock label={t("qty")} value={tot.bags} bold />
             <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(tot.amount)} bold />
             <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
             <StatBlock label={t("supplierBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
@@ -949,9 +1006,9 @@ function StockTab(p) {
       ) : null}
 
       {addingFor !== null ? (
-        <AddStockModal t={t} category={cat} variant={addingFor}
+        <AddStockModal t={t} category={cat} variant={addingFor} canSupplier={p.canSupplier} suppliers={p.suppliers} onAddSupplier={p.onAddSupplier}
           onClose={function () { setAddingFor(null); }}
-          onSave={function (qty, date) { onAddStock(cat, addingFor, qty, date); setAddingFor(null); }} />
+          onSave={function (qty, date, purchase) { onAddStock(cat, addingFor, qty, date, purchase); setAddingFor(null); }} />
       ) : null}
       {historyFor !== null ? (
         <StockHistoryModal t={t} canEdit={canEdit} category={cat} variant={historyFor}
@@ -1436,7 +1493,7 @@ function ReportsTab(p) {
   var rows = [];
   sales.forEach(function (x) { rows.push({ id: "s" + x.id, date: x.date, kind: t("saleAmount"), title: x.customerName + " · #" + x.serial, val: Number(x.totalBill) || 0, dir: "in", soft: true }); });
   payments.forEach(function (x, i) { rows.push({ id: "p" + i + x.date, date: x.date, kind: t("receivedAmount"), title: x.name + " · #" + x.serial, val: x.amount, dir: "in" }); });
-  purchases.forEach(function (x) { rows.push({ id: "c" + x.id, date: x.date, kind: t("buyCement"), title: (supName[x.supplierId] || "-") + " · " + x.bags + " " + t("cementBags"), val: Number(x.amount) || 0, dir: "out", soft: true }); });
+  purchases.forEach(function (x) { rows.push({ id: "c" + x.id, date: x.date, kind: rbMaterialOf(x) === "cement" ? t("buyCement") : t("buyMaterial"), title: (supName[x.supplierId] || "-") + " · " + (x.materialName || t("cement")) + " " + rbQtyOf(x) + " " + (x.unit || ""), val: Number(x.amount) || 0, dir: "out", soft: true }); });
   supPays.forEach(function (x) { rows.push({ id: "sp" + x.id, date: x.date, kind: t("payToSupplier"), title: supName[x.supplierId] || "-", val: Number(x.amount) || 0, dir: "out" }); });
   exps.forEach(function (x) { rows.push({ id: "e" + x.id, date: x.date, kind: t("expenses"), title: x.detail || "-", val: Number(x.amount) || 0, dir: "out" }); });
   stockAdds.forEach(function (x) { rows.push({ id: "st" + x.id, date: x.date, kind: t("stockMade"), title: variantLabel(t, x.category, x.variant) + " +" + x.qty + ((Number(x.cementBags) || 0) > 0 ? " · " + t("cement") + " " + x.cementBags : ""), val: null }); });
@@ -1465,14 +1522,14 @@ function ReportsTab(p) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 8 }}>
               <StatBlock label={t("saleAmount")} value={"Rs " + rbMoney(salesTotal)} bold />
               <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
-              <StatBlock label={t("buyCement")} value={"Rs " + rbMoney(cementCost)} color={TC.stamp} />
+              <StatBlock label={t("purchases")} value={"Rs " + rbMoney(cementCost)} color={TC.stamp} />
               <StatBlock label={t("expenses")} value={"Rs " + rbMoney(expTotal)} color={TC.stamp} />
             </div>
             <div style={{ borderTop: "2px dashed " + TC.paperLine, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span className="rb-display" style={{ fontSize: 13, fontWeight: 700, color: TC.inkSoft }}>{net >= 0 ? t("netProfit") : t("netLoss")}</span>
               <span className="rb-mono" style={{ fontSize: 17, fontWeight: 700, color: net >= 0 ? TC.success : TC.stamp }}>Rs {rbMoney(Math.abs(net))}</span>
             </div>
-            <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("buyCement")} &minus; {t("expenses")}</div>
+            <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("purchases")} &minus; {t("expenses")}</div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>

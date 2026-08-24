@@ -792,6 +792,7 @@ function RaeesBuilderApp() {
     setSuppliers(function (a) { return a.concat([entry]); });
     showToast(t("addSupplier"));
     logActivity("supplier_added", nm);
+    return entry.id;
   }
 
   function addPurchase(supplierId, qty, rate, date, materialId) {
@@ -907,13 +908,26 @@ function RaeesBuilderApp() {
     if (r === "accountant" && (tab === "wastage" || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
 
-  function addStockEntry(category, variant, qty, date) {
-    /* Cement ab yahan nahi - poora stock add hone ke baad ek saath poochi jati hai */
-    var entry = { id: rbUid(), category: category, variant: variant, qty: Number(qty) || 0, date: date || rbToday(), cementBags: 0, cementPending: true,
+  function addStockEntry(category, variant, qty, date, purchase) {
+    /* Cement ab yahan nahi - poora stock add hone ke baad ek saath poochi jati hai.
+       Agar kisi factory (supplier) se kharida ho to us ke ledger mein bhi jama ho jata hai. */
+    var q = Number(qty) || 0;
+    var pur = (purchase && purchase.supplierId) ? purchase : null;
+    var purId = null;
+    if (pur) {
+      var amt = Math.max(0, Number(pur.amount) || 0);
+      purId = rbUid();
+      var pEntry = { id: purId, supplierId: pur.supplierId, material: category, materialName: variantLabel(t, category, variant),
+        unit: t("pieces"), qty: q, bags: 0, rate: q > 0 ? amt / q : 0, amount: amt, date: date || rbToday(),
+        fromStock: true, by: role, createdAt: new Date().toISOString() };
+      setPurchases(function (a) { return [pEntry].concat(a); });
+    }
+    var entry = { id: rbUid(), category: category, variant: variant, qty: q, date: date || rbToday(), cementBags: 0, cementPending: !pur,
+      supplierId: pur ? pur.supplierId : null, purchaseId: purId,
       by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null };
     setStockLog(function (a) { return [entry].concat(a); });
     showToast(t("stockUpdated"));
-    logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty);
+    logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty + (pur ? " (" + t("stockBought") + ")" : ""));
   }
 
   /* ---- cement baqi (stock add hone ke baad) ---- */
@@ -964,6 +978,12 @@ function RaeesBuilderApp() {
     setTab(next);
   }
 function editStockEntry(id, qty, date) {
+    var target = null;
+    stockLog.forEach(function (e) { if (e.id === id) target = e; });
+    if (target && target.purchaseId) {
+      var nq = Number(qty) || 0;
+      setPurchases(function (arr) { return arr.map(function (x) { return x.id === target.purchaseId ? Object.assign({}, x, { qty: nq, amount: (Number(x.rate) || 0) * nq, date: date || x.date }) : x; }); });
+    }
     setStockLog(function (a) { return a.map(function (e) { return e.id === id ? Object.assign({}, e, { qty: Number(qty) || 0, date: date || e.date, verified: role === "admin", verifiedBy: role === "admin" ? role : null }) : e; }); });
     showToast(t("stockUpdated"));
     logActivity("stock_edited", id);
@@ -978,6 +998,9 @@ function editStockEntry(id, qty, date) {
   }
 
   function deleteStockEntry(id) {
+    var gone = null;
+    stockLog.forEach(function (e) { if (e.id === id) gone = e; });
+    if (gone && gone.purchaseId) setPurchases(function (arr) { return arr.filter(function (x) { return x.id !== gone.purchaseId; }); });
     setStockLog(function (a) { return a.filter(function (e) { return e.id !== id; }); });
     showToast(t("stockUpdated"));
     logActivity("stock_deleted", id);
