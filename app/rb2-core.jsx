@@ -89,7 +89,7 @@ var TRANSLATIONS = {
     purchasedFrom: "Kis se liya? (factory)", ownFactory: "Apni factory (khud banaya)", ratePerPiece: "Rate (fi piece)", purchaseTotal: "Kul raqam (Rs)", purchaseNote: "Ye maal is supplier ke ledger mein jama ho jayega — cement nahi poochi jayegi.", newSupplierName: "Nayi factory ka naam", stockBought: "Kharida",
     cementPromptTitle: "Cement darj karein", cementPendingBanner: "In stock entries par cement darj nahi hui", cementAskLine: "Ab tak jo stock add hua, us par kitni cement (bag) lagi?", laterBtn: "Baad mein", cementReminderToast: "Yaad dahani: stock ki cement darj karein", cementBlocked: "Reminder ignore ho chuka — cement darj kiye baghair aage kaam nahi ho sakta.", saveCementBtn: "Cement save karein", cementSaved: "Cement darj ho gayi", cementForCat: "Cement (bag)", cementSkipZero: "Agar cement nahi lagi to 0 likhein",
     appName: "Raees Builder", tagline: "جو نام ہے اعتماد کا",
-    navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings",
+    navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings", navSupplier: "Supplier",
     navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
     billsTotal: "Total amount", billsReceived: "Received", billsDue: "Balance (Baqi)", noBills: "No bills yet.",
     saleType: "Sale Type", cashSale: "Cash Sale", customizedSale: "Pemaishi Sale",
@@ -131,7 +131,7 @@ var TRANSLATIONS = {
     gatePassTitle: "Gate Pass", paymentHistory: "Payment History", stockHistory: "Stock History", confirmDeleteStockEntry: "Delete this stock entry?", edit: "Edit", editingBill: "Editing bill",
     cancelEdit: "Cancel edit", viewGatePass: "View gate pass",
     navGatePass: "Gate Pass", noGatePasses: "No gate passes yet.",
-    materials: "Maal", materialLabel: "Maal", addMaterial: "Naya maal", unitLabel: "Unit", buyMaterial: "Maal kharid", whatsappImage: "WhatsApp par bill bhejein", shareBusy: "Bill ki tasveer ban rahi hai...", shareFail: "Tasveer nahi ban saki - internet check karein", navBook: "Hisab", dayBook: "Day book", profitLoss: "Nafa / Nuqsan", expenses: "Kharche", addExpense: "Kharcha likhein", expenseDetail: "Tafseel (mazdoori waghera)", income: "Aamdani", expenseTotal: "Kul kharcha", netProfit: "Nafa", netLoss: "Nuqsan", saleAmount: "Sale", receivedAmount: "Wasooli", stockMade: "Stock bana", wastageOut: "Zaya", supplier: "Supplier", suppliers: "Suppliers", addSupplier: "Naya supplier", supplierName: "Supplier ka naam", noSuppliers: "Abhi koi supplier nahi", cement: "Cement", cementBags: "Cement (bag)", bagsAdded: "Aayi", bagsUsed: "Kharch", bagsLeft: "Baqi", buyCement: "Cement kharid", payToSupplier: "Adaigi", purchases: "Kharid", supplierBaqi: "Baqi raqam", cementLowNote: "Cement stock kam ho raha hai", billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.",
+    materials: "Maal", materialLabel: "Maal", addMaterial: "Naya maal", unitLabel: "Unit", buyMaterial: "Maal kharid", whatsappImage: "WhatsApp par bill bhejein", shareBusy: "Bill ki tasveer ban rahi hai...", shareFail: "Tasveer nahi ban saki - internet check karein", navBook: "Hisab", dayBook: "Day book", profitLoss: "Nafa / Nuqsan", expenses: "Kharche", addExpense: "Kharcha likhein", expenseDetail: "Tafseel (mazdoori waghera)", income: "Aamdani", expenseTotal: "Kul kharcha", netProfit: "Nafa", netLoss: "Nuqsan", saleAmount: "Sale", receivedAmount: "Wasooli", stockMade: "Stock bana", wastageOut: "Zaya", supplier: "Supplier", suppliers: "Suppliers", addSupplier: "Naya supplier", supplierName: "Supplier ka naam", noSuppliers: "Abhi koi supplier nahi", cement: "Cement", cementBags: "Cement (bag)", bagsAdded: "Aayi", bagsUsed: "Kharch", bagsLeft: "Baqi", buyCement: "Cement kharid", payToSupplier: "Adaigi", purchases: "Kharid", supplierBaqi: "Baqi raqam", cementLowNote: "Cement stock kam ho raha hai", billUpdated: "Bill updated", updateBill: "Update bill", gpMoreThanBill: "Gate pass bill se ziada", gpVsBill: "bill", gpVsGate: "gate pass", verifyGp: "Admin verify", gpVerifiedTag: "Admin verified", zeroBillTag: "Bill Rs 0 — rate nahi dala", byCustomer: "Customer-wise", goodsTaken: "Maal liya gaya", paymentsList: "Adaigi", nextBillNo: "Agla bill number", setBtn: "Set", dupBillNo: "Ye bill number pehle se maujood hai", rateRequired: "Har item ka rate daalein — Rs 0 ka bill save nahi ho sakta.", openingBalance: "Purana baqi", openingAdd: "Purana baqi darj karein", openingTag: "Purana baqi", openingCustDue: "Us ne dena hai (baqi)", openingCustAdv: "Us ka advance jama hai", openingSuppDue: "Hum ne dena hai (baqi)", openingSuppAdv: "Hum ne advance diya hua hai", openingNone: "Abhi koi purana baqi darj nahi", openingSaved: "Purana baqi mehfooz ho gaya", openingHintCust: "App se pehle ka purana hisab. Ye Dues aur customer ke khate mein aa jayega, magar sale/nafa mein shumar nahi hoga.", openingHintSupp: "App se pehle ka purana hisab. Supplier ki baqi raqam mein shamil ho jayega.", openingAmount: "Raqam (Rs)", openingDelete: "Hata dein", openingCustomer: "Customer ka naam", navLabour: "Labour", labour: "Labour", labourers: "Labour", addLabourer: "Naya banda", labourerName: "Banday ka naam", noLabourers: "Abhi koi banda nahi", labourWork: "Kaam", addLabourWork: "Kaam likhein", labourAdvance: "Advance / Adaigi", labourBaqi: "Baqi (dena hai)", labourKind: "Kism", labourWorkTotal: "Kul kaam", labourPaidTotal: "Diya gaya", lkGarder: "Garder bharai", lkSlab: "Slab bharai", lkRing: "Ring bandai", lkFitting: "Chhat fitting", unitDay: "Din", unitNagg: "Nagg", unitSqft: "Sq ft", labourNote: "Tafseel (marzi se)", userCanLabour: "Labour folder", noLabourEntries: "Abhi koi entry nahi",
     tapToAddQty: "Tap an item, then enter how many", add: "Add", selected: "Selected",
     mobileNumber: "Mobile number", whatsapp: "Share on WhatsApp",
     stockSummary: "Stock summary", paymentsSummary: "Payments received", today: "Today",
@@ -154,7 +154,7 @@ var TRANSLATIONS = {
     purchasedFrom: "کس سے لیا؟ (فیکٹری)", ownFactory: "اپنی فیکٹری (خود بنایا)", ratePerPiece: "ریٹ (فی پیس)", purchaseTotal: "کل رقم (روپے)", purchaseNote: "یہ مال اس سپلائر کے کھاتے میں جمع ہو جائے گا — سیمنٹ نہیں پوچھی جائے گی۔", newSupplierName: "نئی فیکٹری کا نام", stockBought: "خریدا",
     cementPromptTitle: "سیمنٹ درج کریں", cementPendingBanner: "ان اسٹاک انٹریوں پر سیمنٹ درج نہیں ہوئی", cementAskLine: "اب تک جو اسٹاک شامل ہوا، اس پر کتنی سیمنٹ (بوری) لگی؟", laterBtn: "بعد میں", cementReminderToast: "یاد دہانی: اسٹاک کی سیمنٹ درج کریں", cementBlocked: "یاد دہانی نظرانداز ہو چکی — سیمنٹ درج کیے بغیر آگے کام نہیں ہو سکتا۔", saveCementBtn: "سیمنٹ محفوظ کریں", cementSaved: "سیمنٹ درج ہو گئی", cementForCat: "سیمنٹ (بوری)", cementSkipZero: "اگر سیمنٹ نہیں لگی تو 0 لکھیں",
     appName: "رئیس بلڈر", tagline: "جو نام ہے اعتماد کا",
-    navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات",
+    navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات", navSupplier: "سپلائر",
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
     billsTotal: "کل رقم", billsReceived: "وصول شدہ", billsDue: "باقی رقم", noBills: "ابھی تک کوئی بل نہیں۔",
     saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
@@ -196,7 +196,7 @@ var TRANSLATIONS = {
     gatePassTitle: "گیٹ پاس", paymentHistory: "ادائیگیوں کی تفصیل", stockHistory: "اسٹاک کی تاریخ", confirmDeleteStockEntry: "کیا یہ اسٹاک اندراج حذف کریں؟", edit: "ترمیم", editingBill: "بل میں ترمیم",
     cancelEdit: "ترمیم منسوخ کریں", viewGatePass: "گیٹ پاس دیکھیں",
     navGatePass: "گیٹ پاس", noGatePasses: "ابھی تک کوئی گیٹ پاس نہیں۔",
-    materials: "مال", materialLabel: "مال", addMaterial: "نیا مال", unitLabel: "یونٹ", buyMaterial: "مال خرید", whatsappImage: "واٹس ایپ پر بل بھیجیں", shareBusy: "بل کی تصویر بن رہی ہے...", shareFail: "تصویر نہیں بن سکی - انٹرنیٹ چیک کریں", navBook: "حساب", dayBook: "ڈے بک", profitLoss: "نفع / نقصان", expenses: "خرچے", addExpense: "خرچہ لکھیں", expenseDetail: "تفصیل (مزدوری وغیرہ)", income: "آمدنی", expenseTotal: "کل خرچہ", netProfit: "نفع", netLoss: "نقصان", saleAmount: "سیل", receivedAmount: "وصولی", stockMade: "اسٹاک بنا", wastageOut: "ضائع", supplier: "سپلائر", suppliers: "سپلائرز", addSupplier: "نیا سپلائر", supplierName: "سپلائر کا نام", noSuppliers: "ابھی کوئی سپلائر نہیں", cement: "سیمنٹ", cementBags: "سیمنٹ (بوری)", bagsAdded: "آئی", bagsUsed: "خرچ", bagsLeft: "باقی", buyCement: "سیمنٹ خرید", payToSupplier: "ادائیگی", purchases: "خرید", supplierBaqi: "باقی رقم", cementLowNote: "سیمنٹ اسٹاک کم ہو رہا ہے", billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔",
+    materials: "مال", materialLabel: "مال", addMaterial: "نیا مال", unitLabel: "یونٹ", buyMaterial: "مال خرید", whatsappImage: "واٹس ایپ پر بل بھیجیں", shareBusy: "بل کی تصویر بن رہی ہے...", shareFail: "تصویر نہیں بن سکی - انٹرنیٹ چیک کریں", navBook: "حساب", dayBook: "ڈے بک", profitLoss: "نفع / نقصان", expenses: "خرچے", addExpense: "خرچہ لکھیں", expenseDetail: "تفصیل (مزدوری وغیرہ)", income: "آمدنی", expenseTotal: "کل خرچہ", netProfit: "نفع", netLoss: "نقصان", saleAmount: "سیل", receivedAmount: "وصولی", stockMade: "اسٹاک بنا", wastageOut: "ضائع", supplier: "سپلائر", suppliers: "سپلائرز", addSupplier: "نیا سپلائر", supplierName: "سپلائر کا نام", noSuppliers: "ابھی کوئی سپلائر نہیں", cement: "سیمنٹ", cementBags: "سیمنٹ (بوری)", bagsAdded: "آئی", bagsUsed: "خرچ", bagsLeft: "باقی", buyCement: "سیمنٹ خرید", payToSupplier: "ادائیگی", purchases: "خرید", supplierBaqi: "باقی رقم", cementLowNote: "سیمنٹ اسٹاک کم ہو رہا ہے", billUpdated: "بل اپ ڈیٹ ہو گیا", updateBill: "بل اپ ڈیٹ کریں", gpMoreThanBill: "گیٹ پاس بل سے زیادہ", gpVsBill: "بل", gpVsGate: "گیٹ پاس", verifyGp: "ایڈمن تصدیق", gpVerifiedTag: "ایڈمن نے تصدیق کر دی", zeroBillTag: "بل صفر روپے — ریٹ درج نہیں", byCustomer: "گاہک کے حساب سے", goodsTaken: "لیا گیا مال", paymentsList: "ادائیگی", nextBillNo: "اگلا بل نمبر", setBtn: "سیٹ", dupBillNo: "یہ بل نمبر پہلے سے موجود ہے", rateRequired: "ہر آئٹم کا ریٹ درج کریں — صفر روپے کا بل محفوظ نہیں ہو سکتا۔", openingBalance: "پرانا باقی", openingAdd: "پرانا باقی درج کریں", openingTag: "پرانا باقی", openingCustDue: "اس نے دینا ہے (باقی)", openingCustAdv: "اس کا ایڈوانس جمع ہے", openingSuppDue: "ہم نے دینا ہے (باقی)", openingSuppAdv: "ہم نے ایڈوانس دیا ہوا ہے", openingNone: "ابھی کوئی پرانا باقی درج نہیں", openingSaved: "پرانا باقی محفوظ ہو گیا", openingHintCust: "ایپ سے پہلے کا پرانا حساب۔ یہ ڈیوز اور گاہک کے کھاتے میں آ جائے گا، مگر سیل/نفع میں شمار نہیں ہو گا۔", openingHintSupp: "ایپ سے پہلے کا پرانا حساب۔ سپلائر کی باقی رقم میں شامل ہو جائے گا۔", openingAmount: "رقم (Rs)", openingDelete: "ہٹا دیں", openingCustomer: "گاہک کا نام", navLabour: "لیبر", labour: "لیبر", labourers: "لیبر", addLabourer: "نیا بندہ", labourerName: "بندے کا نام", noLabourers: "ابھی کوئی بندہ نہیں", labourWork: "کام", addLabourWork: "کام درج کریں", labourAdvance: "ایڈوانس / ادائیگی", labourBaqi: "باقی (دینا ہے)", labourKind: "قسم", labourWorkTotal: "کل کام", labourPaidTotal: "دیا گیا", lkGarder: "گارڈر بھرائی", lkSlab: "سلیب بھرائی", lkRing: "رنگ بندائی", lkFitting: "چھت فٹنگ", unitDay: "دن", unitNagg: "نگ", unitSqft: "مربع فٹ", labourNote: "تفصیل (مرضی سے)", userCanLabour: "لیبر فولڈر", noLabourEntries: "ابھی کوئی اندراج نہیں",
     tapToAddQty: "کوئی آئٹم دبائیں، پھر تعداد درج کریں", add: "شامل کریں", selected: "منتخب شدہ",
     mobileNumber: "موبائل نمبر", whatsapp: "واٹس ایپ پر بھیجیں",
     stockSummary: "اسٹاک کا خلاصہ", paymentsSummary: "ادائیگیوں کا خلاصہ", today: "آج",
@@ -239,7 +239,7 @@ var DEFAULT_MATERIALS = [
 ];
 function rbMaterialOf(x) { return (x && x.material) ? x.material : "cement"; }
 function rbQtyOf(x) { return Number((x && (x.qty !== undefined && x.qty !== null ? x.qty : x.bags)) || 0); }
-var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, reports: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
+var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, labour: false, reports: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
 /* ---- gate pass vs bill check: gate pass mein bill se ziada maal to nahi ja raha ---- */
 function rbItemKey(it) { return String(it.category || "") + "|" + String(it.variant || ""); }
 function gpExtraOverBill(sale, gp) {
@@ -253,6 +253,14 @@ function gpExtraOverBill(sale, gp) {
   });
   return out;
 } /* ---------------- icons ---------------- */
+/* labour ki 4 kismein - har kism ka apna unit */
+var LABOUR_KINDS = [
+  { id: "garder", labelKey: "lkGarder", unitKey: "unitDay" },
+  { id: "slab", labelKey: "lkSlab", unitKey: "unitNagg" },
+  { id: "ring", labelKey: "lkRing", unitKey: "unitNagg" },
+  { id: "fitting", labelKey: "lkFitting", unitKey: "unitSqft" }
+];
+function labourKind(id) { var k = LABOUR_KINDS[0]; LABOUR_KINDS.forEach(function (x) { if (x.id === id) k = x; }); return k; }
 var ICON_PATHS = {
   receipt: <g><path d="M5 3h14v18l-3-2-3 2-3-2-3 2Z" /><path d="M8 8h8" /><path d="M8 12h8" /></g>,
   pkg: <g><path d="M21 8v8l-9 5-9-5V8l9-5 9 5Z" /><path d="M3.3 7.5 12 12l8.7-4.5" /><path d="M12 12v9" /></g>,
@@ -267,6 +275,7 @@ var ICON_PATHS = {
   printer: <g><path d="M7 9V3h10v6" /><path d="M5 9h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2Z" /></g>,
   chev: <path d="m9 6 6 6-6 6" />,
   globe: <g><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.5 3 2.5 15 0 18" /><path d="M12 3c-2.5 3-2.5 15 0 18" /></g>,
+  users: <g><circle cx="8.5" cy="8" r="3.2" /><path d="M2.5 20c0-3.2 2.7-5.8 6-5.8s6 2.6 6 5.8" /><circle cx="17.5" cy="9.5" r="2.4" /><path d="M16 14.5c3 .3 5.5 2.6 5.5 5.5" /></g>,
   usercog: <g><circle cx="9" cy="8" r="3.5" /><path d="M3 20c0-3.3 2.7-6 6-6h1" /><circle cx="17.5" cy="16.5" r="2.4" /><path d="M17.5 12.9v1M17.5 20.1v1M13.9 16.5h1M20.1 16.5h1" /></g>,
   loader: <path d="M12 3a9 9 0 1 0 9 9" />,
   alert: <g><circle cx="12" cy="12" r="9" /><path d="M12 7v6" /><path d="M12 16.3v.4" /></g>,
@@ -325,6 +334,7 @@ function FontLoader() {
     + ".rb2-spin{animation:rb2spin 1s linear infinite}"
     + "#rb-root input,#rb-root select,#rb-root textarea,#rb-root button{font-family:inherit}"
     + "#rb-root button{box-shadow:none}"
+    + "#rb-root .rb-nav::-webkit-scrollbar{display:none}"
     + "@media print{body *{visibility:hidden}.print-area,.print-area *{visibility:visible}"
     + ".print-area{position:absolute;top:0;left:0;width:100%}.no-print{display:none!important}}";
   return <style>{css}</style>;
@@ -462,21 +472,24 @@ function TabBar(p) {
     tabs.push({ id: "stock", label: t("navStock"), icon: "pkg" });
     } if (hasPerm(role, permissions, "wastage")) { tabs.push({ id: "wastage", label: t("navWastage"), icon: "trash" });
   }
+  if (hasPerm(role, permissions, "supplier")) { tabs.push({ id: "supplier", label: t("navSupplier"), icon: "usercog" }); }
+  if (hasPerm(role, permissions, "labour")) { tabs.push({ id: "labour", label: t("navLabour"), icon: "users" }); }
   tabs.push({ id: "gatepass", label: t("navGatePass"), icon: "truck" });
   if (hasPerm(role, permissions, "reports")) { tabs.push({ id: "book", label: t("navBook"), icon: "grid" }); }
   tabs.push({ id: "dues", label: t("navDues"), icon: "wallet", badge: duesCount });
   tabs.push({ id: "settings", label: t("navSettings"), icon: "gear" });
   return (
-    <div className="no-print" style={{
+    <div className="no-print rb-nav" style={{
       position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
       width: "100%", maxWidth: 480, background: TC.appBg2, borderTop: "1px solid #3A362C",
-      display: "flex", padding: "8px 6px 8px", zIndex: 9040
-    }}>
+      display: "flex", padding: "8px 6px 8px", zIndex: 9040,
+      overflowX: "auto", scrollbarWidth: "none"
+    }} >
       {tabs.map(function (it) {
         var active = tab === it.id;
         return (
           <button key={it.id} onClick={function () { setTab(it.id); }} style={{
-            flex: 1, background: "none", border: "none", display: "flex",
+            flex: "1 0 auto", minWidth: 50, background: "none", border: "none", display: "flex",
             flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 2px",
             cursor: "pointer", position: "relative"
           }}>

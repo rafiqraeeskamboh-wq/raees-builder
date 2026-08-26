@@ -479,7 +479,7 @@ function PaymentReceiptModal(p) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <ReceiptLine label={t("customerName")} value={sale.customerName} />
-            <ReceiptLine label={sale.type === "cash" ? t("billNo") : t("gatePassNo")} value={"#" + sale.serial} />
+            <ReceiptLine label={sale.isOpening ? t("openingBalance") : (sale.type === "cash" ? t("billNo") : t("gatePassNo"))} value={sale.isOpening ? t("openingTag") : ("#" + sale.serial)} />
             <ReceiptLine label={t("date")} value={rbDate(date)} />
             <ReceiptLine label={t("amountReceived")} value={"Rs " + rbMoney(amount)} big color={TC.success} />
             <ReceiptLine label={t("totalBill")} value={"Rs " + rbMoney(sale.totalBill)} />
@@ -634,6 +634,9 @@ function RaeesBuilderApp() {
   var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
+  var lbr = React.useState(function () { return rbGet("labourers", []); }), labourers = lbr[0], setLabourers = lbr[1];
+  var lbw = React.useState(function () { return rbGet("labour-work", []); }), labourWork = lbw[0], setLabourWork = lbw[1];
+  var lbp = React.useState(function () { return rbGet("labour-payments", []); }), labourPayments = lbp[0], setLabourPayments = lbp[1];
   var mtl = React.useState(function () { var m = rbGet("materials", null); return (m && m.length) ? m : DEFAULT_MATERIALS.slice(); }), materials = mtl[0], setMaterials = mtl[1];
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
   var ns = React.useState(function () { return rbGet("next-serial", 1); }), nextSerial = ns[0], setNextSerial = ns[1];
@@ -661,6 +664,9 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("purchases", purchases); }, [purchases]);
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
+  React.useEffect(function () { rbSet("labourers", labourers); }, [labourers]);
+  React.useEffect(function () { rbSet("labour-work", labourWork); }, [labourWork]);
+  React.useEffect(function () { rbSet("labour-payments", labourPayments); }, [labourPayments]);
   React.useEffect(function () { rbSet("materials", materials); }, [materials]);
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
@@ -777,18 +783,37 @@ function RaeesBuilderApp() {
   }
 
   function supplierTotals(supplierId) {
+    var sup = null; suppliers.forEach(function (x) { if (x.id === supplierId) sup = x; });
+    /* purana baqi (opening balance): "due" = hum ne dena hai, "adv" = hum ne pehle se diya hua hai */
+    var openAmt = sup ? Math.max(0, Number(sup.opening) || 0) : 0;
+    var opening = (sup && sup.openingDir === "adv") ? -openAmt : openAmt;
     var bought = purchases.filter(function (x) { return x.supplierId === supplierId; });
     var paid = supplierPayments.filter(function (x) { return x.supplierId === supplierId; });
     var amount = bought.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     var bags = bought.reduce(function (n, x) { return n + rbQtyOf(x); }, 0);
     var given = paid.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
-    return { bags: bags, amount: amount, paid: given, dues: amount - given, purchases: bought, payments: paid };
+    return { bags: bags, amount: amount, paid: given, opening: opening, openingDate: sup ? sup.openingDate : null, dues: opening + amount - given, purchases: bought, payments: paid };
   }
 
-  function addSupplier(name, mobile) {
+  /* supplier ka purana baqi set / update (sirf admin) */
+  function setSupplierOpening(supplierId, amount, dirn, date) {
+    var amt = Math.max(0, Number(amount) || 0);
+    var dd = dirn === "adv" ? "adv" : "due";
+    setSuppliers(function (a) {
+      return a.map(function (x) {
+        return x.id === supplierId ? Object.assign({}, x, { opening: amt, openingDir: dd, openingDate: date || x.openingDate || rbToday() }) : x;
+      });
+    });
+    showToast(t("openingSaved"));
+    logActivity("supplier_opening", "Rs " + rbMoney(amt));
+  }
+
+  function addSupplier(name, mobile, opening, openingDir, openingDate) {
     var nm = String(name || "").trim();
     if (!nm) return;
-    var entry = { id: rbUid(), name: nm, mobile: String(mobile || "").trim(), createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), name: nm, mobile: String(mobile || "").trim(),
+      opening: Math.max(0, Number(opening) || 0), openingDir: openingDir === "adv" ? "adv" : "due", openingDate: openingDate || rbToday(),
+      createdAt: new Date().toISOString() };
     setSuppliers(function (a) { return a.concat([entry]); });
     showToast(t("addSupplier"));
     logActivity("supplier_added", nm);
@@ -823,6 +848,80 @@ function RaeesBuilderApp() {
     setSupplierPayments(function (a) { return [entry].concat(a); });
     showToast(t("payToSupplier"));
     logActivity("supplier_paid", "Rs " + rbMoney(amt));
+  }
+
+  /* ---------------- labour (mazdoori) ----------------
+     4 kismein: garder bharai (din), slab bharai (nagg), ring bandai (nagg), chhat fitting (sq ft).
+     Har banday ka apna khata: kaam jama hota hai, advance/adaigi minus hoti hai. */
+  function labourTotals(labourerId) {
+    var lb = null; labourers.forEach(function (x) { if (x.id === labourerId) lb = x; });
+    var openAmt = lb ? Math.max(0, Number(lb.opening) || 0) : 0;
+    var opening = (lb && lb.openingDir === "adv") ? -openAmt : openAmt;
+    var works = labourWork.filter(function (x) { return x.labourerId === labourerId; });
+    var pays = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
+    var work = works.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    var paid = pays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    var byKind = {};
+    works.forEach(function (x) {
+      if (!byKind[x.kind]) byKind[x.kind] = { qty: 0, amount: 0 };
+      byKind[x.kind].qty += Number(x.qty) || 0;
+      byKind[x.kind].amount += Number(x.amount) || 0;
+    });
+    return { opening: opening, openingDate: lb ? lb.openingDate : null, work: work, paid: paid, dues: opening + work - paid, works: works, payments: pays, byKind: byKind };
+  }
+
+  function addLabourer(name, mobile, opening, openingDir, openingDate) {
+    var nm = String(name || "").trim();
+    if (!nm) return;
+    var entry = { id: rbUid(), name: nm, mobile: String(mobile || "").trim(),
+      opening: Math.max(0, Number(opening) || 0), openingDir: openingDir === "adv" ? "adv" : "due",
+      openingDate: openingDate || rbToday(), createdAt: new Date().toISOString() };
+    setLabourers(function (a) { return a.concat([entry]); });
+    showToast(t("addLabourer"));
+    logActivity("labourer_added", nm);
+    return entry.id;
+  }
+
+  function setLabourerOpening(labourerId, amount, dirn, date) {
+    if (role !== "admin") return;
+    var amt = Math.max(0, Number(amount) || 0);
+    var dd = dirn === "adv" ? "adv" : "due";
+    setLabourers(function (a) {
+      return a.map(function (x) {
+        return x.id === labourerId ? Object.assign({}, x, { opening: amt, openingDir: dd, openingDate: date || x.openingDate || rbToday() }) : x;
+      });
+    });
+    showToast(t("openingSaved"));
+    logActivity("labourer_opening", "Rs " + rbMoney(amt));
+  }
+
+  function addLabourWork(labourerId, kind, qty, rate, amount, date, note) {
+    var q = Number(qty) || 0, r = Number(rate) || 0;
+    var amt = Number(amount) > 0 ? Number(amount) : q * r;
+    if (!labourerId || amt <= 0) return;
+    var entry = { id: rbUid(), labourerId: labourerId, kind: kind || "garder", qty: q, rate: r,
+      amount: amt, note: String(note || "").trim(), date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    setLabourWork(function (a) { return [entry].concat(a); });
+    showToast(t("addLabourWork"));
+    logActivity("labour_work", t(labourKind(entry.kind).labelKey) + " — Rs " + rbMoney(amt));
+  }
+
+  function addLabourPayment(labourerId, amount, date, note) {
+    var amt = Number(amount) || 0;
+    if (!labourerId || amt <= 0) return;
+    var entry = { id: rbUid(), labourerId: labourerId, amount: amt, note: String(note || "").trim(),
+      date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    setLabourPayments(function (a) { return [entry].concat(a); });
+    showToast(t("labourAdvance"));
+    logActivity("labour_paid", "Rs " + rbMoney(amt));
+  }
+
+  function deleteLabourEntry(kind, id) {
+    if (role !== "admin") return;
+    if (kind === "work") setLabourWork(labourWork.filter(function (x) { return x.id !== id; }));
+    else setLabourPayments(labourPayments.filter(function (x) { return x.id !== id; }));
+    showToast(t("openingDelete"));
+    logActivity("labour_deleted", kind);
   }
 
   function variantsFor(category) { return category === "garden" ? gardenVariants : slabVariants; }
@@ -905,7 +1004,7 @@ function RaeesBuilderApp() {
     }
     sessionStorage.setItem(RB_SESSION_ROLE_KEY, r);
     setRole(r);
-    if (r === "accountant" && (tab === "wastage" || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
+    if (r === "accountant" && (tab === "wastage" || (tab === "supplier" && !hasPerm("accountant", permissions, "supplier")) || (tab === "labour" && !hasPerm("accountant", permissions, "labour")) || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
 
   function addStockEntry(category, variant, qty, date, purchase) {
@@ -1110,6 +1209,39 @@ function editStockEntry(id, qty, date) {
     }
   }
 
+  /* ---------------- customer ka purana baqi (opening balance) ----------------
+     Ye ek "bill" ki tarah rakha jata hai (isOpening: true) taake Dues list,
+     customer ka khata aur wasooli sab khud-ba-khud kaam karein.
+     Sale summary aur nafa/nuqsan mein ye shumar nahi hota. */
+  function addCustomerOpening(name, amount, dirn, date, mobile) {
+    var nm = String(name || "").trim();
+    var amt = Math.max(0, Number(amount) || 0);
+    if (!nm || amt <= 0) return null;
+    var adv = dirn === "adv";
+    var d = date || rbToday();
+    var entry = {
+      id: rbUid(), type: "opening", isOpening: true, openingDir: adv ? "adv" : "due",
+      serial: 0, customerName: nm, mobile: String(mobile || "").trim(), date: d,
+      items: [], itemsTotal: 0, roofLabourRate: 0, labourTotal: 0, discount: 0,
+      totalBill: adv ? 0 : amt, advance: adv ? amt : 0, dues: adv ? -amt : amt,
+      paidInFull: false, payments: [], createdBy: role, createdAt: new Date().toISOString()
+    };
+    setSales(function (a) { return [entry].concat(a); });
+    showToast(t("openingSaved"));
+    logActivity("opening_added", nm + " — Rs " + rbMoney(amt));
+    return entry;
+  }
+
+  function deleteCustomerOpening(id) {
+    if (role !== "admin") return;
+    var gone = null;
+    sales.forEach(function (x) { if (x.id === id && x.isOpening) gone = x; });
+    if (!gone) return;
+    setSales(sales.filter(function (x) { return x.id !== id; }));
+    showToast(t("openingDelete"));
+    logActivity("opening_deleted", gone.customerName + " — Rs " + rbMoney(Math.abs(Number(gone.dues) || 0)));
+  }
+
   function collectPayment(saleId, amount, date, discount) {
     var amt = Number(amount) || 0;
     var disc = Math.max(0, Number(discount) || 0);
@@ -1137,6 +1269,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function doClearAllData() {
+    setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); setCustomVariants({ garden: [], slab: [] }); setActivityLog([]);
     showToast(t("clearData"));
@@ -1149,7 +1282,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
@@ -1157,6 +1290,16 @@ function editStockEntry(id, qty, date) {
     body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}
           wastageLog={wastageLog} onLogWastage={addWastageEntry} onConvertStock={addConversionEntry} />
       : <EmptyState icon={<Ico name="trash" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
+  } else if (tab === "supplier") {
+    body = can("supplier") ? <SupplierTab t={t} suppliers={suppliers} supplierTotals={supplierTotals} materials={materials}
+      isAdmin={role === "admin"} onAddMaterial={addMaterial} onAddSupplier={addSupplier}
+      onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} />
+      : <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
+  } else if (tab === "labour") {
+    body = can("labour") ? <LabourTab t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
+      onAddLabourer={addLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
+      onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry} />
+      : <EmptyState icon={<Ico name="users" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "gatepass") {
     body = <GatePassTab t={t} gatePasses={gatePasses} onOpen={function (g) {
       setViewingGatePass({ sale: { customerName: g.customerName, date: g.date, serial: g.serial, type: g.type, mobile: g.mobile }, items: g.items, entry: g });
@@ -1164,10 +1307,11 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "book") {
     body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={purchases} supplierPayments={supplierPayments}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
+      labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
       canAddExpense={role === "admin"} onAddExpense={addExpense} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
-    body = <DuesTab t={t} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} />;
+    body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
     body = <SettingsTab t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onLockDevice={lockDeviceToUser} />;

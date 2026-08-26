@@ -342,7 +342,7 @@ function NewSaleTab(p) {
   );
 }
 /* ---------------- stock ---------------- */
-function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "all" }), range = rg[0], setRange = rg[1]; var rb = resolveRange(range); var sales = (p.sales || []).filter(function (bs) { return inDateRange(bs.date, rb.from, rb.to); }); var cs = React.useState(false), showCust = cs[0], setShowCust = cs[1]; var byCust = {}; sales.forEach(function (x) { var raw = String(x.customerName || "-").trim(); var k = raw.toLowerCase(); if (!byCust[k]) byCust[k] = { name: raw, count: 0, total: 0, received: 0, dues: 0 }; byCust[k].count += 1; byCust[k].total += Number(x.totalBill || 0); byCust[k].received += Number(x.advance || 0); byCust[k].dues += Number(x.dues || 0); }); var custList = Object.keys(byCust).map(function (k) { return byCust[k]; }).sort(function (m, n) { return (n.dues - m.dues) || (n.total - m.total); }); var totalBill = sales.reduce(function (s, x) { return s + Number(x.totalBill || 0); }, 0); var totalReceived = sales.reduce(function (s, x) { return s + Number(x.advance || 0); }, 0); var totalDue = sales.reduce(function (s, x) { return s + Number(x.dues || 0); }, 0); return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("billsSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}> <StatBlock label={t("billsCount")} value={sales.length} bold /> <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalBill)} bold /> <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(totalReceived)} bold color={TC.success} /> <StatBlock label={t("billsDue")} value={"Rs " + rbMoney(totalDue)} bold color={totalDue > 0 ? TC.stamp : TC.success} /> </div>
+function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "all" }), range = rg[0], setRange = rg[1]; var rb = resolveRange(range); var sales = (p.sales || []).filter(function (bs) { return inDateRange(bs.date, rb.from, rb.to); }); var cs = React.useState(false), showCust = cs[0], setShowCust = cs[1]; var byCust = {}; sales.forEach(function (x) { var raw = String(x.customerName || "-").trim(); var k = raw.toLowerCase(); if (!byCust[k]) byCust[k] = { name: raw, count: 0, total: 0, received: 0, dues: 0, opening: 0 }; if (x.isOpening) { byCust[k].opening += Number(x.dues || 0); } else { byCust[k].count += 1; byCust[k].total += Number(x.totalBill || 0); byCust[k].received += Number(x.advance || 0); } byCust[k].dues += Number(x.dues || 0); }); var custList = Object.keys(byCust).map(function (k) { return byCust[k]; }).sort(function (m, n) { return (n.dues - m.dues) || (n.total - m.total); }); var realSales = sales.filter(function (x) { return !x.isOpening; }); var totalBill = realSales.reduce(function (s, x) { return s + Number(x.totalBill || 0); }, 0); var totalReceived = realSales.reduce(function (s, x) { return s + Number(x.advance || 0); }, 0); var totalDue = sales.reduce(function (s, x) { return s + Number(x.dues || 0); }, 0); return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("billsSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}> <StatBlock label={t("billsCount")} value={realSales.length} bold /> <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalBill)} bold /> <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(totalReceived)} bold color={TC.success} /> <StatBlock label={t("billsDue")} value={"Rs " + rbMoney(totalDue)} bold color={totalDue > 0 ? TC.stamp : TC.success} /> </div>
       <div style={{ marginTop: 10, borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}>
         <button onClick={function () { setShowCust(!showCust); }} style={{ width: "100%", padding: "7px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>{showCust ? "▲" : "▼"} {t("byCustomer")} ({custList.length})</button>
         {showCust ? (
@@ -367,8 +367,12 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
       </div> ); } function CustomerLedgerModal(p) {
   var t = p.t, name = p.name, onOpen = p.onOpen;
   var list = (p.sales || []).slice().sort(function (x, y) { return String(x.date || "").localeCompare(String(y.date || "")); });
-  var totalAll = 0, receivedAll = 0, duesAll = 0;
-  list.forEach(function (s) { totalAll += Number(s.totalBill || 0); receivedAll += Number(s.advance || 0); duesAll += Number(s.dues || 0); });
+  var totalAll = 0, receivedAll = 0, duesAll = 0, openingAll = 0, billCount = 0;
+  list.forEach(function (s) {
+    duesAll += Number(s.dues || 0);
+    if (s.isOpening) { openingAll += Number(s.dues || 0); return; }
+    billCount += 1; totalAll += Number(s.totalBill || 0); receivedAll += Number(s.advance || 0);
+  });
   var goods = {};
   list.forEach(function (s) {
     (s.items || []).forEach(function (it) {
@@ -388,7 +392,13 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
           <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(receivedAll)} bold color={TC.success} />
           <StatBlock label={t("dues")} value={"Rs " + rbMoney(duesAll)} bold color={duesAll > 0 ? TC.stamp : TC.success} />
         </div>
-        <div style={{ fontSize: 10, color: TC.inkSoft, textAlign: "center", marginTop: 6 }}>{list.length} {t("billsCount")}</div>
+        {openingAll ? (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+            <span style={{ color: TC.inkSoft }}>{t("openingBalance")}</span>
+            <span className="rb-mono" style={{ fontWeight: 700, color: openingAll > 0 ? TC.stamp : TC.success }}>{openingAll < 0 ? "-" : ""}Rs {rbMoney(Math.abs(openingAll))}</span>
+          </div>
+        ) : null}
+        <div style={{ fontSize: 10, color: TC.inkSoft, textAlign: "center", marginTop: 6 }}>{billCount} {t("billsCount")}</div>
       </div>
 
       {goodsList.length > 0 ? (
@@ -415,13 +425,13 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
             var pays = (s.payments || []).slice().sort(function (x, y) { return String(x.date || "").localeCompare(String(y.date || "")); });
             return (
               <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px" }}>
-                <div onClick={function () { onOpen(s); }} style={{ cursor: "pointer" }}>
+                <div onClick={function () { if (!s.isOpening) onOpen(s); }} style={{ cursor: s.isOpening ? "default" : "pointer" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                    <span className="rb-mono" style={{ fontSize: 11.5, color: TC.inkSoft }}>#{s.serial} · {rbDate(s.date)}</span>
+                    <span className="rb-mono" style={{ fontSize: 11.5, color: TC.inkSoft }}>{s.isOpening ? t("openingTag") : "#" + s.serial} · {rbDate(s.date)}</span>
                     <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 3, gap: 8 }}>
-                    <span style={{ color: TC.inkSoft }}>{s.type === "cash" ? t("cashSale") : t("customizedSale")}</span>
+                    <span style={{ color: TC.inkSoft }}>{s.isOpening ? (s.openingDir === "adv" ? t("openingCustAdv") : t("openingCustDue")) : (s.type === "cash" ? t("cashSale") : t("customizedSale"))}</span>
                     <span style={{ whiteSpace: "nowrap" }}><span style={{ color: TC.success }}>{t("billsReceived")} {rbMoney(s.advance || 0)}</span> <span style={{ color: TC.concrete }}>·</span> <span style={{ color: (s.dues || 0) > 0 ? TC.stamp : TC.inkSoft }}>{t("dues")} {rbMoney(s.dues || 0)}</span></span>
                   </div>
                 </div>
@@ -446,7 +456,7 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
     </ModalShell>
   );
 }
-function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, onOpen = p.onOpen, onMakeGatePass = p.onMakeGatePass, onViewGatePass = p.onViewGatePass, canSeeSummary = p.canSeeSummary; var role = p.role, onVerifyBill = p.onVerifyBill; var a = React.useState("all"), filter = a[0], setFilter = a[1]; var lg = React.useState(null), ledgerFor = lg[0], setLedgerFor = lg[1]; var b = React.useState(""), query = b[0], setQuery = b[1]; var gatePassEntryBySale = {}; gatePasses.forEach(function (g) { if (g.saleId) gatePassEntryBySale[g.saleId] = g; }); function needsGatePass(s) { return s.type !== "cash" && !gatePassEntryBySale[s.id]; } var filtered = sales.filter(function (s) { if (filter === "missing" && !needsGatePass(s)) return false; if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false; return true; }); return ( <div style={{ padding: "14px 14px 4px" }}> {canSeeSummary ? <BillsSummaryCard t={t} sales={sales} onOpenCustomer={setLedgerFor} /> : null} <div style={{ position: "relative", marginBottom: 10 }}> <span style={{ position: "absolute", left: 12, top: 11, color: TC.concrete }}><Ico name="search" size={15} /></span> <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={t("searchCustomer")} style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", paddingInlineStart: 34 })} /> </div> <div style={{ display: "flex", gap: 8, marginBottom: 12 }}> {[["all", t("allSales")], ["missing", t("makeGatePass")]].map(function (o) { var id = o[0], label = o[1], on = filter === id; return ( <button key={id} onClick={function () { setFilter(id); }} style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{label}</button> ); })} </div> {filtered.length === 0 ? ( <EmptyState icon={<Ico name="history" size={28} color={TC.concrete} />} text={sales.length === 0 ? t("noBills") : t("searchNoResults")} /> ) : ( <div style={{ display: "flex", flexDirection: "column", gap: 8 }}> {filtered.map(function (s) { var missing = needsGatePass(s); var passEntry = gatePassEntryBySale[s.id]; var zeroBill = !(Number(s.totalBill) > 0); var gpDiff = role === "admin" ? gpExtraOverBill(s, passEntry) : []; var billVerified = !!s.verified; var gpOk = billVerified || !!(passEntry && passEntry.verified); var gpExtra = (gpDiff.length > 0 && !gpOk) ? gpDiff : []; return ( <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}> <div onClick={function () { onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}> <div> <div style={{ display: "flex", alignItems: "center", gap: 6 }}> <span style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</span> {missing ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.amber, color: TC.ink }}>{t("makeGatePass")}</span> ) : null} {gpExtra.length > 0 ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.stamp, color: TC.cream }}>{t("gpMoreThanBill")}</span> ) : null} {billVerified ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.success, color: TC.cream }}>{t("gpVerifiedTag")}</span> ) : null} {zeroBill ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.stamp, color: TC.cream }}>{t("zeroBillTag")}</span> ) : null} </div> <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}> #{s.serial} · {rbDate(s.date)} · {s.type === "cash" ? t("cashSale") : t("customizedSale")} </div> {gpExtra.length > 0 ? ( <div style={{ marginTop: 4 }}> {gpExtra.map(function (x) { return ( <div key={x.category + x.variant} style={{ fontSize: 10, color: TC.stamp, fontWeight: 600 }}>{variantLabel(t, x.category, x.variant)} — {t("gpVsBill")} {x.bill} / {t("gpVsGate")} {x.gp}</div> ); })} </div> ) : null} </div> <div style={{ textAlign: "end" }}> <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</div> <div style={{ fontSize: 10, color: (s.dues || 0) > 0 ? TC.stamp : TC.success, marginTop: 2 }}>{(s.dues || 0) > 0 ? t("due") : t("paid")}</div> </div> </div> {passEntry ? ( <button onClick={function () { onViewGatePass(s, passEntry); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("viewGatePass")}</button> ) : ( <button onClick={function () { onMakeGatePass(s); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("makeGatePass")}</button> )} {(role === "admin" && !billVerified && onVerifyBill) ? ( <button onClick={function () { onVerifyBill(s); }} style={{ marginTop: 8, width: "100%", padding: "9px", borderRadius: 6, border: "none", background: TC.success, color: TC.cream, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>{t("verifyGp")}</button> ) : null} </div> ); })} </div> )} {ledgerFor ? ( <CustomerLedgerModal t={t} name={ledgerFor} sales={sales.filter(function (x) { return String(x.customerName || "").trim().toLowerCase() === String(ledgerFor).trim().toLowerCase(); })} onOpen={function (x) { setLedgerFor(null); onOpen(x); }} onClose={function () { setLedgerFor(null); }} /> ) : null} </div> ); } function StockSummaryCard(p) {
+function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, onOpen = p.onOpen, onMakeGatePass = p.onMakeGatePass, onViewGatePass = p.onViewGatePass, canSeeSummary = p.canSeeSummary; var role = p.role, onVerifyBill = p.onVerifyBill; var a = React.useState("all"), filter = a[0], setFilter = a[1]; var lg = React.useState(null), ledgerFor = lg[0], setLedgerFor = lg[1]; var b = React.useState(""), query = b[0], setQuery = b[1]; var gatePassEntryBySale = {}; gatePasses.forEach(function (g) { if (g.saleId) gatePassEntryBySale[g.saleId] = g; }); function needsGatePass(s) { return !s.isOpening && s.type !== "cash" && !gatePassEntryBySale[s.id]; } var filtered = sales.filter(function (s) { if (filter === "missing" && !needsGatePass(s)) return false; if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false; return true; }); return ( <div style={{ padding: "14px 14px 4px" }}> {canSeeSummary ? <BillsSummaryCard t={t} sales={sales} onOpenCustomer={setLedgerFor} /> : null} <div style={{ position: "relative", marginBottom: 10 }}> <span style={{ position: "absolute", left: 12, top: 11, color: TC.concrete }}><Ico name="search" size={15} /></span> <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={t("searchCustomer")} style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", paddingInlineStart: 34 })} /> </div> <div style={{ display: "flex", gap: 8, marginBottom: 12 }}> {[["all", t("allSales")], ["missing", t("makeGatePass")]].map(function (o) { var id = o[0], label = o[1], on = filter === id; return ( <button key={id} onClick={function () { setFilter(id); }} style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{label}</button> ); })} </div> {filtered.length === 0 ? ( <EmptyState icon={<Ico name="history" size={28} color={TC.concrete} />} text={sales.length === 0 ? t("noBills") : t("searchNoResults")} /> ) : ( <div style={{ display: "flex", flexDirection: "column", gap: 8 }}> {filtered.map(function (s) { var missing = needsGatePass(s); var passEntry = gatePassEntryBySale[s.id]; var zeroBill = !s.isOpening && !(Number(s.totalBill) > 0); var gpDiff = (role === "admin" && !s.isOpening) ? gpExtraOverBill(s, passEntry) : []; var billVerified = !!s.verified; var gpOk = billVerified || !!(passEntry && passEntry.verified); var gpExtra = (gpDiff.length > 0 && !gpOk) ? gpDiff : []; return ( <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}> <div onClick={function () { if (!s.isOpening) onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: s.isOpening ? "default" : "pointer" }}> <div> <div style={{ display: "flex", alignItems: "center", gap: 6 }}> <span style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</span> {missing ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.amber, color: TC.ink }}>{t("makeGatePass")}</span> ) : null} {gpExtra.length > 0 ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.stamp, color: TC.cream }}>{t("gpMoreThanBill")}</span> ) : null} {billVerified ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.success, color: TC.cream }}>{t("gpVerifiedTag")}</span> ) : null} {zeroBill ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.stamp, color: TC.cream }}>{t("zeroBillTag")}</span> ) : null} {s.isOpening ? ( <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", background: TC.slab, color: TC.cream }}>{t("openingTag")}</span> ) : null} </div> <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}> {s.isOpening ? (t("openingTag") + " · " + rbDate(s.date)) : ("#" + s.serial + " · " + rbDate(s.date) + " · " + (s.type === "cash" ? t("cashSale") : t("customizedSale")))} </div> {gpExtra.length > 0 ? ( <div style={{ marginTop: 4 }}> {gpExtra.map(function (x) { return ( <div key={x.category + x.variant} style={{ fontSize: 10, color: TC.stamp, fontWeight: 600 }}>{variantLabel(t, x.category, x.variant)} — {t("gpVsBill")} {x.bill} / {t("gpVsGate")} {x.gp}</div> ); })} </div> ) : null} </div> <div style={{ textAlign: "end" }}> <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(s.totalBill || 0)}</div> <div style={{ fontSize: 10, color: (s.dues || 0) > 0 ? TC.stamp : TC.success, marginTop: 2 }}>{(s.dues || 0) > 0 ? t("due") : t("paid")}</div> </div> </div> {s.isOpening ? null : passEntry ? ( <button onClick={function () { onViewGatePass(s, passEntry); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("viewGatePass")}</button> ) : ( <button onClick={function () { onMakeGatePass(s); }} style={{ marginTop: 9, width: "100%", padding: "8px", borderRadius: 6, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Ico name="truck" size={13} /> {t("makeGatePass")}</button> )} {(role === "admin" && !billVerified && onVerifyBill && !s.isOpening) ? ( <button onClick={function () { onVerifyBill(s); }} style={{ marginTop: 8, width: "100%", padding: "9px", borderRadius: 6, border: "none", background: TC.success, color: TC.cream, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>{t("verifyGp")}</button> ) : null} </div> ); })} </div> )} {ledgerFor ? ( <CustomerLedgerModal t={t} name={ledgerFor} sales={sales.filter(function (x) { return String(x.customerName || "").trim().toLowerCase() === String(ledgerFor).trim().toLowerCase(); })} onOpen={function (x) { setLedgerFor(null); onOpen(x); }} onClose={function () { setLedgerFor(null); }} /> ) : null} </div> ); } function StockSummaryCard(p) {
   var t = p.t, stockLog = p.stockLog;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
   var r = resolveRange(range);
@@ -734,8 +744,40 @@ function StockHistoryModal(p) {
     </ModalShell>
   );
 }
+function InlineShell(p) {
+  return (
+    <div style={{ padding: "14px 14px 4px" }}>
+      {p.title ? (<div className="rb-display" style={{ fontSize: 14, fontWeight: 700, color: TC.cream, marginBottom: 12 }}>{p.title}</div>) : null}
+      {p.children}
+    </div>
+  );
+}
+function OpeningDirPicker(p) {
+  var opts = [["due", p.dueLabel], ["adv", p.advLabel]];
+  return (
+    <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+      {opts.map(function (o) {
+        var id = o[0], label = o[1], on = p.value === id;
+        return (
+          <button key={id} onClick={function () { p.onChange(id); }} style={{
+            flex: 1, padding: "8px 6px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"),
+            background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A",
+            fontSize: 11, fontWeight: 700, cursor: "pointer"
+          }}>{label}</button>
+        );
+      })}
+    </div>
+  );
+}
 function SupplierModal(p) {
   var t = p.t, suppliers = p.suppliers || [], supplierTotals = p.supplierTotals;
+  var Shell = p.inline ? InlineShell : ModalShell;
+  var o1 = React.useState(""), obAmt = o1[0], setObAmt = o1[1];
+  var o2 = React.useState("due"), obDir = o2[0], setObDir = o2[1];
+  var o3 = React.useState(rbToday()), obDate = o3[0], setObDate = o3[1];
+  var o4 = React.useState(false), obOpen = o4[0], setObOpen = o4[1];
+  var n3 = React.useState(""), newOb = n3[0], setNewOb = n3[1];
+  var n4 = React.useState("due"), newObDir = n4[0], setNewObDir = n4[1];
   var a = React.useState(null), openId = a[0], setOpenId = a[1];
   var b = React.useState(false), adding = b[0], setAdding = b[1];
   var n1 = React.useState(""), nm = n1[0], setNm = n1[1];
@@ -760,7 +802,7 @@ function SupplierModal(p) {
       .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount }; }))
       .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
     return (
-      <ModalShell onClose={p.onClose} title={current.name}>
+      <Shell onClose={p.onClose} title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
         <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
@@ -769,7 +811,31 @@ function SupplierModal(p) {
             <StatBlock label={t("billsReceived")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
             <StatBlock label={t("supplierBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
           </div>
+          {tot.opening ? (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+              <span style={{ color: TC.inkSoft }}>{t("openingBalance")}{current.openingDate ? " · " + rbDate(current.openingDate) : ""}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: tot.opening > 0 ? TC.stamp : TC.success }}>{tot.opening < 0 ? "-" : ""}Rs {rbMoney(Math.abs(tot.opening))}</span>
+            </div>
+          ) : null}
         </div>
+
+        {(p.isAdmin && p.onSetSupplierOpening) ? (
+          obOpen ? (
+            <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+              <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{t("openingBalance")}</div>
+              <div style={{ fontSize: 10, color: "#A39C8A", marginBottom: 8 }}>{t("openingHintSupp")}</div>
+              <OpeningDirPicker value={obDir} onChange={setObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
+              <input type="number" inputMode="decimal" value={obAmt} onChange={function (e) { setObAmt(e.target.value); }} placeholder={t("openingAmount")} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 6 }} />
+              <input type="date" value={obDate} onChange={function (e) { setObDate(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 8 }} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={function () { p.onSetSupplierOpening(current.id, obAmt, obDir, obDate); setObOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: TC.garden, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("save")}</button>
+                <button onClick={function () { setObOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={function () { setObAmt(Math.max(0, Number(current.opening) || 0) ? String(Number(current.opening)) : ""); setObDir(current.openingDir === "adv" ? "adv" : "due"); setObDate(current.openingDate || rbToday()); setObOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{tot.opening ? t("openingBalance") + " — " + t("edit") : "+ " + t("openingBalance")}</button>
+          )
+        ) : null}
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyMaterial")}</div>
@@ -811,18 +877,21 @@ function SupplierModal(p) {
             })}
           </div>
         )}
-      </ModalShell>
+      </Shell>
     );
   }
 
   return (
-    <ModalShell onClose={p.onClose} title={t("suppliers")}>
+    <Shell onClose={p.onClose} title={t("suppliers")}>
       {adding ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
           <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("supplierName")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
           <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 }} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("openingBalance")} — {t("openingHintSupp")}</div>
+          <OpeningDirPicker value={newObDir} onChange={setNewObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
+          <input type="number" inputMode="decimal" value={newOb} onChange={function (e) { setNewOb(e.target.value); }} placeholder={t("openingAmount")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 }} />
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={function () { p.onAddSupplier(nm, mob); setNm(""); setMob(""); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
+            <button onClick={function () { p.onAddSupplier(nm, mob, newOb, newObDir, rbToday()); setNm(""); setMob(""); setNewOb(""); setNewObDir("due"); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
             <button onClick={function () { setAdding(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
           </div>
         </div>
@@ -858,7 +927,7 @@ function SupplierModal(p) {
                   <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
-                  <span style={{ color: TC.inkSoft }}>{tt.bags} {t("cementBags")}</span>
+                  <span style={{ color: TC.inkSoft }}>{tt.bags} {t("cementBags")}{tt.opening ? " · " + t("openingBalance") + " " + (tt.opening < 0 ? "-" : "") + rbMoney(Math.abs(tt.opening)) : ""}</span>
                   <span style={{ color: TC.inkSoft }}>{t("billsTotal")} {rbMoney(tt.amount)} · {t("billsReceived")} {rbMoney(tt.paid)}</span>
                 </div>
               </div>
@@ -866,7 +935,193 @@ function SupplierModal(p) {
           })}
         </div>
       )}
-    </ModalShell>
+    </Shell>
+  );
+}
+function SupplierTab(p) {
+  return (
+    <SupplierModal inline t={p.t} suppliers={p.suppliers} supplierTotals={p.supplierTotals} materials={p.materials}
+      isAdmin={p.isAdmin} onAddMaterial={p.onAddMaterial} onAddSupplier={p.onAddSupplier}
+      onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier} onSetSupplierOpening={p.onSetSupplierOpening} />
+  );
+}
+function LabourTab(p) {
+  var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
+  var a = React.useState(null), openId = a[0], setOpenId = a[1];
+  var b = React.useState(false), adding = b[0], setAdding = b[1];
+  var n1 = React.useState(""), nm = n1[0], setNm = n1[1];
+  var n2 = React.useState(""), mob = n2[0], setMob = n2[1];
+  var n3 = React.useState(""), newOb = n3[0], setNewOb = n3[1];
+  var n4 = React.useState("due"), newObDir = n4[0], setNewObDir = n4[1];
+  var w1 = React.useState("garder"), wKind = w1[0], setWKind = w1[1];
+  var w2 = React.useState(""), wQty = w2[0], setWQty = w2[1];
+  var w3 = React.useState(""), wRate = w3[0], setWRate = w3[1];
+  var w4 = React.useState(""), wAmt = w4[0], setWAmt = w4[1];
+  var w5 = React.useState(rbToday()), wDate = w5[0], setWDate = w5[1];
+  var w6 = React.useState(""), wNote = w6[0], setWNote = w6[1];
+  var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
+  var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
+  var o1 = React.useState(""), obAmt = o1[0], setObAmt = o1[1];
+  var o2 = React.useState("due"), obDir = o2[0], setObDir = o2[1];
+  var o3 = React.useState(rbToday()), obDate = o3[0], setObDate = o3[1];
+  var o4 = React.useState(false), obOpen = o4[0], setObOpen = o4[1];
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
+  var current = null;
+  labourers.forEach(function (x) { if (x.id === openId) current = x; });
+
+  if (current) {
+    var tot = labourTotals(current.id);
+    var kindInfo = labourKind(wKind);
+    var autoAmt = Number(wAmt) > 0 ? Number(wAmt) : (Number(wQty) || 0) * (Number(wRate) || 0);
+    var rows = tot.works.map(function (x) { return { k: "work", id: x.id, date: x.date, kind: x.kind, qty: x.qty, rate: x.rate, note: x.note, amount: x.amount }; })
+      .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount, note: x.note }; }))
+      .sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
+    return (
+      <InlineShell title={current.name}>
+        <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("labourers")}</button>
+        <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+            <StatBlock label={t("labourWorkTotal")} value={"Rs " + rbMoney(tot.work)} bold />
+            <StatBlock label={t("labourPaidTotal")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
+            <StatBlock label={t("labourBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
+          </div>
+          {tot.opening ? (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+              <span style={{ color: TC.inkSoft }}>{t("openingBalance")}{current.openingDate ? " \u00b7 " + rbDate(current.openingDate) : ""}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: tot.opening > 0 ? TC.stamp : TC.success }}>{tot.opening < 0 ? "-" : ""}Rs {rbMoney(Math.abs(tot.opening))}</span>
+            </div>
+          ) : null}
+          {Object.keys(tot.byKind).length > 0 ? (
+            <div style={{ marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+              {LABOUR_KINDS.map(function (k) {
+                var v = tot.byKind[k.id];
+                if (!v) return null;
+                return (
+                  <div key={k.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, padding: "1px 0" }}>
+                    <span style={{ color: TC.inkSoft }}>{t(k.labelKey) + " \u00b7 " + v.qty + " " + t(k.unitKey)}</span>
+                    <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>Rs {rbMoney(v.amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        {p.isAdmin ? (obOpen ? (
+          <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+            <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{t("openingBalance")}</div>
+            <OpeningDirPicker value={obDir} onChange={setObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
+            <input type="number" inputMode="decimal" value={obAmt} onChange={function (e) { setObAmt(e.target.value); }} placeholder={t("openingAmount")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+            <input type="date" value={obDate} onChange={function (e) { setObDate(e.target.value); }} style={Object.assign({}, inp, { marginBottom: 8 })} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function () { p.onSetOpening(current.id, obAmt, obDir, obDate); setObOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: TC.garden, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("save")}</button>
+              <button onClick={function () { setObOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={function () { setObAmt(Math.max(0, Number(current.opening) || 0) ? String(Number(current.opening)) : ""); setObDir(current.openingDir === "adv" ? "adv" : "due"); setObDate(current.openingDate || rbToday()); setObOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{tot.opening ? t("openingBalance") + " \u2014 " + t("edit") : "+ " + t("openingBalance")}</button>
+        )) : null}
+
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("addLabourWork")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+            {LABOUR_KINDS.map(function (k) {
+              var on = wKind === k.id;
+              return (
+                <button key={k.id} onClick={function () { setWKind(k.id); }} style={{
+                  padding: "9px 6px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"),
+                  background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A",
+                  fontSize: 11.5, fontWeight: 700, cursor: "pointer"
+                }}>{t(k.labelKey)}<div style={{ fontSize: 9, fontWeight: 500, opacity: .8 }}>{t(k.unitKey)}</div></button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input type="number" inputMode="decimal" value={wQty} onChange={function (e) { setWQty(e.target.value); }} placeholder={t(kindInfo.unitKey)} style={Object.assign({}, inp, { flex: 1 })} />
+            <input type="number" inputMode="decimal" value={wRate} onChange={function (e) { setWRate(e.target.value); }} placeholder={t("rate")} style={Object.assign({}, inp, { flex: 1 })} />
+          </div>
+          <input type="number" inputMode="decimal" value={wAmt} onChange={function (e) { setWAmt(e.target.value); }} placeholder={t("purchaseTotal")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+          <input type="date" value={wDate} onChange={function (e) { setWDate(e.target.value); }} style={Object.assign({}, inp, { marginBottom: 6 })} />
+          <input value={wNote} onChange={function (e) { setWNote(e.target.value); }} placeholder={t("labourNote")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{t("total")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>Rs {rbMoney(autoAmt)}</span></div>
+          <button disabled={!(autoAmt > 0)} onClick={function () { p.onAddWork(current.id, wKind, wQty, wRate, wAmt, wDate, wNote); setWQty(""); setWRate(""); setWAmt(""); setWNote(""); }} style={{ width: "100%", padding: "10px", borderRadius: 7, border: "none", background: autoAmt > 0 ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: autoAmt > 0 ? "pointer" : "not-allowed" }}>{t("addLabourWork")}</button>
+        </div>
+
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("labourAdvance")}</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="number" inputMode="decimal" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={Object.assign({}, inp, { flex: 1 })} />
+            <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={Object.assign({}, inp, { flex: 1 })} />
+          </div>
+          <button disabled={!(Number(payAmt) > 0)} onClick={function () { p.onAddPayment(current.id, payAmt, payDate); setPayAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 7, border: "none", background: Number(payAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("labourAdvance")}</button>
+        </div>
+
+        {rows.length === 0 ? (
+          <div style={{ fontSize: 11.5, color: "#A39C8A", textAlign: "center", padding: "10px 0" }}>{t("noLabourEntries")}</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.map(function (r) {
+              var kk = r.k === "work" ? labourKind(r.kind) : null;
+              return (
+                <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success }}>{r.k === "work" ? t(kk.labelKey) : t("labourAdvance")}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "work" && r.qty ? " \u00b7 " + r.qty + " " + t(kk.unitKey) + (r.rate ? " \u00d7 " + rbMoney(r.rate) : "") : ""}{r.note ? " \u00b7 " + r.note : ""}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "work" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                    {p.isAdmin && p.onDeleteEntry ? (
+                      <button onClick={function () { p.onDeleteEntry(r.k === "work" ? "work" : "pay", r.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}><Ico name="trash" size={14} /></button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </InlineShell>
+    );
+  }
+
+  return (
+    <InlineShell title={t("labourers")}>
+      {adding ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("labourerName")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+          <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={Object.assign({}, inp, { marginBottom: 8 })} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("openingBalance")}</div>
+          <OpeningDirPicker value={newObDir} onChange={setNewObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
+          <input type="number" inputMode="decimal" value={newOb} onChange={function (e) { setNewOb(e.target.value); }} placeholder={t("openingAmount")} style={Object.assign({}, inp, { marginBottom: 8 })} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function () { p.onAddLabourer(nm, mob, newOb, newObDir, rbToday()); setNm(""); setMob(""); setNewOb(""); setNewObDir("due"); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
+            <button onClick={function () { setAdding(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addLabourer")}</button>
+      )}
+      {labourers.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noLabourers")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {labourers.map(function (lb) {
+            var tt = labourTotals(lb.id);
+            return (
+              <div key={lb.id} onClick={function () { setOpenId(lb.id); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{lb.name}</span>
+                  <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
+                  <span style={{ color: TC.inkSoft }}>{t("labourWorkTotal")} {rbMoney(tt.work)}</span>
+                  <span style={{ color: TC.inkSoft }}>{t("labourPaidTotal")} {rbMoney(tt.paid)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </InlineShell>
   );
 }
 function StockTab(p) {
@@ -926,7 +1181,6 @@ function StockTab(p) {
             </div>
           );
         })}
-        <button onClick={function () { setSupplierOpen(true); }} style={{ width: "100%", marginTop: 10, padding: "9px", borderRadius: 7, border: "1.5px solid " + TC.slab, background: "transparent", color: TC.slab, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("suppliers")}</button>
       </div>
       ) : null}
 
@@ -1245,7 +1499,7 @@ function CollectPaymentModal(p) {
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: TC.cream }}>{sale.customerName}</div>
-        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>#{sale.serial} · {t("dues")}: Rs {rbMoney(sale.dues)}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>{sale.isOpening ? t("openingTag") : "#" + sale.serial} · {t("dues")}: Rs {rbMoney(sale.dues)}</div>
       </div>
       <Field label={t("amountReceived")}>
         <input type="number" inputMode="decimal" autoFocus value={amount} onChange={function (e) { setAmount(e.target.value); }}
@@ -1266,11 +1520,66 @@ function CollectPaymentModal(p) {
   );
 }
 
+function CustomerOpeningModal(p) {
+  var t = p.t;
+  var a = React.useState(""), nm = a[0], setNm = a[1];
+  var b = React.useState(""), amt = b[0], setAmt = b[1];
+  var c = React.useState("due"), dirn = c[0], setDirn = c[1];
+  var d = React.useState(rbToday()), dt = d[0], setDt = d[1];
+  var names = {};
+  (p.sales || []).forEach(function (x) { var n = String(x.customerName || "").trim(); if (n) names[n.toLowerCase()] = n; });
+  var nameList = Object.keys(names).map(function (k) { return names[k]; }).sort();
+  var openings = (p.sales || []).filter(function (x) { return x.isOpening; })
+    .slice().sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
+  var canSave = nm.trim() && Number(amt) > 0;
+  return (
+    <ModalShell onClose={p.onClose} title={t("openingBalance")}>
+      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 10 }}>{t("openingHintCust")}</div>
+      <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+        <input list="rb-cust-names" value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("openingCustomer")}
+          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
+        <datalist id="rb-cust-names">{nameList.map(function (n) { return <option key={n} value={n} />; })}</datalist>
+        <OpeningDirPicker value={dirn} onChange={setDirn} dueLabel={t("openingCustDue")} advLabel={t("openingCustAdv")} />
+        <input type="number" inputMode="decimal" value={amt} onChange={function (e) { setAmt(e.target.value); }} placeholder={t("openingAmount")}
+          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
+        <input type="date" value={dt} onChange={function (e) { setDt(e.target.value); }}
+          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 }} />
+        <button disabled={!canSave} onClick={function () { p.onAdd(nm, amt, dirn, dt); setNm(""); setAmt(""); setDirn("due"); }}
+          style={{ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "not-allowed" }}>{t("save")}</button>
+      </div>
+      {openings.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "12px 0" }}>{t("openingNone")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {openings.map(function (x) {
+            var adv = x.openingDir === "adv";
+            var val = adv ? (Number(x.advance) || 0) : (Number(x.dues) || 0);
+            return (
+              <div key={x.id} style={{ background: TC.paper, borderRadius: 7, padding: "9px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>{x.customerName}</div>
+                  <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(x.date)} · {adv ? t("openingCustAdv") : t("openingCustDue")}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: adv ? TC.success : TC.stamp, whiteSpace: "nowrap" }}>Rs {rbMoney(Math.abs(val))}</span>
+                  {p.canDelete ? (
+                    <button onClick={function () { p.onDelete(x.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}><Ico name="trash" size={14} /></button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </ModalShell>
+  );
+}
 function DuesTab(p) {
   var t = p.t, sales = p.sales, onOpen = p.onOpen, onCollect = p.onCollect, onReceipt = p.onReceipt;
   var a = React.useState("dues"), filter = a[0], setFilter = a[1];
   var b = React.useState(""), query = b[0], setQuery = b[1];
   var c = React.useState(null), collectingFor = c[0], setCollectingFor = c[1];
+  var ob = React.useState(false), obOpen = ob[0], setObOpen = ob[1];
   var filtered = sales.filter(function (s) {
     if (filter === "dues" && (s.dues || 0) <= 0) return false;
     if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false;
@@ -1284,6 +1593,13 @@ function DuesTab(p) {
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <PaymentsSummaryCard t={t} sales={sales} />
+      {p.onAddOpening ? (
+        <button onClick={function () { setObOpen(true); }} style={{
+          width: "100%", marginBottom: 10, padding: "10px", borderRadius: 8,
+          border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A",
+          fontSize: 12.5, fontWeight: 600, cursor: "pointer"
+        }}>+ {t("openingAdd")}</button>
+      ) : null}
       <div style={{ position: "relative", marginBottom: 10 }}>
         <span style={{ position: "absolute", left: 12, top: 11, color: TC.concrete }}><Ico name="search" size={15} /></span>
         <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={t("searchCustomer")}
@@ -1308,11 +1624,11 @@ function DuesTab(p) {
           {filtered.map(function (s) {
             return (
               <div key={s.id} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}>
-                <div onClick={function () { onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
+                <div onClick={function () { if (!s.isOpening) onOpen(s); }} style={{ display: "flex", justifyContent: "space-between", cursor: s.isOpening ? "default" : "pointer" }}>
                   <div>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{s.customerName}</div>
                     <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>
-                      #{s.serial} · {rbDate(s.date)} · {s.type === "cash" ? t("cashSale") : t("customizedSale")}
+                      {s.isOpening ? (t("openingTag") + " · " + rbDate(s.date)) : ("#" + s.serial + " · " + rbDate(s.date) + " · " + (s.type === "cash" ? t("cashSale") : t("customizedSale")))}
                     </div>
                   </div>
                   <div style={{ textAlign: "end" }}>
@@ -1333,6 +1649,12 @@ function DuesTab(p) {
       )}
       {collectingFor ? (
         <CollectPaymentModal t={t} sale={collectingFor} onClose={function () { setCollectingFor(null); }} onCollect={handleCollect} />
+      ) : null}
+      {obOpen ? (
+        <CustomerOpeningModal t={t} sales={sales} canDelete={p.role === "admin"}
+          onAdd={function (nm, amt, dirn, dt) { p.onAddOpening(nm, amt, dirn, dt); }}
+          onDelete={p.onDeleteOpening}
+          onClose={function () { setObOpen(false); }} />
       ) : null}
     </div>
   );
@@ -1470,7 +1792,7 @@ function ReportsTab(p) {
   var supName = {};
   (p.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
 
-  var sales = (p.sales || []).filter(function (x) { return inR(x.date); });
+  var sales = (p.sales || []).filter(function (x) { return !x.isOpening && inR(x.date); });
   var payments = [];
   (p.sales || []).forEach(function (s) {
     (s.payments || []).forEach(function (pay) {
@@ -1482,13 +1804,18 @@ function ReportsTab(p) {
   var stockAdds = (p.stockLog || []).filter(function (x) { return inR(x.date); });
   var wast = (p.wastageLog || []).filter(function (x) { return inR(x.date); });
   var exps = (p.expenses || []).filter(function (x) { return inR(x.date); });
+  var labName = {};
+  (p.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
+  var labWork = (p.labourWork || []).filter(function (x) { return inR(x.date); });
+  var labPays = (p.labourPayments || []).filter(function (x) { return inR(x.date); });
+  var labourCost = labWork.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
 
   var salesTotal = sales.reduce(function (n, x) { return n + (Number(x.totalBill) || 0); }, 0);
   var received = payments.reduce(function (n, x) { return n + x.amount; }, 0);
   var cementCost = purchases.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
   var expTotal = exps.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
   var paidOut = supPays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
-  var net = salesTotal - cementCost - expTotal;
+  var net = salesTotal - cementCost - expTotal - labourCost;
 
   var rows = [];
   sales.forEach(function (x) { rows.push({ id: "s" + x.id, date: x.date, kind: t("saleAmount"), title: x.customerName + " · #" + x.serial, val: Number(x.totalBill) || 0, dir: "in", soft: true }); });
@@ -1496,6 +1823,8 @@ function ReportsTab(p) {
   purchases.forEach(function (x) { rows.push({ id: "c" + x.id, date: x.date, kind: rbMaterialOf(x) === "cement" ? t("buyCement") : t("buyMaterial"), title: (supName[x.supplierId] || "-") + " · " + (x.materialName || t("cement")) + " " + rbQtyOf(x) + " " + (x.unit || ""), val: Number(x.amount) || 0, dir: "out", soft: true }); });
   supPays.forEach(function (x) { rows.push({ id: "sp" + x.id, date: x.date, kind: t("payToSupplier"), title: supName[x.supplierId] || "-", val: Number(x.amount) || 0, dir: "out" }); });
   exps.forEach(function (x) { rows.push({ id: "e" + x.id, date: x.date, kind: t("expenses"), title: x.detail || "-", val: Number(x.amount) || 0, dir: "out" }); });
+  labWork.forEach(function (x) { var kk = labourKind(x.kind); rows.push({ id: "lw" + x.id, date: x.date, kind: t("labourWork"), title: (labName[x.labourerId] || "-") + " \u00b7 " + t(kk.labelKey) + (x.qty ? " " + x.qty + " " + t(kk.unitKey) : ""), val: Number(x.amount) || 0, dir: "out", soft: true }); });
+  labPays.forEach(function (x) { rows.push({ id: "lp" + x.id, date: x.date, kind: t("labourAdvance"), title: labName[x.labourerId] || "-", val: Number(x.amount) || 0, dir: "out" }); });
   stockAdds.forEach(function (x) { rows.push({ id: "st" + x.id, date: x.date, kind: t("stockMade"), title: variantLabel(t, x.category, x.variant) + " +" + x.qty + ((Number(x.cementBags) || 0) > 0 ? " · " + t("cement") + " " + x.cementBags : ""), val: null }); });
   wast.forEach(function (x) { rows.push({ id: "w" + x.id, date: x.date, kind: t("wastageOut"), title: variantLabel(t, x.category, x.variant) + " -" + x.qty, val: null }); });
   rows.sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
@@ -1523,18 +1852,19 @@ function ReportsTab(p) {
               <StatBlock label={t("saleAmount")} value={"Rs " + rbMoney(salesTotal)} bold />
               <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
               <StatBlock label={t("purchases")} value={"Rs " + rbMoney(cementCost)} color={TC.stamp} />
+              <StatBlock label={t("labourWork")} value={"Rs " + rbMoney(labourCost)} color={TC.stamp} />
               <StatBlock label={t("expenses")} value={"Rs " + rbMoney(expTotal)} color={TC.stamp} />
             </div>
             <div style={{ borderTop: "2px dashed " + TC.paperLine, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span className="rb-display" style={{ fontSize: 13, fontWeight: 700, color: TC.inkSoft }}>{net >= 0 ? t("netProfit") : t("netLoss")}</span>
               <span className="rb-mono" style={{ fontSize: 17, fontWeight: 700, color: net >= 0 ? TC.success : TC.stamp }}>Rs {rbMoney(Math.abs(net))}</span>
             </div>
-            <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("purchases")} &minus; {t("expenses")}</div>
+            <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("purchases")} &minus; {t("labourWork")} &minus; {t("expenses")}</div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
             <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
-            <StatBlock label={t("expenseTotal")} value={"Rs " + rbMoney(expTotal + paidOut)} bold color={TC.stamp} />
+            <StatBlock label={t("expenseTotal")} value={"Rs " + rbMoney(expTotal + paidOut + labPays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0))} bold color={TC.stamp} />
             <StatBlock label={t("saleAmount")} value={"Rs " + rbMoney(salesTotal)} bold />
           </div>
         )}
@@ -1618,7 +1948,7 @@ function ReportsTab(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
