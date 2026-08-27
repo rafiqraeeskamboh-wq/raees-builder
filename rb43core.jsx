@@ -327,6 +327,14 @@ var TRANSLATIONS = {
   };
   Object.keys(EN6).forEach(function (k) { TRANSLATIONS.en[k] = EN6[k]; });
   Object.keys(UR6).forEach(function (k) { TRANSLATIONS.ur[k] = UR6[k]; });
+  TRANSLATIONS.en.stockShort = "Itna stock maujood nahi";
+  TRANSLATIONS.en.onlyLeft = "Sirf itna baqi hai";
+  TRANSLATIONS.en.stockShortSave = "Stock se ziada maal bill mein hai - pehle theek karein";
+  TRANSLATIONS.en.available = "Maujood";
+  TRANSLATIONS.ur.stockShort = "اتنا اسٹاک موجود نہیں";
+  TRANSLATIONS.ur.onlyLeft = "صرف اتنا باقی ہے";
+  TRANSLATIONS.ur.stockShortSave = "اسٹاک سے زیادہ مال بل میں ہے - پہلے درست کریں";
+  TRANSLATIONS.ur.available = "موجود";
 })();
 
 function getRangeBounds(preset) {
