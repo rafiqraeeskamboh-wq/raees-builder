@@ -491,7 +491,57 @@ function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, 
   );
 }
 
-function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function CementSummaryCard(p) {
+function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function CatNamesSetter(p) {
+  var t = p.t, names = p.names || {};
+  var a = React.useState(names.garden || ""), g = a[0], setG = a[1];
+  var b = React.useState(names.slab || ""), sl = b[0], setSl = b[1];
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{t("catNamesHint")}</div>
+      <input value={g} onChange={function (e) { setG(e.target.value); }} placeholder={t("catNameFirst")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+      <input value={sl} onChange={function (e) { setSl(e.target.value); }} placeholder={t("catNameSecond")} style={Object.assign({}, inp, { marginBottom: 8 })} />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={function () { p.onSave(g, sl); }} style={{ flex: 2, padding: "10px", borderRadius: 7, border: "none", background: TC.garden, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("save")}</button>
+        <button onClick={function () { setG(""); setSl(""); p.onSave("", ""); }} style={{ flex: 1, padding: "10px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{t("resetName")}</button>
+      </div>
+    </div>
+  );
+}
+
+function EditVariantModal(p) {
+  var t = p.t, cat = p.category, v = p.variant;
+  var a = React.useState(String(v)), val = a[0], setVal = a[1];
+  var b = React.useState(variantCustomLabel(cat, v) || ""), lbl = b[0], setLbl = b[1];
+  var c = React.useState(false), confirmDel = c[0], setConfirmDel = c[1];
+  var inp = { width: "100%", boxSizing: "border-box", padding: "10px 11px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 15 };
+  var ok = Number(val) > 0;
+  return (
+    <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18 }}>
+        <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{t("editSize")}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t(cat)} &middot; {v}{cat === "garden" ? " ft" : ""}</div>
+        <input type="number" inputMode="decimal" value={val} onChange={function (e) { setVal(e.target.value); }} placeholder={t("sizeValue")} style={Object.assign({}, inp, { marginBottom: 8 })} />
+        <input value={lbl} onChange={function (e) { setLbl(e.target.value); }} placeholder={t("sizeLabelOptional")} style={Object.assign({}, inp, { marginBottom: 8 })} />
+        <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 12 }}>{t("sizeMoved")}</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <button disabled={!ok} onClick={function () { p.onSave(cat, v, val, lbl); p.onClose(); }} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: ok ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed" }}>{t("save")}</button>
+          <button onClick={p.onClose} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{t("cancel")}</button>
+        </div>
+        {confirmDel ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function () { p.onDelete(cat, v); p.onClose(); }} style={{ flex: 1, padding: "11px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("deleteSize")}</button>
+            <button onClick={function () { setConfirmDel(false); }} style={{ flex: 1, padding: "11px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("cancel")}</button>
+          </div>
+        ) : (
+          <button onClick={function () { setConfirmDel(true); }} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "1.5px dashed " + TC.stamp, background: "transparent", color: TC.stamp, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("deleteSize")}</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CementSummaryCard(p) {
   var t = p.t, stockLog = p.stockLog || [], purchases = p.purchases || [], suppliers = p.suppliers || [];
   var totals = p.cementTotals || { added: 0, used: 0, remaining: 0 };
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
@@ -1001,6 +1051,28 @@ function SupplierModal(p) {
         <button onClick={function () { setAddMat(true); }} style={{ width: "100%", marginBottom: 12, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ {t("addMaterial")}</button>
       )) : null}
 
+      {suppliers.length > 0 ? (function () {
+        var sAll = { amount: 0, paid: 0, dues: 0, bags: 0 };
+        suppliers.forEach(function (sp) {
+          var q = supplierTotals(sp.id);
+          sAll.amount += q.amount; sAll.paid += q.paid; sAll.dues += q.dues; sAll.bags += q.bags;
+        });
+        return (
+          <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+            <div className="rb-display" style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, marginBottom: 6 }}>{t("supplierSummary")}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+              <StatBlock label={t("supAllBuy")} value={"Rs " + rbMoney(sAll.amount)} bold />
+              <StatBlock label={t("supAllPaid")} value={"Rs " + rbMoney(sAll.paid)} bold color={TC.success} />
+              <StatBlock label={t("supAllDues")} value={"Rs " + rbMoney(sAll.dues)} bold color={sAll.dues > 0 ? TC.stamp : TC.success} />
+            </div>
+            <div style={{ borderTop: "1px dashed " + TC.paperLine, marginTop: 6, paddingTop: 5, display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+              <span style={{ color: TC.inkSoft }}>{t("cementBags")}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>{sAll.bags}</span>
+            </div>
+          </div>
+        );
+      })() : null}
+
       {suppliers.length === 0 ? (
         <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noSuppliers")}</div>
       ) : (
@@ -1234,6 +1306,117 @@ function LabourWorkEditModal(p) {
   );
 }
 
+function LabourKhataModal(p) {
+  var t = p.t, lb = p.labourer, tot = p.totals;
+  var showToast = p.showToast || function () {};
+  var shotRef = React.useRef(null);
+  var note = function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); };
+  var rows = tot.works.map(function (x) { return { k: "work", id: x.id, date: x.date, kind: x.kind, qty: x.qty, rate: x.rate, extra: x.extra, note: x.note, amount: x.amount }; })
+    .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount, note: x.note }; }))
+    .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+  var waText = t("khataTitle") + " - " + lb.name + "\n" + t("labourWorkTotal") + ": Rs " + rbMoney(tot.work)
+    + "\n" + t("labourPaidTotal") + ": Rs " + rbMoney(tot.paid) + "\n" + t("labourBaqi") + ": Rs " + rbMoney(tot.dues);
+  var btn = { width: "100%", marginBottom: 10, padding: "12px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box" };
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9095, overflowY: "auto" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
+        <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; {t("back")}</button>
+          <button onClick={function () { window.print(); }} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Ico name="printer" size={14} /> {t("print")}
+          </button>
+        </div>
+
+        <button onClick={function () { rbShareNode(shotRef.current, "khata.png", waText, lb.mobile || "", note); }} className="no-print" style={Object.assign({}, btn, { background: "#128C7E", color: "#FFFFFF" })}>
+          <Ico name="chat" size={15} /> {t("khataShare")}
+        </button>
+        <button onClick={function () { rbSaveNode(shotRef.current, "khata.png", note); }} className="no-print" style={Object.assign({}, btn, { padding: "10px", border: "1.5px solid " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5 })}>
+          <Ico name="printer" size={14} /> {t("saveImage")}
+        </button>
+
+        <div className="print-area" ref={shotRef} style={{
+          background: TC.paper, borderRadius: 10, padding: 20, position: "relative", overflow: "hidden",
+          backgroundImage: "repeating-linear-gradient(45deg, " + TC.paperDark + " 0, " + TC.paperDark + " 1px, transparent 1px, transparent 14px)"
+        }}>
+          <div style={{ textAlign: "center", marginBottom: 6 }}>
+            <div className="rb-display" style={{ fontSize: 21, fontWeight: 700, color: TC.ink, letterSpacing: .5 }}>{t("appName")}</div>
+            <div className="rb-urdu" style={{ fontSize: 12, color: TC.inkSoft, marginTop: 2 }}>{TRANSLATIONS.en.tagline}</div>
+          </div>
+          <div style={{ borderTop: "2px solid " + TC.ink, margin: "10px 0" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 10, color: TC.inkSoft }}>{t("labourWorker")}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TC.ink }}>{lb.name}</div>
+              {lb.mobile ? <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft }}>{lb.mobile}</div> : null}
+            </div>
+            <div style={{ textAlign: "end" }}>
+              <div style={{ fontSize: 10, color: TC.inkSoft }}>{t("khataTitle")}</div>
+              <div className="rb-mono" style={{ fontSize: 11.5, color: TC.ink }}>{rbDate(rbToday())}</div>
+            </div>
+          </div>
+          {labourKindsOf(lb).length ? (
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 10, color: TC.inkSoft }}>{t("labourKindsLabel")}: </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: TC.ink }}>{labourKindsOf(lb).map(function (k) { return t(labourKind(k).labelKey); }).join(" · ")}</span>
+            </div>
+          ) : null}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+            <thead>
+              <tr style={{ borderBottom: "1.5px solid " + TC.ink }}>
+                <th style={{ textAlign: "start", padding: "5px 3px", color: TC.inkSoft, fontWeight: 700 }}>{t("date")}</th>
+                <th style={{ textAlign: "start", padding: "5px 3px", color: TC.inkSoft, fontWeight: 700 }}>{t("khataDetail")}</th>
+                <th style={{ textAlign: "end", padding: "5px 3px", color: TC.inkSoft, fontWeight: 700 }}>{t("khataAmount")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={3} style={{ padding: "10px 3px", textAlign: "center", color: TC.concrete }}>{t("khataNoRows")}</td></tr>
+              ) : rows.map(function (r) {
+                var kk = r.k === "work" ? labourKind(r.kind) : null;
+                var detail = r.k === "work"
+                  ? t(kk.labelKey) + (r.qty ? " " + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + rbMoney(r.rate) : "") : "") + (Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : "")
+                  : t("khataAdvance");
+                return (
+                  <tr key={r.k + r.id} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
+                    <td className="rb-mono" style={{ padding: "5px 3px", color: TC.inkSoft, whiteSpace: "nowrap" }}>{rbDate(r.date)}</td>
+                    <td style={{ padding: "5px 3px", color: TC.ink }}>{detail}{r.note ? " · " + r.note : ""}</td>
+                    <td className="rb-mono" style={{ padding: "5px 3px", textAlign: "end", fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "work" ? "" : "-"}{rbMoney(r.amount)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ borderTop: "2px solid " + TC.ink, marginTop: 10, paddingTop: 8 }}>
+            {tot.opening ? (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "2px 0" }}>
+                <span style={{ color: TC.inkSoft }}>{t("openingBalance")}</span>
+                <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>{tot.opening < 0 ? "-" : ""}Rs {rbMoney(Math.abs(tot.opening))}</span>
+              </div>
+            ) : null}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0" }}>
+              <span style={{ fontWeight: 700, color: TC.ink }}>{t("labourWorkTotal")}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>Rs {rbMoney(tot.work)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0" }}>
+              <span style={{ fontWeight: 700, color: TC.ink }}>{t("labourPaidTotal")}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: TC.success }}>Rs {rbMoney(tot.paid)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, padding: "6px 0 2px" }}>
+              <span style={{ fontWeight: 700, color: tot.dues > 0 ? TC.stamp : TC.success }}>{t("labourBaqi")}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: tot.dues > 0 ? TC.stamp : TC.success }}>Rs {rbMoney(tot.dues)}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ borderTop: "1px solid " + TC.ink, paddingTop: 3, fontSize: 10.5, color: TC.inkSoft, minWidth: 130 }}>{t("signature")}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LabourTab(p) {
   var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
   var pendingItems = p.pendingItems || [];
@@ -1258,6 +1441,9 @@ function LabourTab(p) {
   var o3 = React.useState(rbToday()), obDate = o3[0], setObDate = o3[1];
   var o4 = React.useState(false), obOpen = o4[0], setObOpen = o4[1];
   var e1 = React.useState(null), editEntry = e1[0], setEditEntry = e1[1];
+  var s1 = React.useState(false), settleAsk = s1[0], setSettleAsk = s1[1];
+  var s2 = React.useState(false), showOld = s2[0], setShowOld = s2[1];
+  var s3 = React.useState(false), khataOpen = s3[0], setKhataOpen = s3[1];
   var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
   var current = null;
   labourers.forEach(function (x) { if (x.id === openId) current = x; });
@@ -1273,6 +1459,9 @@ function LabourTab(p) {
     return (
       <InlineShell title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("labourers")}</button>
+        <button onClick={function () { setKhataOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "10px", borderRadius: 8, border: "none", background: "#128C7E", color: "#FFFFFF", fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+          <Ico name="chat" size={14} /> {t("khataOpen")}
+        </button>
         <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 9.5, color: TC.inkSoft, marginBottom: 4 }}>{t("labourKindsLabel")}</div>
@@ -1308,7 +1497,25 @@ function LabourTab(p) {
           {p.isAdmin && unver > 0 ? (
             <button onClick={function () { p.onVerifyAll(current.id); }} style={{ width: "100%", marginTop: 8, padding: "8px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 11.5, cursor: "pointer" }}>{t("labourVerifyAll")} ({unver})</button>
           ) : null}
+          {tot.lastSettled ? (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
+              <span style={{ color: TC.inkSoft }}>{t("lastSettled")} &middot; {rbDate(tot.lastSettled.date)}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>Rs {rbMoney(tot.lastSettled.amount)}</span>
+            </div>
+          ) : null}
         </div>
+
+        {p.isAdmin && p.onSettle ? (settleAsk ? (
+          <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8, lineHeight: 1.5 }}>{t("settleHint")}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function () { p.onSettle(current.id, rbToday()); setSettleAsk(false); }} style={{ flex: 1, padding: "10px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("settleLabour")}</button>
+              <button onClick={function () { setSettleAsk(false); }} style={{ flex: 1, padding: "10px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={function () { setSettleAsk(true); }} style={{ width: "100%", marginBottom: 10, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.stamp, background: "transparent", color: TC.stamp, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("settleLabour")}</button>
+        )) : null}
 
         {p.isAdmin ? (obOpen ? (
           <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
@@ -1395,6 +1602,35 @@ function LabourTab(p) {
             })}
           </div>
         )}
+        {(tot.oldWorks.length + tot.oldPayments.length) > 0 ? (
+          <div style={{ marginTop: 12 }}>
+            <button onClick={function () { setShowOld(!showOld); }} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {t("oldLedger")} ({tot.oldWorks.length + tot.oldPayments.length}) {showOld ? "\u2212" : "+"}
+            </button>
+            {showOld ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                {tot.oldWorks.map(function (x) { return { k: "work", id: x.id, date: x.date, kind: x.kind, qty: x.qty, amount: x.amount, settledAt: x.settledAt }; })
+                  .concat(tot.oldPayments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount, settledAt: x.settledAt }; }))
+                  .sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); })
+                  .map(function (r) {
+                    var kk = r.k === "work" ? labourKind(r.kind) : null;
+                    return (
+                      <div key={"o" + r.k + r.id} style={{ background: TC.paperDark, borderRadius: 7, padding: "7px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: .75 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: TC.inkSoft }}>{r.k === "work" ? t(kk.labelKey) : t("labourAdvance")} <span style={{ fontSize: 8.5, background: TC.concrete, color: TC.cream, borderRadius: 20, padding: "1px 6px" }}>{t("settledTag")}</span></div>
+                          <div className="rb-mono" style={{ fontSize: 9.5, color: TC.concrete, marginTop: 1 }}>{rbDate(r.date)}{r.k === "work" && r.qty ? " \u00b7 " + r.qty + " " + t(kk.unitKey) : ""}</div>
+                        </div>
+                        <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: TC.inkSoft }}>{r.k === "work" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        {khataOpen ? (
+          <LabourKhataModal t={t} labourer={current} totals={tot} showToast={p.showToast} onClose={function () { setKhataOpen(false); }} />
+        ) : null}
         {editEntry ? (
           <LabourWorkEditModal t={t} entry={editEntry} labourers={labourers} onSave={p.onEditWork} onClose={function () { setEditEntry(null); }} />
         ) : null}
@@ -1501,6 +1737,7 @@ function LabourTab(p) {
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
   var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
+  var evS = React.useState(null), editingVariant = evS[0], setEditingVariant = evS[1];
   var canEdit = p.canEdit !== false; /* sirf admin: size add, edit, delete */
   var canAdd = p.canAdd === undefined ? canEdit : !!p.canAdd; /* stock add karna - admin ya ijazat wala user */
   var cementTotals = p.cementTotals || { added: 0, used: 0, remaining: 0 };
@@ -1606,6 +1843,14 @@ function StockTab(p) {
                 <StatBlock label={t("sold")} value={sold} />
                 <StatBlock label={t("remaining")} value={remaining} bold color={remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft)} />
               </div>
+              {canEdit ? (
+              <button onClick={function () { setEditingVariant(v); }} style={{
+                width: 28, height: 32, borderRadius: 8, border: "none", background: "transparent",
+                color: TC.inkSoft, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
+                <Ico name="pencil" size={15} />
+              </button>
+              ) : null}
               {canAdd ? (
               <button onClick={function () { setAddingFor(v); }} style={{
                 width: 32, height: 32, borderRadius: 8, border: "none", background: TC.garden,
@@ -1635,6 +1880,11 @@ function StockTab(p) {
       </button>
       ) : null}
 
+      {editingVariant !== null ? (
+        <EditVariantModal t={t} category={cat} variant={editingVariant}
+          onSave={p.onEditVariant} onDelete={p.onDeleteVariant}
+          onClose={function () { setEditingVariant(null); }} />
+      ) : null}
       {addingFor !== null ? (
         <AddStockModal t={t} category={cat} variant={addingFor} canSupplier={p.canSupplier} suppliers={p.suppliers} onAddSupplier={p.onAddSupplier}
           onClose={function () { setAddingFor(null); }}
@@ -2307,6 +2557,12 @@ function ReportsTab(p) {
         </div>
       </SettingsBlock>
 
+      {role === "admin" && p.onSaveCatNames ? (
+        <SettingsBlock icon={<Ico name="pkg" size={16} color={TC.cream} />} title={t("catNamesTitle")}>
+          <CatNamesSetter t={t} names={p.catNames} onSave={p.onSaveCatNames} />
+        </SettingsBlock>
+      ) : null}
+
       {window.RB_LOCK_ROLE ? null : (
       <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("role")}>
         <div style={{ display: "flex", gap: 8 }}>
@@ -2324,7 +2580,7 @@ function ReportsTab(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
+      {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanTabSale")} checked={permissions.tabSale !== false} onChange={function (v) { onTogglePermission("tabSale", v); }} /> <PermissionCheckRow label={t("userCanTabBills")} checked={permissions.tabBills !== false} onChange={function (v) { onTogglePermission("tabBills", v); }} /> <PermissionCheckRow label={t("userCanTabGatePass")} checked={permissions.tabGatePass !== false} onChange={function (v) { onTogglePermission("tabGatePass", v); }} /> <PermissionCheckRow label={t("userCanTabDues")} checked={permissions.tabDues !== false} onChange={function (v) { onTogglePermission("tabDues", v); }} /> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
