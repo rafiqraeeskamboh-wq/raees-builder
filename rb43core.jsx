@@ -287,6 +287,46 @@ var TRANSLATIONS = {
   };
   Object.keys(EN3).forEach(function (k) { TRANSLATIONS.en[k] = EN3[k]; });
   Object.keys(UR3).forEach(function (k) { TRANSLATIONS.ur[k] = UR3[k]; });
+  var EN4 = {
+    userCanTabSale: "New Sale", userCanTabBills: "Bills", userCanTabGatePass: "Gate Pass", userCanTabDues: "Dues",
+    settleLabour: "Hisab saaf karein", settleHint: "Is banday ka mojooda hisab band ho jayega aur naya khata sifar se shuru hoga. Purani entries record mein rahengi.",
+    settleDone: "Hisab saaf ho gaya \u2014 naya khata shuru", lastSettled: "Pichla hisab saaf", settledTag: "Saaf shuda",
+    settleNothing: "Is waqt koi hisab baqi nahi", oldLedger: "Purana hisab",
+    supplierSummary: "Supplier ka khulasa", supAllBuy: "Kul kharid", supAllPaid: "Kul adaigi", supAllDues: "Kul baqi"
+  };
+  var UR4 = {
+    userCanTabSale: "\u0646\u0626\u06cc \u0633\u06cc\u0644", userCanTabBills: "\u0628\u0644", userCanTabGatePass: "\u06af\u06cc\u0679 \u067e\u0627\u0633", userCanTabDues: "\u0688\u06cc\u0648\u0632",
+    settleLabour: "\u062d\u0633\u0627\u0628 \u0635\u0627\u0641 \u06a9\u0631\u06cc\u06ba", settleHint: "\u0627\u0633 \u0628\u0646\u062f\u06d2 \u06a9\u0627 \u0645\u0648\u062c\u0648\u062f\u06c1 \u062d\u0633\u0627\u0628 \u0628\u0646\u062f \u06c1\u0648 \u062c\u0627\u0626\u06d2 \u06af\u0627 \u0627\u0648\u0631 \u0646\u06cc\u0627 \u06a9\u06be\u0627\u062a\u06c1 \u0635\u0641\u0631 \u0633\u06d2 \u0634\u0631\u0648\u0639 \u06c1\u0648 \u06af\u0627\u06d4 \u067e\u0631\u0627\u0646\u06cc \u0627\u0646\u062f\u0631\u0627\u062c\u0627\u062a \u0631\u06cc\u06a9\u0627\u0631\u0688 \u0645\u06cc\u06ba \u0631\u06c1\u06cc\u06ba \u06af\u06cc\u06d4",
+    settleDone: "\u062d\u0633\u0627\u0628 \u0635\u0627\u0641 \u06c1\u0648 \u06af\u06cc\u0627 \u2014 \u0646\u06cc\u0627 \u06a9\u06be\u0627\u062a\u06c1 \u0634\u0631\u0648\u0639", lastSettled: "\u067e\u0686\u06be\u0644\u0627 \u062d\u0633\u0627\u0628 \u0635\u0627\u0641", settledTag: "\u0635\u0627\u0641 \u0634\u062f\u06c1",
+    settleNothing: "\u0627\u0633 \u0648\u0642\u062a \u06a9\u0648\u0626\u06cc \u062d\u0633\u0627\u0628 \u0628\u0627\u0642\u06cc \u0646\u06c1\u06cc\u06ba", oldLedger: "\u067e\u0631\u0627\u0646\u0627 \u062d\u0633\u0627\u0628",
+    supplierSummary: "\u0633\u067e\u0644\u0627\u0626\u0631 \u06a9\u0627 \u062e\u0644\u0627\u0635\u06c1", supAllBuy: "\u06a9\u0644 \u062e\u0631\u06cc\u062f", supAllPaid: "\u06a9\u0644 \u0627\u062f\u0627\u0626\u06cc\u06af\u06cc", supAllDues: "\u06a9\u0644 \u0628\u0627\u0642\u06cc"
+  };
+  Object.keys(EN4).forEach(function (k) { TRANSLATIONS.en[k] = EN4[k]; });
+  Object.keys(UR4).forEach(function (k) { TRANSLATIONS.ur[k] = UR4[k]; });
+  var EN5 = {
+    saveImage: "Tasveer save karein",
+    imageSaved: "Tasveer download ho gayi \u2014 ab WhatsApp mein attach kar dein",
+    shareFail2: "Tasveer nahi ban saki \u2014 ek dafa internet ke sath app kholein, phir dobara koshish karein"
+  };
+  var UR5 = {
+    saveImage: "\u062a\u0635\u0648\u06cc\u0631 \u0645\u062d\u0641\u0648\u0638 \u06a9\u0631\u06cc\u06ba",
+    imageSaved: "\u062a\u0635\u0648\u06cc\u0631 \u0688\u0627\u0624\u0646 \u0644\u0648\u0688 \u06c1\u0648 \u06af\u0626\u06cc \u2014 \u0627\u0628 \u0648\u0627\u0679\u0633 \u0627\u06cc\u067e \u0645\u06cc\u06ba \u0644\u06af\u0627 \u062f\u06cc\u06ba",
+    shareFail2: "\u062a\u0635\u0648\u06cc\u0631 \u0646\u06c1\u06cc\u06ba \u0628\u0646 \u0633\u06a9\u06cc \u2014 \u0627\u06cc\u06a9 \u062f\u0641\u0639\u06c1 \u0627\u0646\u0679\u0631\u0646\u06cc\u0679 \u06a9\u06d2 \u0633\u0627\u062a\u06be \u0627\u06cc\u067e \u06a9\u06be\u0648\u0644\u06cc\u06ba\u060c \u067e\u06be\u0631 \u062f\u0648\u0628\u0627\u0631\u06c1 \u06a9\u0648\u0634\u0634 \u06a9\u0631\u06cc\u06ba"
+  };
+  Object.keys(EN5).forEach(function (k) { TRANSLATIONS.en[k] = EN5[k]; });
+  Object.keys(UR5).forEach(function (k) { TRANSLATIONS.ur[k] = UR5[k]; });
+  var EN6 = {
+    khataOpen: "Khata bhejein / print karein", khataTitle: "Mazdoori ka khata",
+    khataShare: "WhatsApp par khata bhejein", khataDetail: "Tafseel", khataAmount: "Raqam",
+    khataAdvance: "Advance", khataNoRows: "Koi entry nahi"
+  };
+  var UR6 = {
+    khataOpen: "\u06a9\u06be\u0627\u062a\u06c1 \u0628\u06be\u06cc\u062c\u06cc\u06ba / \u067e\u0631\u0646\u0679 \u06a9\u0631\u06cc\u06ba", khataTitle: "\u0645\u0632\u062f\u0648\u0631\u06cc \u06a9\u0627 \u06a9\u06be\u0627\u062a\u06c1",
+    khataShare: "\u0648\u0627\u0679\u0633 \u0627\u06cc\u067e \u067e\u0631 \u06a9\u06be\u0627\u062a\u06c1 \u0628\u06be\u06cc\u062c\u06cc\u06ba", khataDetail: "\u062a\u0641\u0635\u06cc\u0644", khataAmount: "\u0631\u0642\u0645",
+    khataAdvance: "\u0627\u06cc\u0688\u0648\u0627\u0646\u0633", khataNoRows: "\u06a9\u0648\u0626\u06cc \u0627\u0646\u062f\u0631\u0627\u062c \u0646\u06c1\u06cc\u06ba"
+  };
+  Object.keys(EN6).forEach(function (k) { TRANSLATIONS.en[k] = EN6[k]; });
+  Object.keys(UR6).forEach(function (k) { TRANSLATIONS.ur[k] = UR6[k]; });
 })();
 
 function getRangeBounds(preset) {
@@ -311,7 +351,7 @@ var DEFAULT_MATERIALS = [
 ];
 function rbMaterialOf(x) { return (x && x.material) ? x.material : "cement"; }
 function rbQtyOf(x) { return Number((x && (x.qty !== undefined && x.qty !== null ? x.qty : x.bags)) || 0); }
-var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, labour: false, reports: false, wastage: false, editSale: false, gatePass: true, billsSummary: false }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
+var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, labour: false, reports: false, wastage: false, editSale: false, gatePass: true, billsSummary: false, tabSale: true, tabBills: true, tabGatePass: true, tabDues: true }; /* Stock tab har role ko dikhta hai (User bhi) */ var ALWAYS_ALLOWED = { stock: true }; function hasPerm(role, permissions, feature) { if (role === "admin") return true; if (ALWAYS_ALLOWED[feature]) return true; var p = permissions || DEFAULT_PERMISSIONS; return !!p[feature]; }
 /* ---- gate pass vs bill check: gate pass mein bill se ziada maal to nahi ja raha ---- */
 function rbItemKey(it) { return String(it.category || "") + "|" + String(it.variant || ""); }
 function gpExtraOverBill(sale, gp) {
@@ -378,7 +418,7 @@ var ICON_PATHS = {
 };
 
 /* bill/gate pass ko tasveer bana kar WhatsApp (ya kisi bhi app) par bhejna */
-function rbShareNode(node, filename, text, phone, onNote) {
+function rbShareNode(node, filename, text, phone, onNote, onlySave) {
   if (!node) return;
   if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
   if (onNote) onNote("busy");
@@ -387,7 +427,7 @@ function rbShareNode(node, filename, text, phone, onNote) {
       if (!blob) { if (onNote) onNote("fail"); return; }
       var file = null;
       try { file = new File([blob], filename, { type: "image/png" }); } catch (e) { file = null; }
-      if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+      if (!onlySave && file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
         navigator.share({ files: [file], text: text || "" }).catch(function () {});
         return;
       }
@@ -396,9 +436,15 @@ function rbShareNode(node, filename, text, phone, onNote) {
       a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
-      window.open(rbWa(phone, text), "_blank");
+      if (onNote) onNote("saved");
+      if (!onlySave) window.open(rbWa(phone, text), "_blank");
     }, "image/png");
   }).catch(function () { if (onNote) onNote("fail"); });
+}
+
+/* sirf tasveer save karni ho (WhatsApp khole baghair) */
+function rbSaveNode(node, filename, onNote) {
+  rbShareNode(node, filename, "", "", onNote, true);
 }
 
 function Ico(p) {
@@ -555,17 +601,18 @@ function AppHeader(p) {
 
 function TabBar(p) {
   var t = p.t, tab = p.tab, setTab = p.setTab, role = p.role, duesCount = p.duesCount, permissions = p.permissions;
-  var tabs = [{ id: "sale", label: t("navSale"), icon: "receipt" }];
-  tabs.push({ id: "bills", label: t("navBills"), icon: "history" });
+  var tabs = [];
+  if (hasPerm(role, permissions, "tabSale")) { tabs.push({ id: "sale", label: t("navSale"), icon: "receipt" }); }
+  if (hasPerm(role, permissions, "tabBills")) { tabs.push({ id: "bills", label: t("navBills"), icon: "history" }); }
   if (hasPerm(role, permissions, "stock")) {
     tabs.push({ id: "stock", label: t("navStock"), icon: "pkg" });
     } if (hasPerm(role, permissions, "wastage")) { tabs.push({ id: "wastage", label: t("navWastage"), icon: "trash" });
   }
   if (hasPerm(role, permissions, "supplier")) { tabs.push({ id: "supplier", label: t("navSupplier"), icon: "usercog" }); }
   if (hasPerm(role, permissions, "labour")) { tabs.push({ id: "labour", label: t("navLabour"), icon: "users" }); }
-  tabs.push({ id: "gatepass", label: t("navGatePass"), icon: "truck" });
+  if (hasPerm(role, permissions, "tabGatePass")) { tabs.push({ id: "gatepass", label: t("navGatePass"), icon: "truck" }); }
   if (hasPerm(role, permissions, "reports")) { tabs.push({ id: "book", label: t("navBook"), icon: "grid" }); }
-  tabs.push({ id: "dues", label: t("navDues"), icon: "wallet", badge: duesCount });
+  if (hasPerm(role, permissions, "tabDues")) { tabs.push({ id: "dues", label: t("navDues"), icon: "wallet", badge: duesCount }); }
   tabs.push({ id: "settings", label: t("navSettings"), icon: "gear" });
   return (
     <div className="no-print rb-nav" style={{
