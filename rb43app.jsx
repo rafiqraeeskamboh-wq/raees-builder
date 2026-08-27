@@ -1,6 +1,7 @@
 /* Raees Builder App v2 - bill / gate pass / receipt modals + app shell */
 
 function BillModal(p) {
+  var showToast = p.showToast || function () {};
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass, gatePassEntry = p.gatePassEntry;
   var shotRef = React.useRef(null);
   var isPaid = (sale.dues || 0) <= 0;
@@ -58,12 +59,20 @@ function BillModal(p) {
           </a>
         ) : null}
 
-        <button onClick={function () { rbShareNode(shotRef.current, "bill.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+        <button onClick={function () { rbShareNode(shotRef.current, "bill.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
           width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
           background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
         }}>
           <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <button onClick={function () { rbSaveNode(shotRef.current, "bill.png", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.concrete,
+          background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="printer" size={14} /> {t("saveImage")}
         </button>
 
         <div className="print-area" ref={shotRef}>
@@ -346,6 +355,7 @@ function GatePassBuilderModal(p) {
 }
 
 function GatePassModal(p) {
+  var showToast = p.showToast || function () {};
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;
   var shotRef = React.useRef(null);
   var canEdit = hasPerm(role, permissions, "gatePass") && !!onEdit;
@@ -381,12 +391,20 @@ function GatePassModal(p) {
           </a>
         ) : null}
 
-        <button onClick={function () { rbShareNode(shotRef.current, "gate-pass.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+        <button onClick={function () { rbShareNode(shotRef.current, "gate-pass.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
           width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
           background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
         }}>
           <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <button onClick={function () { rbSaveNode(shotRef.current, "gate-pass.png", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.concrete,
+          background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="printer" size={14} /> {t("saveImage")}
         </button>
 
         <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 20, position: "relative" }}>
@@ -449,6 +467,7 @@ function ReceiptLine(p) {
 }
 
 function PaymentReceiptModal(p) {
+  var showToast = p.showToast || function () {};
   var shotRef = React.useRef(null);
   var t = p.t, data = p.data, onClose = p.onClose;
   var sale = data.sale, amount = data.amount, date = data.date;
@@ -464,12 +483,20 @@ function PaymentReceiptModal(p) {
             <Ico name="printer" size={14} /> {t("print")}
           </button>
         </div>
-        <button onClick={function () { rbShareNode(shotRef.current, "receipt.png", t("appName"), (p.data && p.data.mobile) || "", function (k) { showToast(k === "busy" ? t("shareBusy") : t("shareFail")); }); }} className="no-print" style={{
+        <button onClick={function () { rbShareNode(shotRef.current, "receipt.png", t("appName"), (p.data && p.data.mobile) || "", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
           width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
           background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
         }}>
           <Ico name="chat" size={15} /> {t("whatsappImage")}
+        </button>
+
+        <button onClick={function () { rbSaveNode(shotRef.current, "receipt.png", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
+          width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.concrete,
+          background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
+        }}>
+          <Ico name="printer" size={14} /> {t("saveImage")}
         </button>
 
         <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 22, position: "relative" }}>
@@ -626,6 +653,19 @@ function RaeesBuilderApp() {
   }
   function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
+  /* agar mojooda tab ki ijazat na ho to pehle jaiz tab par le jayein */
+  var TAB_PERMS = { sale: "tabSale", bills: "tabBills", gatepass: "tabGatePass", dues: "tabDues", stock: "stock", wastage: "wastage", supplier: "supplier", labour: "labour", book: "reports" };
+  React.useEffect(function () {
+    var need = TAB_PERMS[tab];
+    if (need && !hasPerm(role, permissions, need)) {
+      var order = ["sale", "bills", "stock", "gatepass", "dues", "supplier", "labour", "book", "wastage", "settings"];
+      for (var i = 0; i < order.length; i++) {
+        var nx = order[i], np = TAB_PERMS[nx];
+        if (!np || hasPerm(role, permissions, np)) { setTab(nx); return; }
+      }
+      setTab("settings");
+    }
+  }, [tab, role, permissions]);
   var cpo = React.useState(false), cementPromptOpen = cpo[0], setCementPromptOpen = cpo[1];
   var cnz = React.useState(0), cementSnooze = cnz[0], setCementSnooze = cnz[1];
   var cnt = React.useState(null), cementNextTab = cnt[0], setCementNextTab = cnt[1];
@@ -874,8 +914,13 @@ function RaeesBuilderApp() {
     var lb = null; labourers.forEach(function (x) { if (x.id === labourerId) lb = x; });
     var openAmt = lb ? Math.max(0, Number(lb.opening) || 0) : 0;
     var opening = (lb && lb.openingDir === "adv") ? -openAmt : openAmt;
-    var works = labourWork.filter(function (x) { return x.labourerId === labourerId; });
-    var pays = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
+    /* hisab saaf hone ke baad purani entries khate se bahar, magar record mein mehfooz */
+    var allWorks = labourWork.filter(function (x) { return x.labourerId === labourerId; });
+    var allPays = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
+    var works = allWorks.filter(function (x) { return !x.settledAt; });
+    var pays = allPays.filter(function (x) { return !x.settledAt; });
+    var oldWorks = allWorks.filter(function (x) { return !!x.settledAt; });
+    var oldPays = allPays.filter(function (x) { return !!x.settledAt; });
     var work = works.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     var paid = pays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     var byKind = {};
@@ -884,7 +929,9 @@ function RaeesBuilderApp() {
       byKind[x.kind].qty += Number(x.qty) || 0;
       byKind[x.kind].amount += Number(x.amount) || 0;
     });
-    return { opening: opening, openingDate: lb ? lb.openingDate : null, work: work, paid: paid, dues: opening + work - paid, works: works, payments: pays, byKind: byKind };
+    return { opening: opening, openingDate: lb ? lb.openingDate : null, work: work, paid: paid, dues: opening + work - paid,
+      works: works, payments: pays, byKind: byKind,
+      oldWorks: oldWorks, oldPayments: oldPays, lastSettled: (lb && lb.lastSettled) || null };
   }
 
   function addLabourer(name, mobile, opening, openingDir, openingDate, kinds) {
@@ -1453,6 +1500,26 @@ function editStockEntry(id, qty, date) {
     showToast(t("sizeDeleted"));
   }
 
+  /* banday ka hisab saaf: purani entries band, naya khata sifar se */
+  function settleLabour(labourerId, date) {
+    if (role !== "admin") return;
+    var tot = labourTotals(labourerId);
+    if (!(tot.work > 0 || tot.paid > 0 || tot.opening !== 0)) { showToast(t("settleNothing")); return; }
+    var d = date || rbToday();
+    var mark = function (x) { return (x.labourerId === labourerId && !x.settledAt) ? Object.assign({}, x, { settledAt: d }) : x; };
+    setLabourWork(function (a) { return a.map(mark); });
+    setLabourPayments(function (a) { return a.map(mark); });
+    setLabourers(function (a) {
+      return a.map(function (x) {
+        return x.id === labourerId
+          ? Object.assign({}, x, { opening: 0, openingDir: "due", openingDate: d, lastSettled: { date: d, amount: tot.dues } })
+          : x;
+      });
+    });
+    showToast(t("settleDone"));
+    logActivity("labour_settled", (function () { var nm = ""; labourers.forEach(function (y) { if (y.id === labourerId) nm = y.name; }); return nm + " \u2014 Rs " + rbMoney(tot.dues); })());
+  }
+
   function saveCatNames(gName, sName) {
     if (role !== "admin") return;
     setCatNames({ garden: String(gName || "").trim(), slab: String(sName || "").trim() });
@@ -1620,12 +1687,12 @@ function editStockEntry(id, qty, date) {
       onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} />
       : <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "labour") {
-    body = can("labour") ? <LabourTab t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
+    body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
       onAddLabourer={addLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
       onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry}
       labourConfig={labourConfig} onSaveConfig={saveLabourConfig} onSetKinds={setLabourerKinds}
       pendingItems={labourPendingItems} onPostPending={postPendingLabour} onSkipPending={skipPendingLabour}
-      onEditWork={editLabourWork} onVerifyWork={verifyLabourWork} onVerifyAll={verifyAllLabour} />
+      onEditWork={editLabourWork} onVerifyWork={verifyLabourWork} onVerifyAll={verifyAllLabour} onSettle={settleLabour} />
       : <EmptyState icon={<Ico name="users" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "gatepass") {
     body = <GatePassTab t={t} gatePasses={gatePasses} onOpen={function (g) {
@@ -1678,7 +1745,7 @@ function editStockEntry(id, qty, date) {
       ) : null}
 
       {viewingBill ? (
-        <BillModal t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} onClose={function () { setViewingBill(null); }}
+        <BillModal showToast={showToast} t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} onClose={function () { setViewingBill(null); }}
           onEdit={startEditSale}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
           gatePassEntry={(function () { var found = null; gatePasses.forEach(function (g) { if (g.saleId === viewingBill.id) found = g; }); return found; })()}
@@ -1706,13 +1773,13 @@ function editStockEntry(id, qty, date) {
       ) : null}
 
       {viewingGatePass ? (
-        <GatePassModal t={t} lang={lang} role={role} permissions={permissions} sale={viewingGatePass.sale} items={viewingGatePass.items} entry={viewingGatePass.entry}
+        <GatePassModal showToast={showToast} t={t} lang={lang} role={role} permissions={permissions} sale={viewingGatePass.sale} items={viewingGatePass.items} entry={viewingGatePass.entry}
           onClose={function () { setViewingGatePass(null); }}
           onEdit={viewingGatePass.entry ? function () { setGatePassEditTarget(viewingGatePass.entry); setViewingGatePass(null); } : undefined} />
       ) : null}
 
       {viewingReceipt ? (
-        <PaymentReceiptModal t={t} lang={lang} data={viewingReceipt} by={role} onClose={function () { setViewingReceipt(null); }} />
+        <PaymentReceiptModal showToast={showToast} t={t} lang={lang} data={viewingReceipt} by={role} onClose={function () { setViewingReceipt(null); }} />
       ) : null}
 
       {toast ? (
