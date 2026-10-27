@@ -1473,6 +1473,26 @@ function LabourKhataModal(p) {
   );
 }
 
+function RbLabourerRename(p) {
+  var lb = p.lb;
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState(lb.name || ""), nm = b[0], setNm = b[1];
+  var c = React.useState(lb.mobile || ""), mob = c[0], setMob = c[1];
+  React.useEffect(function () { setNm(lb.name || ""); setMob(lb.mobile || ""); setOpen(false); }, [lb.id]);
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 };
+  if (!open) return <button onClick={function () { setNm(lb.name || ""); setMob(lb.mobile || ""); setOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "9px", borderRadius: 8, border: "1.5px dashed #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Naam / mobile edit karein</button>;
+  return (
+    <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+      <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Naam edit karein</div>
+      <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder="Naam" style={inp} />
+      <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="Mobile" style={inp} />
+      <div style={{ display: "flex", gap: 6 }}>
+        <button onClick={function () { setOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Cancel</button>
+        <button disabled={!nm.trim()} onClick={function () { p.onSave(lb.id, nm, mob); setOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Save</button>
+      </div>
+    </div>
+  );
+}
 function LabourTab(p) {
   var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
   var pendingItems = p.pendingItems || [];
@@ -1515,6 +1535,7 @@ function LabourTab(p) {
     return (
       <InlineShell title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("labourers")}</button>
+        {p.isAdmin && p.onRenameLabourer ? <RbLabourerRename lb={current} onSave={p.onRenameLabourer} /> : null}
         <button onClick={function () { setKhataOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "10px", borderRadius: 8, border: "none", background: "#128C7E", color: "#FFFFFF", fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
           <Ico name="chat" size={14} /> {t("khataOpen")}
         </button>
