@@ -2537,8 +2537,8 @@ function DayBookReport(p) {
   (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: x.note || "Supplier Payment", amt: num(x.amount) }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
-      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer", vno: "", amt: num(x.amount) });
-      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer", amt: num(x.amount) });
+      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount) });
+      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount) });
       return;
     }
     if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha", amt: num(x.amount) });
@@ -2577,7 +2577,7 @@ function DayBookReport(p) {
     <div>
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
       <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
-        <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")}</div>
+        <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")} - {rbStoreName()}</div>
         <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book</div>
         <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book === "admin" ? "Bara Cash (Admin)" : "Parchoon Cash (User)"}</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
@@ -2633,6 +2633,7 @@ function ReportsTab(p) {
   var isAdmin = p.role !== "accountant";
   var bk = React.useState(isAdmin ? "admin" : "accountant"), book = isAdmin ? bk[0] : "accountant", setBook = bk[1];
   var tf1 = React.useState(""), tfAmt = tf1[0], setTfAmt = tf1[1];
+  var tf2 = React.useState(""), tfName = tf2[0], setTfName = tf2[1];
   function inR(d) { return inDateRange(d, r.from, r.to); }
   var supName = {};
   (p.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
@@ -2692,10 +2693,11 @@ function ReportsTab(p) {
       ) : null}
       {p.onCashTransfer ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{isAdmin ? "User ko cash dein" : "Admin ko cash dein"}</div>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{book === "accountant" ? "Parchoon Cash se Admin ko cash dein" : "Bara Cash se User ko cash dein"}</div>
           <div style={{ display: "flex", gap: 6 }}>
+            <input value={tfName} onChange={function (ev) { setTfName(ev.target.value); }} placeholder={book === "accountant" ? "Admin ka naam" : "User ka naam"} style={{ flex: 1.3, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
             <input type="number" inputMode="numeric" value={tfAmt} onChange={function (ev) { setTfAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
-            <button disabled={!(Number(tfAmt) > 0)} onClick={function () { if (window.confirm("Rs " + rbMoney(tfAmt) + (isAdmin ? " User ko diye?" : " Admin ko diye?"))) { p.onCashTransfer(tfAmt, rbToday()); setTfAmt(""); } }} style={{ padding: "9px 14px", borderRadius: 7, border: "none", background: Number(tfAmt) > 0 ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: Number(tfAmt) > 0 ? "pointer" : "not-allowed" }}>Cash dein</button>
+            <button disabled={!(Number(tfAmt) > 0)} onClick={function () { if (window.confirm("Rs " + rbMoney(tfAmt) + (book === "accountant" ? " Admin" : " User") + (tfName.trim() ? " (" + tfName.trim() + ")" : "") + " ko diye?")) { p.onCashTransfer(tfAmt, rbToday(), book === "accountant" ? "admin" : "accountant", tfName); setTfAmt(""); setTfName(""); } }} style={{ padding: "9px 14px", borderRadius: 7, border: "none", background: Number(tfAmt) > 0 ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: Number(tfAmt) > 0 ? "pointer" : "not-allowed" }}>Cash dein</button>
           </div>
         </div>
       ) : null}
