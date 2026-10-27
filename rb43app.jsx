@@ -898,6 +898,16 @@ function RaeesBuilderApp() {
     logActivity("expense_added", d + " — Rs " + rbMoney(amt));
   }
 
+  function addCashTransfer(amount, date) {
+    var amt = Number(amount) || 0;
+    if (amt <= 0) return;
+    var to = role === "admin" ? "accountant" : "admin";
+    var entry = { id: rbUid(), detail: role === "admin" ? "User ko cash diya" : "Admin ko cash diya", amount: amt, date: date || rbToday(), by: role, transfer: true, from: role, to: to, createdAt: new Date().toISOString() };
+    setExpenses(function (a) { return [entry].concat(a); });
+    showToast("Cash transfer: Rs " + rbMoney(amt));
+    logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
+  }
+
   function addSupplierPayment(supplierId, amount, date) {
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
@@ -1577,7 +1587,7 @@ function editStockEntry(id, qty, date) {
       return;
     }
     var serial = wantSerial > 0 ? wantSerial : nextSerial;
-    var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date }] : [];
+    var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date, by: role }] : [];
     var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdAt: new Date().toISOString() });
     /* paimaishi bill ki chhat fitting mazdoori khud-ba-khud, bill ke kul sq ft par */
     if (full.type === "customized" && !full.isOpening) {
@@ -1702,7 +1712,7 @@ function editStockEntry(id, qty, date) {
     body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={purchases} supplierPayments={supplierPayments}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
-      canAddExpense={role === "admin"} onAddExpense={addExpense} />
+      canAddExpense={role === "admin"} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
