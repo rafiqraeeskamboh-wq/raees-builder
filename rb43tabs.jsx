@@ -2459,6 +2459,163 @@ function NextSerialSetter(p) {
     </div>
   );
 }
+/* ---- Day Book Report (classic format) ---- */
+var DB_MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+function dbDateLabel(d) {
+  var m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(d || "");
+  return m[3] + "-" + DB_MON[Number(m[2]) - 1] + "-" + m[1].slice(2);
+}
+var DB_C = { red: "#C0262D", blue: "#2A4FC9", head: "#9CC3EA", line: "#555", ink: "#111" };
+var dbCell = { border: "1px solid " + DB_C.line, padding: "4px 6px", fontSize: 11.5, color: DB_C.ink, verticalAlign: "top" };
+function DbSection(p) {
+  var cols = p.cols, rows = p.rows, total = p.total;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", border: "1px solid " + DB_C.line, borderBottom: "none" }}>
+        <div style={{ flex: 1, padding: "4px 6px", fontSize: 12, fontWeight: 700, color: DB_C.red }}>{p.title}</div>
+        <div style={{ width: 46, borderLeft: "1px solid " + DB_C.line, padding: "4px 6px", fontSize: 11, fontWeight: 700, color: DB_C.blue, textAlign: "center" }}>{p.tag}</div>
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+        <thead>
+          <tr>
+            {cols.map(function (c, i) {
+              return <th key={i} style={Object.assign({}, dbCell, { background: DB_C.head, fontWeight: 700, textAlign: c.right ? "right" : "left", width: c.w || "auto" })}>{c.label}</th>;
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={cols.length} style={Object.assign({}, dbCell, { textAlign: "center", color: "#888" })}>-</td></tr>
+          ) : rows.map(function (r, ri) {
+            return (
+              <tr key={ri}>
+                {r.map(function (v, ci) {
+                  return <td key={ci} style={Object.assign({}, dbCell, { textAlign: cols[ci].right ? "right" : "left", wordBreak: "break-word" })}>{v}</td>;
+                })}
+              </tr>
+            );
+          })}
+          <tr>
+            <td colSpan={cols.length - 1} style={Object.assign({}, dbCell, { textAlign: "right", fontWeight: 700 })}>Sub Total:</td>
+            <td style={Object.assign({}, dbCell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(total)}</td>
+          </tr>
+          <tr>
+            <td colSpan={cols.length - 1} style={Object.assign({}, dbCell, { textAlign: "right", fontWeight: 700, color: DB_C.blue })}>Grand Total:</td>
+            <td style={Object.assign({}, dbCell, { textAlign: "right", fontWeight: 700, color: DB_C.blue })}>{rbMoney(total)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function DbSumRow(p) {
+  return (
+    <tr>
+      <td style={{ padding: "5px 6px", fontSize: 12, fontWeight: 700, color: p.color || DB_C.ink, borderBottom: "1px solid " + DB_C.line, borderRight: "1px solid " + DB_C.line }}>{p.label}</td>
+      <td style={{ padding: "5px 6px", fontSize: 12, fontWeight: 700, color: p.color || DB_C.ink, borderBottom: "1px solid " + DB_C.line, textAlign: "right", width: "40%" }}>{p.value}</td>
+    </tr>
+  );
+}
+function DayBookReport(p) {
+  var all = p.all, r = p.range;
+  function before(d) { return r.from ? String(d || "") < r.from : false; }
+  function inR(d) { return inDateRange(d, r.from, r.to); }
+  function byDate(m, n) { return String(m.date || "").localeCompare(String(n.date || "")); }
+  var num = function (v) { return Number(v) || 0; };
+  var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
+  var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
+
+  /* cash opening = all cash in minus all cash out before the start date */
+  var opening = 0;
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (before(pay.date)) opening += num(pay.amount); }); });
+  (all.supplierPayments || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
+  (all.expenses || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
+  (all.labourPayments || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
+
+  var rec = [];
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (inR(pay.date)) rec.push({ date: pay.date, title: s.customerName || "-", part: "Cash Received", vno: s.serial, amt: num(pay.amount) }); }); });
+  rec.sort(byDate);
+  var out = [];
+  (all.supplierPayments || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: supName[x.supplierId] || "-", part: x.note || "Supplier Payment", amt: num(x.amount) }); });
+  (all.expenses || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: x.detail || "-", part: "Kharcha", amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance", amt: num(x.amount) }); });
+  out.sort(byDate);
+  var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date); }).sort(byDate);
+  var cp = (all.purchases || []).filter(function (x) { return inR(x.date); }).sort(byDate);
+
+  var recT = rec.reduce(function (n, x) { return n + x.amt; }, 0);
+  var outT = out.reduce(function (n, x) { return n + x.amt; }, 0);
+  var csT = cs.reduce(function (n, x) { return n + num(x.totalBill); }, 0);
+  var cpT = cp.reduce(function (n, x) { return n + num(x.amount); }, 0);
+  var income = opening + recT;
+  var closing = income - outT;
+  var multi = !r.from || r.from !== r.to;
+  var dated = !r.from && !r.to ? "All Dates" : (multi ? dbDateLabel(r.from) + "  to  " + dbDateLabel(r.to || rbToday()) : dbDateLabel(r.from));
+  var showDate = multi;
+
+  function printIt() {
+    var el = document.getElementById("rb-daybook");
+    if (!el) return;
+    var w = window.open("", "_blank");
+    if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Day Book Report</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close();
+    w.focus();
+    setTimeout(function () { w.print(); }, 400);
+  }
+
+  var dCol = showDate ? [{ label: "Date", w: "16%" }] : [];
+  function dCell(x) { return showDate ? [rbDate(x.date)] : []; }
+
+  return (
+    <div>
+      <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
+      <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")}</div>
+        <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book Report</div>
+        <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
+          <span style={{ minWidth: 110, border: "1px solid " + DB_C.line, padding: "4px 8px", textAlign: "right", fontSize: 13, fontWeight: 700, color: DB_C.red }}>{rbMoney(opening)}</span>
+        </div>
+
+        <DbSection title="Cash Received / Recovery" tag="RV" total={recT}
+          cols={dCol.concat([{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "V.No", w: "14%" }, { label: "Amount", w: "22%", right: true }])}
+          rows={rec.map(function (x) { return dCell(x).concat([x.title, x.part, x.vno ? "#" + x.vno : "-", rbMoney(x.amt)]); })} />
+
+        <DbSection title="Payments / Expenses" tag="PV" total={outT}
+          cols={dCol.concat([{ label: "Title of Account", w: showDate ? "34%" : "40%" }, { label: "Particular" }, { label: "Amount", w: "24%", right: true }])}
+          rows={out.map(function (x) { return dCell(x).concat([x.title, x.part, rbMoney(x.amt)]); })} />
+
+        <DbSection title="Credit Sale / Return" tag="SI" total={csT}
+          cols={dCol.concat([{ label: "Inv No", w: "16%" }, { label: "Customer Name" }, { label: "Amount", w: "26%", right: true }])}
+          rows={cs.map(function (x) { return dCell(x).concat([x.serial || "-", x.customerName || "-", rbMoney(x.totalBill)]); })} />
+
+        <DbSection title="Credit Purchase (Maal)" tag="PI" total={cpT}
+          cols={dCol.concat([{ label: "Supplier", w: "32%" }, { label: "Detail" }, { label: "Amount", w: "24%", right: true }])}
+          rows={cp.map(function (x) { return dCell(x).concat([supName[x.supplierId] || "-", (x.materialName || "Cement") + " " + rbQtyOf(x) + " " + (x.unit || ""), rbMoney(x.amount)]); })} />
+
+        <div style={{ margin: "18px auto 14px", width: "60%", border: "2px solid #222", textAlign: "center", padding: "6px 0", fontSize: 17, fontWeight: 700, color: DB_C.red, letterSpacing: 1 }}>SUMMARY</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
+          <tbody>
+            <DbSumRow label="Opening Balance" value={rbMoney(opening)} />
+            <DbSumRow label="Total Cash Received" value={rbMoney(recT)} />
+            <DbSumRow label="Total Income" value={rbMoney(income)} color={DB_C.blue} />
+          </tbody>
+        </table>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            <DbSumRow label="Payments/Expenses" value={rbMoney(outT)} />
+            <DbSumRow label="Total Expense" value={rbMoney(outT)} />
+            <DbSumRow label="Closing Balance" value={rbMoney(closing)} color={DB_C.red} />
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ReportsTab(p) {
   var t = p.t;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
@@ -2561,7 +2718,7 @@ function ReportsTab(p) {
         </div>
       ) : null}
 
-      {rows.length === 0 ? (
+      {view === "book" ? <DayBookReport t={t} range={r} all={p} /> : rows.length === 0 ? (
         <EmptyState icon={<Ico name="grid" size={28} color={TC.concrete} />} text={t("noEntriesRange")} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
