@@ -54,17 +54,24 @@ function rbWa(mobile, message) {
 }
 
 var RB2_PRE = "rb2:";
+/* do store: Himmat (purana data) aur Rangpur - har store ka data alag */
+var RB_STORES = [["himmat", "Himmat"], ["rangpur", "Rangpur"]];
+var RB_STORE = (function () { try { return localStorage.getItem("raees-store") === "rangpur" ? "rangpur" : "himmat"; } catch (e) { return "himmat"; } })();
+var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1 };
+function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
+function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
+function rbSwitchStore(st) { try { localStorage.setItem("raees-store", st); } catch (e) {} location.reload(); }
 /* per-login-session role marker (sessionStorage, not localStorage) - cleared when the
    browser tab / installed app is closed, so every fresh open re-asks for a PIN */
 var RB_SESSION_ROLE_KEY = "rb2-session-role";
 function rbGet(key, def) {
   try {
-    var r = localStorage.getItem(RB2_PRE + key);
+    var r = localStorage.getItem(rbKey(key));
     return r === null ? def : JSON.parse(r);
   } catch (e) { return def; }
 }
 function rbSet(key, val) {
-  try { localStorage.setItem(RB2_PRE + key, JSON.stringify(val)); return true; }
+  try { localStorage.setItem(rbKey(key), JSON.stringify(val)); return true; }
   catch (e) { return false; }
 }
 
@@ -588,6 +595,13 @@ function AppHeader(p) {
         <div>
           <div className="rb-display" style={{ color: TC.cream, fontSize: 21, fontWeight: 700 }}>{t("appName")}</div>
           <div className="rb-urdu" dir="rtl" style={{ color: "#D9A441", fontSize: 15, fontWeight: 500, lineHeight: 2, marginTop: 2, textAlign: "center" }}>{t("tagline")}</div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+            {RB_STORES.map(function (st) {
+              var on = RB_STORE === st[0];
+              if (!on && role !== "admin") return null;
+              return <button key={st[0]} onClick={function () { if (!on && window.confirm(st[1] + " store kholein?")) rbSwitchStore(st[0]); }} style={{ padding: "4px 12px", borderRadius: 14, border: "1.5px solid " + (on ? "#D9A441" : "#6B6656"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: on ? "default" : "pointer" }}>{st[1]} Store</button>;
+            })}
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
