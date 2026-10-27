@@ -1082,6 +1082,14 @@ function RaeesBuilderApp() {
     logActivity("labour_config", t(labourKind(kind).labelKey) + " \u2014 Rs " + rbMoney(rt));
   }
 
+  function renameLabourer(labourerId, name, mobile) {
+    var nm = String(name || "").trim();
+    if (!labourerId || !nm || role !== "admin") return;
+    setLabourers(function (a) { return a.map(function (x) { return x.id === labourerId ? Object.assign({}, x, { name: nm, mobile: String(mobile || "").trim() }) : x; }); });
+    showToast("Naam save ho gaya");
+    logActivity("labourer_edit", nm);
+  }
+
   function setLabourerKinds(labourerId, kinds) {
     setLabourers(function (a) {
       return a.map(function (x) { return x.id === labourerId ? Object.assign({}, x, { kinds: kinds || [] }) : x; });
@@ -1763,7 +1771,7 @@ function editStockEntry(id, qty, date) {
       : <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "labour") {
     body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
-      onAddLabourer={addLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
+      onAddLabourer={addLabourer} onRenameLabourer={renameLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
       onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry}
       labourConfig={labourConfig} onSaveConfig={saveLabourConfig} onSetKinds={setLabourerKinds}
       pendingItems={labourPendingItems} onPostPending={postPendingLabour} onSkipPending={skipPendingLabour}
