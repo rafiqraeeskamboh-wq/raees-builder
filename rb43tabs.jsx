@@ -3063,7 +3063,81 @@ function ReportsTab(p) {
     </div>
   );
 }
-  function SettingsTab(p) {
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "custom-variants", "activity-log"];
+function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
+function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
+function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function rbDownloadBackup(b) { try { var blob = new Blob([JSON.stringify(b)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "raees-backup-" + b.store + "-" + String(b.at).slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { window.alert("Download nahi ho saka"); } }
+function RbSuperDataTools(p) {
+  var a = React.useState(0), step = a[0], setStep = a[1];
+  var b = React.useState(""), pin1 = b[0], setPin1 = b[1];
+  var c = React.useState(""), pin2 = c[0], setPin2 = c[1];
+  var d = React.useState(""), msg = d[0], setMsg = d[1];
+  var e = React.useState(""), rpin = e[0], setRpin = e[1];
+  var f = React.useState(false), restoring = f[0], setRestoring = f[1];
+  var bk = rbGetLocalBackup();
+  function superPin() { return (rbGet("security", {}) || {}).superPin || ""; }
+  function reset() { setStep(0); setPin1(""); setPin2(""); }
+  function next1() { if (!pin1 || pin1 !== superPin()) { setMsg("Galat PIN"); setPin1(""); return; } setMsg(""); setStep(2); }
+  function doClear() {
+    if (!pin2 || pin2 !== superPin() || pin1 !== pin2) { setMsg("Doosri dafa PIN galat - data saaf nahi hua"); reset(); return; }
+    var backup = rbMakeBackup();
+    var ok = rbSaveLocalBackup(backup);
+    p.onClear(); reset();
+    setMsg(ok ? "Data saaf ho gaya. Is ka backup isi phone par mehfooz hai - neeche se wapas laa sakte hain." : "Data saaf ho gaya. (Backup save nahi ho saka)");
+  }
+  function restore(backup) {
+    if (!backup || !backup.data) { setMsg("Backup sahi nahi"); return; }
+    if (backup.store && backup.store !== RB_STORE) { setMsg("Ye backup " + (backup.store === "rangpur" ? "Rangpur" : "Himmat") + " store ka hai - pehle wo store kholein"); return; }
+    if (!window.confirm("Backup (" + rbDate(String(backup.at).slice(0, 10)) + ") ka data wapas layein? Abhi wala data us se badal jaye ga.")) return;
+    Object.keys(backup.data).forEach(function (k) { localStorage.setItem(rbKey(k), backup.data[k]); });
+    setRestoring(true); setMsg("Data wapas aa raha hai... thora intezar karein");
+    setTimeout(function () { location.reload(); }, 6000);
+  }
+  function restoreLocal() { if (rpin !== superPin()) { setMsg("Galat PIN"); setRpin(""); return; } setRpin(""); restore(bk); }
+  function restoreFile(ev) {
+    var file = ev.target.files && ev.target.files[0]; if (!file) return;
+    if (rpin !== superPin()) { setMsg("Pehle Super Admin PIN darj karein"); ev.target.value = ""; return; }
+    var rd = new FileReader();
+    rd.onload = function () { try { var obj = JSON.parse(rd.result); setRpin(""); restore(obj); } catch (x) { setMsg("File sahi nahi"); } };
+    rd.readAsText(file); ev.target.value = "";
+  }
+  var inp = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 16, letterSpacing: 4, textAlign: "center", marginBottom: 8 };
+  var red = { width: "100%", padding: "11px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontSize: 13, fontWeight: 700, cursor: "pointer" };
+  var ghost = { width: "100%", padding: "10px", borderRadius: 8, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12.5, fontWeight: 700, cursor: "pointer", marginTop: 6 };
+  return (
+    <div style={{ background: TC.appBg2, borderRadius: 8, padding: 12 }}>
+      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Data (sirf Super Admin) - {RB_STORE === "rangpur" ? "Rangpur" : "Himmat"} Store</div>
+      {step === 0 ? <button onClick={function () { setMsg(""); setStep(1); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "1.5px solid " + TC.stamp, background: "transparent", color: TC.stamp, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear all data</button> : null}
+      {step === 1 ? (
+        <div style={{ background: "#3A2A22", borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 8 }}>Super Admin PIN darj karein (1/2)</div>
+          <input type="password" inputMode="numeric" maxLength={6} value={pin1} onChange={function (ev) { setPin1(ev.target.value.replace(/\D/g, "")); }} style={inp} />
+          <button onClick={next1} style={red}>Aage</button>
+          <button onClick={reset} style={ghost}>Cancel</button>
+        </div>
+      ) : null}
+      {step === 2 ? (
+        <div style={{ background: "#3A2A22", borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 8 }}>Pakka? Bills, stock, labour, gate pass sab saaf ho jaye ga. Dobara Super Admin PIN darj karein (2/2)</div>
+          <input type="password" inputMode="numeric" maxLength={6} value={pin2} onChange={function (ev) { setPin2(ev.target.value.replace(/\D/g, "")); }} style={inp} />
+          <button onClick={doClear} style={red}>Haan, saara data saaf karein</button>
+          <button onClick={reset} style={ghost}>Cancel</button>
+        </div>
+      ) : null}
+      <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
+        <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Recover data (data wapas layein)</div>
+        <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{bk ? ("Is phone par backup mehfooz hai: " + rbDate(String(bk.at).slice(0, 10))) : "Is phone par abhi koi backup nahi."} Abhi ka backup file bhi download kar sakte hain.</div>
+        <input type="password" inputMode="numeric" maxLength={6} value={rpin} onChange={function (ev) { setRpin(ev.target.value.replace(/\D/g, "")); }} placeholder="Super Admin PIN" style={Object.assign({}, inp, { fontSize: 14, letterSpacing: 2 })} />
+        {bk ? <button disabled={restoring} onClick={restoreLocal} style={red}>Pichla backup wapas layein</button> : null}
+        <label style={Object.assign({}, ghost, { display: "block", textAlign: "center", boxSizing: "border-box" })}>Backup file se wapas layein<input type="file" accept=".json,application/json" onChange={restoreFile} style={{ display: "none" }} /></label>
+        <button onClick={function () { rbDownloadBackup(rbMakeBackup()); }} style={ghost}>Abhi ka backup file download karein</button>
+      </div>
+      {msg ? <div style={{ fontSize: 12, color: "#E8C9B8", marginTop: 8 }}>{msg}</div> : null}
+    </div>
+  );
+}
+function SettingsTab(p) {
   var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var nextSerial = p.nextSerial, onSetNextSerial = p.onSetNextSerial; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
   return (
@@ -3173,27 +3247,7 @@ function ReportsTab(p) {
 
       <div style={{ background: TC.appBg2, borderRadius: 8, padding: 12, fontSize: 11.5, color: "#A39C8A" }}>{t("dataShared")}</div>
 
-      {role !== "admin" ? null : (
-      <div>
-        {!confirming ? (
-          <button onClick={function () { setConfirming(true); }} style={{
-            width: "100%", padding: "12px", borderRadius: 8, border: "1.5px solid " + TC.stamp,
-            background: "transparent", color: TC.stamp, fontSize: 13, fontWeight: 600, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7
-          }}>
-            <Ico name="trash" size={15} /> {t("clearData")}
-          </button>
-        ) : (
-          <div style={{ background: "#3A2A22", borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 10 }}>{t("clearDataConfirm")}</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={function () { setConfirming(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>{t("cancel")}</button>
-              <button onClick={function () { onClear(); setConfirming(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("clearData")}</button>
-            </div>
-          </div>
-        )}
-      </div>
-      )}
+      {role === "admin" && rbIsSuper() ? <RbSuperDataTools onClear={onClear} /> : null}
     </div>
   );
 }
