@@ -2950,7 +2950,7 @@ function ReportsTab(p) {
             </div>
             <div style={{ fontSize: 9.5, color: TC.concrete, marginTop: 6 }}>{t("saleAmount")} &minus; {t("purchases")} &minus; {t("labourWork")} &minus; {t("expenses")}</div>
           </div>
-        ) : (
+        ) : !isAdmin ? null : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
             <StatBlock label={t("receivedAmount")} value={"Rs " + rbMoney(received)} bold color={TC.success} />
             <StatBlock label={t("expenseTotal")} value={"Rs " + rbMoney(expTotal + paidOut + labPays.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0))} bold color={TC.stamp} />
