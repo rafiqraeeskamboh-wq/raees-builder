@@ -290,8 +290,8 @@ function NewSaleTab(p) {
         </div>
 
         <Field label={t("customerName")} className={urdu ? "rb-urdu" : ""}>
-          <input list="rb-cust-list" value={customerName} onChange={function (ev) { var v = ev.target.value; setCustomerName(v); var m = rbCustomerMobile(v); if (m && !mobile) setMobile(m); }} placeholder={t("customerName")} style={rbInput()} />
-          <RbCustomerDatalist />
+          <input autoComplete="off" value={customerName} onChange={function (ev) { var v = ev.target.value; setCustomerName(v); var m = rbCustomerMobile(v); if (m && !mobile) setMobile(m); }} placeholder={t("customerName")} style={rbInput()} />
+          <RbCustomerSuggest value={customerName} onPick={function (c) { setCustomerName(c.name); if (c.mobile) setMobile(c.mobile); }} />
         </Field>
         <Field label={t("mobileNumber")} className={urdu ? "rb-urdu" : ""}>
           <input type="tel" value={mobile} onChange={function (ev) { setMobile(ev.target.value); }} placeholder="03xx xxxxxxx" style={rbInput()} />
@@ -2287,6 +2287,37 @@ function rbCustomerMobile(name) {
 function RbCustomerDatalist() {
   var names = React.useMemo(function () { RB_CUST_CACHE = rbAllCustomers(null); return RB_CUST_CACHE.map(function (c) { return c.name; }); }, []);
   return <datalist id="rb-cust-list">{names.map(function (n, i) { return <option key={i} value={n} />; })}</datalist>;
+}
+function RbCustomerSuggest(p) {
+  var all = React.useMemo(function () { RB_CUST_CACHE = rbAllCustomers(null); return RB_CUST_CACHE; }, []);
+  var qk = rbCustKey(p.value);
+  if (qk.length < 2) return null;
+  var exact = null, list = [];
+  all.forEach(function (c) { if (c.key === qk) exact = c; else if (c.key.indexOf(qk) >= 0) list.push(c); });
+  if (exact) {
+    return (
+      <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 7, background: "#E6F2E1", border: "1.5px solid " + TC.success, fontSize: 11.5, color: TC.ink }}>
+        <b>Purana customer hai</b> - {exact.bills.length} bill{exact.mobile ? " · " + exact.mobile : ""} · baqi Rs {rbMoney(exact.dues)}
+      </div>
+    );
+  }
+  if (!list.length) return null;
+  return (
+    <div style={{ marginTop: 6, borderRadius: 7, border: "1.5px solid " + TC.amber, background: "#FFF8E6", overflow: "hidden" }}>
+      <div style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, color: TC.ink, background: "#F6E3B0" }}>Ye naam pehle se hain - in mein se chunein:</div>
+      {list.slice(0, 6).map(function (c) {
+        return (
+          <div key={c.key} onClick={function () { p.onPick(c); }} style={{ padding: "8px 10px", borderTop: "1px solid #EAD9A8", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{c.name}</div>
+              <div style={{ fontSize: 10, color: TC.inkSoft }}>{(c.mobile ? c.mobile + " · " : "") + c.bills.length + " bill"}</div>
+            </div>
+            <div className="rb-mono" style={{ fontSize: 11.5, fontWeight: 700, color: c.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(c.dues)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 function CustomerListView(p) {
   var q = React.useState(""), query = q[0], setQuery = q[1];
