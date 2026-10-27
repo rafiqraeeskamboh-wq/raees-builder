@@ -60,6 +60,7 @@ var RB_STORE = (function () { try { return localStorage.getItem("raees-store") =
 var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
+function rbSessionName() { try { return sessionStorage.getItem("rb2-session-name") || ""; } catch (e) { return ""; } }
 function rbIsSuper() { try { return sessionStorage.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
 function rbCanSwitchStore(role) { return role === "admin" && (rbIsSuper() || !rbGet("security", {}).superPin); }
 /* fingerprint / face login - sirf isi phone par (cloud par nahi jata) */
@@ -75,7 +76,7 @@ function rbBioRegister(role, isSuper) {
   return navigator.credentials.create({ publicKey: { challenge: rbRand(32), rp: { name: "Raees Builder" }, user: { id: rbRand(16), name: "raees-" + nm.toLowerCase().replace(" ", "-"), displayName: "Raees Builder " + nm },
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
     authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
-    .then(function (cred) { var b = { id: rbB64(cred.rawId), role: role, super: !!isSuper }; localStorage.setItem(RB_BIO_KEY, JSON.stringify(b)); return b; });
+    .then(function (cred) { var b = { id: rbB64(cred.rawId), role: role, super: !!isSuper, name: rbSessionName() }; localStorage.setItem(RB_BIO_KEY, JSON.stringify(b)); return b; });
 }
 function rbBioVerify() {
   var b = rbBioGet(); if (!b) return Promise.reject(new Error("none"));
@@ -629,7 +630,7 @@ function AppHeader(p) {
             background: role === "admin" ? TC.stamp : TC.slab, color: TC.cream,
             fontSize: 10.5, fontWeight: 700, padding: "5px 10px", borderRadius: 5,
             textTransform: "uppercase", letterSpacing: "0.05em"
-          }}>{role === "admin" ? (rbIsSuper() ? "Super Admin" : t("admin")) : t("accountant")}</div>
+          }}>{(rbSessionName() ? rbSessionName() + " · " : "") + (role === "admin" ? (rbIsSuper() ? "Super Admin" : t("admin")) : t("accountant"))}</div>
           {p.onLogout ? (
             <button onClick={p.onLogout} style={{
               background: "transparent", border: "1.5px solid #6B6656", color: "#D8CDA9",
