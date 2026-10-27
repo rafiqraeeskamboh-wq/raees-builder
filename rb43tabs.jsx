@@ -2599,7 +2599,7 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
   var s = React.useState(function () { return rbBioGet(); }), bio = s[0], setBio = s[1];
   var m = React.useState(""), msg = m[0], setMsg = m[1];
   if (!rbBioSupported()) return <div style={{ fontSize: 11.5, color: "#A39C8A" }}>Ye phone ya browser fingerprint login support nahi karta. PIN se login karein.</div>;
-  function label(b) { return b.role === "admin" ? (b.super ? "Super Admin" : "Admin") : "User"; }
+  function label(b) { return (b.name ? b.name + " - " : "") + (b.role === "admin" ? (b.super ? "Super Admin" : "Admin") : "User"); }
   function turnOn() { setMsg("Phone par fingerprint lagayein..."); rbBioRegister(p.role, p.role === "admin" && rbIsSuper()).then(function (b) { setBio(b); setMsg("Fingerprint on ho gaya"); }).catch(function (e) { setMsg("Fingerprint on nahi hua (" + ((e && e.name) || "error") + "). Phone mein fingerprint ya screen lock laga hona chahiye."); }); }
   function turnOff() { rbBioClear(); setBio(null); setMsg("Fingerprint band kar diya"); }
   return (
@@ -2608,6 +2608,51 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={turnOn} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{bio ? "Dobara on karein" : "Fingerprint on karein"}</button>
         {bio ? <button onClick={turnOff} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Band karein</button> : null}
+      </div>
+      {msg ? <div style={{ fontSize: 11.5, color: TC.cream, marginTop: 6 }}>{msg}</div> : null}
+    </div>
+  );
+}
+function RbPeopleManager(p) {
+  var list = (p.security && p.security.people) || [];
+  var a = React.useState(""), nm = a[0], setNm = a[1];
+  var b = React.useState("accountant"), rl = b[0], setRl = b[1];
+  var c = React.useState(""), pin = c[0], setPin = c[1];
+  var d = React.useState(""), msg = d[0], setMsg = d[1];
+  function add() {
+    var name = nm.trim();
+    if (!name) { setMsg("Naam likhein"); return; }
+    if (pin.length < 4) { setMsg("PIN kam az kam 4 hindson ka ho"); return; }
+    var sec = p.security || {};
+    var used = list.some(function (x) { return x.pin === pin; }) || pin === sec.adminPin || pin === sec.userPin || pin === sec.superPin;
+    if (used) { setMsg("Ye PIN pehle se kisi aur ka hai - alag PIN rakhein"); return; }
+    p.onSave(list.concat([{ id: rbUid(), name: name, role: rl, pin: pin }]));
+    setNm(""); setPin(""); setMsg(name + " add ho gaya");
+  }
+  function remove(x) { if (window.confirm(x.name + " ko hata dein?")) p.onSave(list.filter(function (y) { return y.id !== x.id; })); }
+  var inp = { padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, minWidth: 0, boxSizing: "border-box" };
+  return (
+    <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
+      <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Log (naam aur PIN)</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Har Admin aur User ka apna naam aur PIN banayein. Login par naam chun kar apna PIN darj karein. Har entry par us ka naam likha jaye ga.</div>
+      {list.map(function (x) {
+        return (
+          <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 10px", marginBottom: 6, borderRadius: 8, background: TC.appBg, color: TC.cream, fontSize: 13 }}>
+            <span><b>{x.name}</b> <span style={{ color: "#A39C8A", fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"})</span></span>
+            <button onClick={function () { remove(x); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Hatayein</button>
+          </div>
+        );
+      })}
+      <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder="Naam (jaise Ali)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        {[["accountant", "User"], ["admin", "Admin"]].map(function (o) {
+          var on = rl === o[0];
+          return <button key={o[0]} onClick={function () { setRl(o[0]); }} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{o[1]}</button>;
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={function (e) { setPin(e.target.value.replace(/\D/g, "")); }} placeholder="PIN (4-6 digit)" style={Object.assign({}, inp, { flex: 1 })} />
+        <button onClick={add} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Add</button>
       </div>
       {msg ? <div style={{ fontSize: 11.5, color: TC.cream, marginTop: 6 }}>{msg}</div> : null}
     </div>
@@ -2719,17 +2764,17 @@ function DayBookReport(p) {
   var out = [];
   function addIn(d, row) { if (before(d)) opening += row.amt; else if (inR(d)) rec.push(row); }
   function addOut(d, row) { if (before(d)) opening -= row.amt; else if (inR(d)) out.push(row); }
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received", vno: s.serial, amt: num(pay.amount) }); }); });
-  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: x.note || "Supplier Payment", amt: num(x.amount) }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
+  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
       if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount) });
       else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount) });
       return;
     }
-    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha", amt: num(x.amount) });
+    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) });
   });
-  (all.labourPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance", amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   rec.sort(byDate);
   out.sort(byDate);
   var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
@@ -3007,6 +3052,7 @@ function ReportsTab(p) {
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
             <UserPinSetter security={security} onSetPin={onSetUserPin} />
             {p.onSetSuperPin && (rbIsSuper() || !security.superPin) ? <SuperPinSetter security={security} onSetPin={p.onSetSuperPin} /> : null}
+            {p.onSetPeople ? <RbPeopleManager security={security} onSave={p.onSetPeople} /> : null}
             
           </div>
         </SettingsBlock>
