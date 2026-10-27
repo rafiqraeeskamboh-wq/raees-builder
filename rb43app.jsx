@@ -610,15 +610,43 @@ function ReturnModal(p) {
 }
 
 function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) { var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor; var a = React.useState("garden"), cat = a[0], setCat = a[1]; var b = React.useState(function () { var src = p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)); return src.map(function (it) { return Object.assign({}, it); }); }); var cart = b[0], setCart = b[1]; var c = React.useState(null), active = c[0], setActive = c[1]; var d = React.useState(""), qtyInput = d[0], setQtyInput = d[1]; var ce = React.useState(""), customDescInput = ce[0], setCustomDescInput = ce[1]; var gw = React.useState(""), gpWarn = gw[0], setGpWarn = gw[1]; var urdu = lang === "ur"; var variants = variantsFor(cat); function cartQtyFor(category, variant) { return cart.filter(function (x) { return x.category === category && x.variant === variant; }) .reduce(function (s, x) { return s + Number(x.qty || 0); }, 0); } function openPrompt(category, variant) { setActive({ category: category, variant: variant }); setQtyInput(""); } function openCustomPrompt() { setActive({ category: "custom", variant: null }); setQtyInput(""); setCustomDescInput(""); } function confirmAdd() { var q = Number(qtyInput); if (!q || q <= 0) return; var category = active.category, variant = active.variant; if (category === "custom") { var customDesc = customDescInput.trim(); if (!customDesc) return; setCart(function (prev) { return prev.concat([{ id: rbUid(), category: "custom", variant: null, qty: q, desc: customDesc }]); }); setActive(null); setQtyInput(""); setCustomDescInput(""); return; } var availGp = Math.max(0, (remainingFor(category, variant) || 0) + (p.backQty ? p.backQty(category, variant) : 0) - cartQtyFor(category, variant)); if (q > availGp) { setGpWarn(t("stockShort") + " \u2014 " + t("onlyLeft") + ": " + availGp); return; } var desc = variantLabel(t, category, variant); setCart(function (prev) { var idx = -1; prev.forEach(function (x, i) { if (x.category === category && x.variant === variant) idx = i; }); if (idx >= 0) { var next = prev.slice(); next[idx] = Object.assign({}, next[idx], { qty: Number(next[idx].qty) + q }); return next; } return prev.concat([{ id: rbUid(), category: category, variant: variant, qty: q, desc: desc }]); }); setActive(null); setQtyInput(""); } function removeFromCart(id) { setCart(function (x) { return x.filter(function (y) { return y.id !== id; }); }); } var totalPieces = cart.reduce(function (s, x) { return s + Number(x.qty || 0); }, 0); var title = (p.isEdit ? t("edit") : t("makeGatePass")) + " — " + sale.customerName; return ( <ModalShell onClose={p.onClose} title={title}> {active ? ( <div style={{ textAlign: "center", padding: "10px 4px" }}> <div style={{ fontSize: 15, fontWeight: 700, color: TC.cream, marginBottom: 4 }}>{active.category === "custom" ? t("customItem") : variantLabel(t, active.category, active.variant)}</div> {active.category !== "custom" ? (<div style={{ fontSize: 11.5, color: "#9FBE8A", marginBottom: 12 }}>{t("available")}: {Math.max(0, (remainingFor(active.category, active.variant) || 0) + (p.backQty ? p.backQty(active.category, active.variant) : 0) - cartQtyFor(active.category, active.variant))}</div>) : <div style={{ marginBottom: 12 }} />} {gpWarn ? (<div style={{ background: TC.stamp, color: TC.cream, borderRadius: 7, padding: "7px 10px", fontSize: 11.5, fontWeight: 700, marginBottom: 10 }}>{gpWarn}</div>) : null} {active.category === "custom" ? ( <input value={customDescInput} autoFocus onChange={function (e) { setCustomDescInput(e.target.value); }} placeholder={t("description")} style={Object.assign({}, rbInput(), { marginBottom: 10 })} /> ) : null} <input type="number" inputMode="numeric" autoFocus={active.category !== "custom"} value={qtyInput} onChange={function (e) { setQtyInput(e.target.value); setGpWarn(""); }} onKeyDown={function (e) { if (e.key === "Enter") confirmAdd(); }} placeholder={t("enterQty")} style={Object.assign({}, rbInput(), { fontSize: 22, textAlign: "center", padding: "14px", marginBottom: 14 })} /> <div style={{ display: "flex", gap: 8 }}> <button onClick={function () { setActive(null); }} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("cancel")}</button> <button disabled={!(Number(qtyInput) > 0) || (active.category === "custom" && !customDescInput.trim())} onClick={confirmAdd} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: (Number(qtyInput) > 0 && !(active.category === "custom" && !customDescInput.trim())) ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13, fontWeight: 700, cursor: (Number(qtyInput) > 0 && !(active.category === "custom" && !customDescInput.trim())) ? "pointer" : "not-allowed" }}>{t("add")}</button> </div> </div> ) : ( <div> <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }} className={urdu ? "rb-urdu" : ""}>{t("selectItemsToTake")}</div> <div style={{ display: "flex", gap: 8, marginBottom: 14 }}> {[["garden", t("garden"), TC.garden, "sprout"], ["slab", t("slab"), TC.slab, "grid"]].map(function (o) { var id = o[0], label = o[1], color = o[2], icon = o[3], on = cat === id; return ( <button key={id} onClick={function () { setCat(id); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? color : "#3A362C"), background: on ? color : "transparent", color: on ? TC.cream : "#A39C8A", fontSize: 13, fontWeight: 600, cursor: "pointer" }} className={urdu ? "rb-urdu" : ""}> <Ico name={icon} size={15} /> {label} </button> ); })} </div> <div style={{ marginBottom: 14 }}> <button onClick={openCustomPrompt} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1.5px dashed #6B6656", background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} className={urdu ? "rb-urdu" : ""}> <Ico name="plus" size={14} /> {t("customItem")} </button> </div> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 14 }}> {variants.map(function (v) { var inCart = cartQtyFor(cat, v); var remaining = remainingFor(cat, v) - inCart; return ( <button key={v} onClick={function () { openPrompt(cat, v); }} style={{ textAlign: "start", padding: "10px 12px", borderRadius: 8, border: "1.5px solid " + (inCart > 0 ? TC.garden : "#3A362C"), background: TC.appBg2, cursor: "pointer", position: "relative" }}> <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{v}{cat === "garden" ? " ft" : ""}</div> <div style={{ fontSize: 10.5, color: remaining > 0 ? "#9FBE8A" : TC.stamp, marginTop: 2 }}>{remaining} {t("inStock")}</div> {inCart > 0 ? ( <span style={{ position: "absolute", top: 6, right: 6, background: TC.garden, color: TC.cream, fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px" }}>+{inCart}</span> ) : null} </button> ); })} </div> {cart.length > 0 ? ( <div style={{ marginBottom: 14 }}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 6, fontWeight: 600 }}>{t("selected")} ({totalPieces})</div> <div style={{ display: "flex", flexDirection: "column", gap: 6 }}> {cart.map(function (x) { return ( <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: TC.appBg2, borderRadius: 7, padding: "7px 10px" }}> <span style={{ fontSize: 12.5, color: TC.cream }}>{x.desc}</span> <div style={{ display: "flex", alignItems: "center", gap: 8 }}> <span className="rb-mono" style={{ fontSize: 12.5, color: "#9FBE8A", fontWeight: 700 }}>x{x.qty}</span> <button onClick={function () { removeFromCart(x.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}> <Ico name="x" size={14} /> </button> </div> </div> ); })} </div> </div> ) : null} <button disabled={cart.length === 0} onClick={function () { p.onCreate(cart); }} style={{ width: "100%", padding: "13px", borderRadius: 8, border: "none", background: cart.length > 0 ? TC.slab : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700, cursor: cart.length > 0 ? "pointer" : "not-allowed" }} className={urdu ? "rb-urdu" : ""}>{p.isEdit ? t("updateGatePass") : t("makeGatePass")}</button> </div> )} </ModalShell> ); } function PinPromptModal(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var s2 = React.useState(""), err = s2[0], setErr = s2[1]; function submit() { if (!val) return; if (p.onSubmit(val)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } } return (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: TC.appBg2, borderRadius: 14, padding: 20, width: "100%", maxWidth: 320 }}><div style={{ fontSize: 15, fontWeight: 700, color: TC.cream, marginBottom: 10 }}>{p.title}</div><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} onKeyDown={function (e) { if (e.key === "Enter") submit(); }} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 18, letterSpacing: 4, textAlign: "center", marginBottom: 8 }} autoFocus />{err ? <div style={{ color: "#ff8a80", fontSize: 12, marginBottom: 8 }}>{err}</div> : null}<div style={{ display: "flex", gap: 8 }}><button onClick={p.onCancel} style={{ flex: 1, padding: 10, borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 600 }}>Cancel</button><button onClick={submit} style={{ flex: 1, padding: 10, borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700 }}>Unlock</button></div></div></div>); }
-function StartupPinGate(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var s2 = React.useState(""), err = s2[0], setErr = s2[1]; function submit() { if (!val) return; if (p.onSubmit(val)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } } return (<div style={{ position: "fixed", inset: 0, background: TC.appBg, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: TC.appBg2, borderRadius: 14, padding: 24, width: "100%", maxWidth: 320, textAlign: "center" }}><div style={{ fontSize: 17, fontWeight: 700, color: TC.cream, marginBottom: 4 }}>Raees Builder</div><div style={{ fontSize: 13, color: "#A39C8A", marginBottom: 16 }}>{p.deviceLocked ? "User PIN darj karein" : "Login karne ke liye apna PIN darj karein"}</div><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} onKeyDown={function (e) { if (e.key === "Enter") submit(); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 20, letterSpacing: 6, textAlign: "center", marginBottom: 10 }} autoFocus />{err ? <div style={{ color: "#ff8a80", fontSize: 12, marginBottom: 10 }}>{err}</div> : null}<button onClick={submit} style={{ width: "100%", padding: 12, borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Login</button>{p.onBioLogin && rbBioSupported() && rbBioGet() ? (<button onClick={function () { setErr(""); rbBioVerify().then(function (b) { if (!p.onBioLogin(b)) setErr("Is phone par is role ka fingerprint login band hai - PIN darj karein"); }).catch(function () { setErr("Fingerprint match nahi hua - dobara try karein ya PIN darj karein"); }); }} style={{ width: "100%", padding: 12, marginTop: 10, borderRadius: 8, border: "2px solid #D9A441", background: "transparent", color: "#D9A441", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Fingerprint se login</button>) : null}{p.deviceLocked ? (<button onClick={p.onUnlockRequest} style={{ width: "100%", padding: 8, marginTop: 10, border: "none", background: "transparent", color: "#6B6656", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>Admin? Is device ko unlock karein</button>) : null}</div></div>); }
+function StartupPinGate(p) {
+  var s1 = React.useState(""), val = s1[0], setVal = s1[1];
+  var s2 = React.useState(""), err = s2[0], setErr = s2[1];
+  var s3 = React.useState(""), who = s3[0], setWho = s3[1];
+  var people = (rbGet("security", {}).people || []).filter(function (x) { return !(p.deviceLocked && x.role === "admin"); });
+  var sel = people.filter(function (x) { return x.id === who; })[0];
+  function submit() { if (!val) return; if (p.onSubmit(val, who)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } }
+  return (
+    <div style={{ position: "fixed", inset: 0, background: TC.appBg, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}>
+      <div style={{ background: TC.appBg2, borderRadius: 14, padding: 24, width: "100%", maxWidth: 340, textAlign: "center" }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: TC.cream, marginBottom: 4 }}>Raees Builder</div>
+        <div style={{ fontSize: 13, color: "#A39C8A", marginBottom: 14 }}>{sel ? (sel.name + " - apna PIN darj karein") : (people.length ? "Apna naam chunein, phir PIN darj karein" : (p.deviceLocked ? "User PIN darj karein" : "Login karne ke liye apna PIN darj karein"))}</div>
+        {people.length ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>
+            {people.map(function (x) {
+              var on = who === x.id;
+              return <button key={x.id} onClick={function () { setWho(on ? "" : x.id); setErr(""); }} style={{ padding: "8px 12px", borderRadius: 16, border: "1.5px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : TC.cream, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{x.name} <span style={{ fontWeight: 500, opacity: 0.75, fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"})</span></button>;
+            })}
+          </div>
+        ) : null}
+        <input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} onKeyDown={function (e) { if (e.key === "Enter") submit(); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 20, letterSpacing: 6, textAlign: "center", marginBottom: 10, boxSizing: "border-box" }} autoFocus />
+        {err ? <div style={{ color: "#ff8a80", fontSize: 12, marginBottom: 10 }}>{err}</div> : null}
+        <button onClick={submit} style={{ width: "100%", padding: 12, borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Login</button>
+        {p.onBioLogin && rbBioSupported() && rbBioGet() ? (<button onClick={function () { setErr(""); rbBioVerify().then(function (b) { if (!p.onBioLogin(b)) setErr("Is phone par is role ka fingerprint login band hai - PIN darj karein"); }).catch(function () { setErr("Fingerprint match nahi hua - dobara try karein ya PIN darj karein"); }); }} style={{ width: "100%", padding: 12, marginTop: 10, borderRadius: 8, border: "2px solid #D9A441", background: "transparent", color: "#D9A441", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Fingerprint se login{rbBioGet().name ? " (" + rbBioGet().name + ")" : ""}</button>) : null}
+        {p.deviceLocked ? (<button onClick={p.onUnlockRequest} style={{ width: "100%", padding: 8, marginTop: 10, border: "none", background: "transparent", color: "#6B6656", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>Admin? Is device ko unlock karein</button>) : null}
+      </div>
+    </div>
+  );
+}
 
 function RaeesBuilderApp() {
   var la = React.useState(function () { var pr = rbGet("prefs", {}); return pr.lang || "en"; }), lang = la[0], setLang = la[1];
-  var ro = React.useState(function () { var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); if (sr === "admin" || sr === "accountant") return sr; var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1]; var pm = React.useState(function () { var pr = rbGet("prefs", {}); var shared = rbGet("permissions", null); return Object.assign({}, DEFAULT_PERMISSIONS, (shared || pr.permissions || {})); }), permissions = pm[0], setPermissions = pm[1]; function can(feature) { return hasPerm(role, permissions, feature); } function togglePermission(feature, value) { setPermissions(function (prev) { var next = Object.assign({}, prev); next[feature] = value; return next; }); } var secS = React.useState(function () { return rbGet("security", {}); }), security = secS[0], setSecurity = secS[1]; function setUserPin(pin) { var next = Object.assign({}, security, { userPin: pin }); setSecurity(next); rbSet("security", next); showToast("PIN save ho gaya"); } function setAdminPin(pin) { var next2 = Object.assign({}, security, { adminPin: pin }); setSecurity(next2); rbSet("security", next2); showToast("PIN save ho gaya"); } function setSuperPin(pin) { var next3 = Object.assign({}, security, { superPin: pin }); setSecurity(next3); rbSet("security", next3); sessionStorage.setItem("rb2-session-super", "1"); showToast("Super Admin PIN save ho gaya"); }
+  var ro = React.useState(function () { var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); if (sr === "admin" || sr === "accountant") return sr; var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1]; var pm = React.useState(function () { var pr = rbGet("prefs", {}); var shared = rbGet("permissions", null); return Object.assign({}, DEFAULT_PERMISSIONS, (shared || pr.permissions || {})); }), permissions = pm[0], setPermissions = pm[1]; function can(feature) { return hasPerm(role, permissions, feature); } function togglePermission(feature, value) { setPermissions(function (prev) { var next = Object.assign({}, prev); next[feature] = value; return next; }); } var secS = React.useState(function () { return rbGet("security", {}); }), security = secS[0], setSecurity = secS[1]; function setUserPin(pin) { var next = Object.assign({}, security, { userPin: pin }); setSecurity(next); rbSet("security", next); showToast("PIN save ho gaya"); } function setAdminPin(pin) { var next2 = Object.assign({}, security, { adminPin: pin }); setSecurity(next2); rbSet("security", next2); showToast("PIN save ho gaya"); } function setSuperPin(pin) { var next3 = Object.assign({}, security, { superPin: pin }); setSecurity(next3); rbSet("security", next3); sessionStorage.setItem("rb2-session-super", "1"); showToast("Super Admin PIN save ho gaya"); } function setPeople(list) { var next4 = Object.assign({}, rbGet("security", {}), security, { people: list }); setSecurity(next4); rbSet("security", next4); showToast("Save ho gaya"); }
   var pmS = React.useState(false), pinModalOpen = pmS[0], setPinModalOpen = pmS[1];
-  function confirmUserPin(pin) { var sec = rbGet("security", {}); if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setPinModalOpen(false); return true; } return false; }
+  function confirmUserPin(pin) { var sec = rbGet("security", {}); if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setPinModalOpen(false); return true; } return false; }
   var apmS = React.useState(false), adminPinModalOpen = apmS[0], setAdminPinModalOpen = apmS[1];
-  function confirmAdminPin(pin) { if (deviceLocked) return false; var sec = rbGet("security", {}); if (sec.superPin && pin === sec.superPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setAdminPinModalOpen(false); return true; } if (sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setAdminPinModalOpen(false); return true; } return false; }
+  function confirmAdminPin(pin) { if (deviceLocked) return false; var sec = rbGet("security", {}); if (sec.superPin && pin === sec.superPin) { sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setAdminPinModalOpen(false); return true; } if (sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setAdminPinModalOpen(false); return true; } return false; }
   var dlS = React.useState(function () { return !!rbGet("deviceLock", false); }), deviceLocked = dlS[0], setDeviceLocked = dlS[1];
   window.RB_LOCK_ROLE = deviceLocked ? "accountant" : null;
   function lockDeviceToUser() {
@@ -627,7 +655,7 @@ function RaeesBuilderApp() {
     rbSet("deviceLock", true);
     setDeviceLocked(true);
     window.RB_LOCK_ROLE = "accountant";
-    sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant");
+    sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant");
     setRole("accountant");
     if (tab === "wastage") setTab("sale");
     showToast("Ye device ab sirf User ke liye lock ho gaya");
@@ -645,22 +673,38 @@ function RaeesBuilderApp() {
     return false;
   }
   var gwS = React.useState(function () { var sec = rbGet("security", {}); var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); return !!(sec.adminPin && sr !== "admin" && sr !== "accountant"); }), gateOpen = gwS[0], setGateOpen = gwS[1];
-  function confirmStartupPin(pin) {
+  function loginPerson(person) {
+    sessionStorage.removeItem("rb2-session-super");
+    sessionStorage.setItem(RB_SESSION_ROLE_KEY, person.role);
+    sessionStorage.setItem("rb2-session-name", person.name);
+    setRole(person.role);
+    if (person.role === "accountant" && tab === "wastage") setTab("sale");
+    setGateOpen(false); return true;
+  }
+  function confirmStartupPin(pin, who) {
     var sec = rbGet("security", {});
-    if (!deviceLocked && sec.superPin && pin === sec.superPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setGateOpen(false); return true; }
-    if (!deviceLocked && sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setGateOpen(false); return true; }
-    if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setGateOpen(false); return true; }
+    var people = sec.people || [];
+    if (who) {
+      var pp = people.filter(function (x) { return x.id === who; })[0];
+      if (!pp || pp.pin !== pin || (pp.role === "admin" && deviceLocked)) return false;
+      return loginPerson(pp);
+    }
+    var byPin = people.filter(function (x) { return x.pin === pin && !(x.role === "admin" && deviceLocked); })[0];
+    if (byPin && !(sec.superPin && pin === sec.superPin)) return loginPerson(byPin);
+    if (!deviceLocked && sec.superPin && pin === sec.superPin) { sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setGateOpen(false); return true; }
+    if (!deviceLocked && sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setGateOpen(false); return true; }
+    if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setGateOpen(false); return true; }
     return false;
   }
   function bioLogin(b) {
     if (!b || (b.role !== "admin" && b.role !== "accountant")) return false;
     if (b.role === "admin" && deviceLocked) return false;
     if (b.role === "admin" && b.super) sessionStorage.setItem("rb2-session-super", "1"); else sessionStorage.removeItem("rb2-session-super");
-    sessionStorage.setItem(RB_SESSION_ROLE_KEY, b.role); setRole(b.role);
+    sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, b.role); if (b.name) sessionStorage.setItem("rb2-session-name", b.name); setRole(b.role);
     if (b.role === "accountant" && tab === "wastage") setTab("sale");
     setGateOpen(false); return true;
   }
-  function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); sessionStorage.removeItem("rb2-session-super"); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
+  function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
   /* agar mojooda tab ki ijazat na ho to pehle jaiz tab par le jayein */
   var TAB_PERMS = { sale: "tabSale", bills: "tabBills", gatepass: "tabGatePass", dues: "tabDues", stock: "stock", wastage: "wastage", supplier: "supplier", labour: "labour", book: "reports" };
@@ -891,7 +935,7 @@ function RaeesBuilderApp() {
     var mid = materialId || "cement";
     if (!supplierId || b <= 0) return;
     var mm = null; materials.forEach(function (x) { if (x.id === mid) mm = x; });
-    var entry = { id: rbUid(), supplierId: supplierId, material: mid, materialName: mm ? mm.name : mid, unit: mm ? mm.unit : "", qty: b, bags: mid === "cement" ? b : 0, rate: r, amount: b * r, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), supplierId: supplierId, material: mid, materialName: mm ? mm.name : mid, unit: mm ? mm.unit : "", qty: b, bags: mid === "cement" ? b : 0, rate: r, amount: b * r, date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setPurchases(function (a) { return [entry].concat(a); });
     showToast(t("buyMaterial"));
     logActivity("material_bought", (mm ? mm.name : mid) + " " + b);
@@ -901,7 +945,7 @@ function RaeesBuilderApp() {
     var amt = Number(amount) || 0;
     var d = String(detail || "").trim();
     if (amt <= 0 || !d) return;
-    var entry = { id: rbUid(), detail: d, amount: amt, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), detail: d, amount: amt, date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setExpenses(function (a) { return [entry].concat(a); });
     showToast(t("addExpense"));
     logActivity("expense_added", d + " — Rs " + rbMoney(amt));
@@ -913,7 +957,7 @@ function RaeesBuilderApp() {
     var to = toWho || (role === "admin" ? "accountant" : "admin");
     var from = to === "admin" ? "accountant" : "admin";
     var nm = String(name || "").trim();
-    var entry = { id: rbUid(), detail: (to === "admin" ? "Admin ko cash diya" : "User ko cash diya") + (nm ? " (" + nm + ")" : ""), name: nm, amount: amt, date: date || rbToday(), by: role, transfer: true, from: from, to: to, createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), detail: (to === "admin" ? "Admin ko cash diya" : "User ko cash diya") + (nm ? " (" + nm + ")" : ""), name: nm, amount: amt, date: date || rbToday(), by: role, byName: rbSessionName(), transfer: true, from: from, to: to, createdAt: new Date().toISOString() };
     setExpenses(function (a) { return [entry].concat(a); });
     showToast("Cash transfer: Rs " + rbMoney(amt));
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
@@ -922,7 +966,7 @@ function RaeesBuilderApp() {
   function addSupplierPayment(supplierId, amount, date) {
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
-    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setSupplierPayments(function (a) { return [entry].concat(a); });
     showToast(t("payToSupplier"));
     logActivity("supplier_paid", "Rs " + rbMoney(amt));
@@ -985,7 +1029,7 @@ function RaeesBuilderApp() {
     var amt = labourEntryAmount(q, r, ex, amount);
     if (!labourerId || amt <= 0) return;
     var entry = { id: rbUid(), labourerId: labourerId, kind: kind || "garder", qty: q, rate: r, extra: ex,
-      amount: amt, note: String(note || "").trim(), date: date || rbToday(), by: role,
+      amount: amt, note: String(note || "").trim(), date: date || rbToday(), by: role, byName: rbSessionName(),
       verified: role === "admin", verifiedBy: role === "admin" ? role : null, createdAt: new Date().toISOString() };
     setLabourWork(function (a) { return [entry].concat(a); });
     showToast(t("addLabourWork"));
@@ -996,7 +1040,7 @@ function RaeesBuilderApp() {
     var amt = Number(amount) || 0;
     if (!labourerId || amt <= 0) return;
     var entry = { id: rbUid(), labourerId: labourerId, amount: amt, note: String(note || "").trim(),
-      date: date || rbToday(), by: role, createdAt: new Date().toISOString() };
+      date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setLabourPayments(function (a) { return [entry].concat(a); });
     showToast(t("labourAdvance"));
     logActivity("labour_paid", "Rs " + rbMoney(amt));
@@ -1191,7 +1235,7 @@ function RaeesBuilderApp() {
     list.forEach(function (g) { if (g.saleId === sale.id) existing = g; });
     var entry = existing
       ? Object.assign({}, existing, { items: items, customerName: sale.customerName, date: sale.date, serial: sale.serial, type: type || existing.type, mobile: sale.mobile, verified: false, verifiedBy: null, verifiedAt: null })
-      : { id: rbUid(), saleId: sale.id, serial: sale.serial, customerName: sale.customerName, date: sale.date, items: items, type: type, mobile: sale.mobile, createdBy: role, createdAt: new Date().toISOString() };
+      : { id: rbUid(), saleId: sale.id, serial: sale.serial, customerName: sale.customerName, date: sale.date, items: items, type: type, mobile: sale.mobile, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() };
     var next = existing
       ? list.map(function (g) { return g.saleId === sale.id ? entry : g; })
       : [entry].concat(list);
@@ -1261,7 +1305,7 @@ function RaeesBuilderApp() {
       var unlockedAdmin = sessionStorage.getItem(RB_SESSION_ROLE_KEY) === "admin";
       if (sec0.adminPin && !unlockedAdmin) { setAdminPinModalOpen(true); return; }
     }
-    sessionStorage.setItem(RB_SESSION_ROLE_KEY, r);
+    sessionStorage.removeItem("rb2-session-name"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, r);
     setRole(r);
     if (r === "accountant" && (tab === "wastage" || (tab === "supplier" && !hasPerm("accountant", permissions, "supplier")) || (tab === "labour" && !hasPerm("accountant", permissions, "labour")) || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
@@ -1277,7 +1321,7 @@ function RaeesBuilderApp() {
       purId = rbUid();
       var pEntry = { id: purId, supplierId: pur.supplierId, material: category, materialName: variantLabel(t, category, variant),
         unit: t("pieces"), qty: q, bags: 0, rate: q > 0 ? amt / q : 0, amount: amt, date: date || rbToday(),
-        fromStock: true, by: role, createdAt: new Date().toISOString() };
+        fromStock: true, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
       setPurchases(function (a) { return [pEntry].concat(a); });
     }
     var stId = rbUid();
@@ -1598,8 +1642,8 @@ function editStockEntry(id, qty, date) {
       return;
     }
     var serial = wantSerial > 0 ? wantSerial : nextSerial;
-    var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date, by: role }] : [];
-    var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdAt: new Date().toISOString() });
+    var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date, by: role, byName: rbSessionName() }] : [];
+    var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() });
     /* paimaishi bill ki chhat fitting mazdoori khud-ba-khud, bill ke kul sq ft par */
     if (full.type === "customized" && !full.isOpening) {
       var billSqft = (full.items || []).reduce(function (n, it) { return n + (Number(it.sqft) || 0); }, 0);
@@ -1636,7 +1680,7 @@ function editStockEntry(id, qty, date) {
       serial: 0, customerName: nm, mobile: String(mobile || "").trim(), date: d,
       items: [], itemsTotal: 0, roofLabourRate: 0, labourTotal: 0, discount: 0,
       totalBill: adv ? 0 : amt, advance: adv ? amt : 0, dues: adv ? -amt : amt,
-      paidInFull: false, payments: [], createdBy: role, createdAt: new Date().toISOString()
+      paidInFull: false, payments: [], createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString()
     };
     setSales(function (a) { return [entry].concat(a); });
     showToast(t("openingSaved"));
@@ -1664,7 +1708,7 @@ function editStockEntry(id, qty, date) {
       var newTotal = Math.max(0, Number(s.totalBill || 0) - disc);
       var newAdvance = Math.min(newTotal, (s.advance || 0) + amt);
       var newDues = Math.max(0, newTotal - newAdvance);
-      var payments = (s.payments || []).concat([{ id: rbUid(), amount: amt, discount: disc, date: date || rbToday(), by: role }]);
+      var payments = (s.payments || []).concat([{ id: rbUid(), amount: amt, discount: disc, date: date || rbToday(), by: role, byName: rbSessionName() }]);
       updated = Object.assign({}, s, { totalBill: newTotal, discount: Number(s.discount || 0) + disc, advance: newAdvance, dues: newDues, payments: payments });
       return updated;
     });
@@ -1729,7 +1773,7 @@ function editStockEntry(id, qty, date) {
     body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
     body = <SettingsTab catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
-      onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onLockDevice={lockDeviceToUser} />;
+      onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
   }
 
   if (gateOpen) {
