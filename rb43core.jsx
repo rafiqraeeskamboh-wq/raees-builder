@@ -57,7 +57,7 @@ var RB2_PRE = "rb2:";
 /* do store: Himmat (purana data) aur Rangpur - har store ka data alag */
 var RB_STORES = [["himmat", "Himmat"], ["rangpur", "Rangpur"]];
 var RB_STORE = (function () { try { return localStorage.getItem("raees-store") === "rangpur" ? "rangpur" : "himmat"; } catch (e) { return "himmat"; } })();
-var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1 };
+var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
 function rbSessionName() { try { return sessionStorage.getItem("rb2-session-name") || ""; } catch (e) { return ""; } }
@@ -82,6 +82,7 @@ function rbBioVerify() {
   var b = rbBioGet(); if (!b) return Promise.reject(new Error("none"));
   return navigator.credentials.get({ publicKey: { challenge: rbRand(32), allowCredentials: [{ type: "public-key", id: rbUnB64(b.id) }], userVerification: "required", timeout: 60000 } }).then(function () { return b; });
 }
+function rbKeyFor(st, key) { return (st === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + st + ":" + key; }
 function rbSwitchStore(st) { try { localStorage.setItem("raees-store", st); } catch (e) {} location.reload(); }
 /* per-login-session role marker (sessionStorage, not localStorage) - cleared when the
    browser tab / installed app is closed, so every fresh open re-asks for a PIN */
