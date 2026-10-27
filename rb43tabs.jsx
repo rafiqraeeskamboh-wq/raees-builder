@@ -2863,6 +2863,35 @@ function DayBookReport(p) {
   );
 }
 
+var RB_DEFAULT_HEADS = ["Tractor diesel", "Petrol", "Chai", "Khana", "Bijli bill", "Kiraya", "Marammat", "Gari kiraya", "Mobile / Internet", "Mutafarriq"];
+function RbExpenseHeads(p) {
+  var h = React.useState(function () { var x = rbGet("expense-heads", null); return (Array.isArray(x) && x.length) ? x : RB_DEFAULT_HEADS; }), heads = h[0], setHeads = h[1];
+  var a = React.useState(false), adding = a[0], setAdding = a[1];
+  var e = React.useState(false), editing = e[0], setEditing = e[1];
+  var n = React.useState(""), nm = n[0], setNm = n[1];
+  function save(list) { setHeads(list); rbSet("expense-heads", list); }
+  function add() { var v = nm.trim(); if (!v) return; if (heads.indexOf(v) < 0) save(heads.concat([v])); p.onPick(v); setNm(""); setAdding(false); }
+  function chip(on) { return { padding: "6px 10px", borderRadius: 14, border: "1.5px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }; }
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>Kharche ki qism chunein:</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {heads.map(function (hd) {
+          var on = p.value === hd;
+          return <button key={hd} type="button" onClick={function () { if (editing) { if (window.confirm(hd + " list se hata dein?")) save(heads.filter(function (y) { return y !== hd; })); } else p.onPick(hd); }} style={chip(on)}>{hd}{editing ? " ×" : ""}</button>;
+        })}
+        <button type="button" onClick={function () { setAdding(!adding); setEditing(false); }} style={chip(false)}>+ Nayi qism</button>
+        <button type="button" onClick={function () { setEditing(!editing); setAdding(false); }} style={chip(editing)}>{editing ? "Bas" : "Hatayein"}</button>
+      </div>
+      {adding ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+          <input value={nm} onChange={function (ev) { setNm(ev.target.value); }} placeholder="Nayi qism ka naam" style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
+          <button type="button" onClick={add} style={{ padding: "8px 12px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Add</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 function ReportsTab(p) {
   var t = p.t;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
@@ -2972,12 +3001,33 @@ function ReportsTab(p) {
       {p.canAddExpense ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("addExpense")}</div>
+          <RbExpenseHeads value={expDetail} onPick={setExpDetail} />
           <input value={expDetail} onChange={function (ev) { setExpDetail(ev.target.value); }} placeholder={t("expenseDetail")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
           <div style={{ display: "flex", gap: 6 }}>
             <input type="number" inputMode="numeric" value={expAmt} onChange={function (ev) { setExpAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
             <input type="date" value={expDate} onChange={function (ev) { setExpDate(ev.target.value); }} style={{ flex: 1, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
           </div>
           <button disabled={!(Number(expAmt) > 0 && expDetail.trim())} onClick={function () { p.onAddExpense(expDetail, expAmt, expDate); setExpDetail(""); setExpAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(expAmt) > 0 && expDetail.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: (Number(expAmt) > 0 && expDetail.trim()) ? "pointer" : "not-allowed" }}>{t("addExpense")}</button>
+          {(function () {
+            var myExps = exps.filter(function (x) { return (x.by || "admin") === book; }).slice().sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
+            var tot = myExps.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+            return (
+              <div style={{ marginTop: 10, borderTop: "1px dashed #3A362C", paddingTop: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, fontWeight: 700, color: TC.cream, marginBottom: 6 }}>
+                  <span>Likhe hue kharche ({myExps.length})</span>
+                  <span className="rb-mono">Rs {rbMoney(tot)}</span>
+                </div>
+                {myExps.length === 0 ? <div style={{ fontSize: 11, color: "#A39C8A" }}>Is tareekh mein koi kharcha nahi</div> : myExps.map(function (x) {
+                  return (
+                    <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderBottom: "1px solid #2E2B23", fontSize: 12, color: "#D8CDA9" }}>
+                      <span style={{ minWidth: 0 }}>{rbDate(x.date)} · {x.detail || "-"}{x.byName ? <span style={{ color: "#A39C8A" }}> · {x.byName}</span> : null}</span>
+                      <span className="rb-mono" style={{ whiteSpace: "nowrap", fontWeight: 700 }}>Rs {rbMoney(x.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       ) : null}
 
