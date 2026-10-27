@@ -290,7 +290,8 @@ function NewSaleTab(p) {
         </div>
 
         <Field label={t("customerName")} className={urdu ? "rb-urdu" : ""}>
-          <input value={customerName} onChange={function (ev) { setCustomerName(ev.target.value); }} placeholder={t("customerName")} style={rbInput()} />
+          <input list="rb-cust-list" value={customerName} onChange={function (ev) { var v = ev.target.value; setCustomerName(v); var m = rbCustomerMobile(v); if (m && !mobile) setMobile(m); }} placeholder={t("customerName")} style={rbInput()} />
+          <RbCustomerDatalist />
         </Field>
         <Field label={t("mobileNumber")} className={urdu ? "rb-urdu" : ""}>
           <input type="tel" value={mobile} onChange={function (ev) { setMobile(ev.target.value); }} placeholder="03xx xxxxxxx" style={rbInput()} />
@@ -2253,12 +2254,108 @@ function CustomerOpeningModal(p) {
     </ModalShell>
   );
 }
+/* ---------------- customer list (dono store) ---------------- */
+function rbStoreSales(st) {
+  try { var r = localStorage.getItem(st === "himmat" ? "rb2:sales" : "rb2:" + st + ":sales"); var a = r ? JSON.parse(r) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function rbCustKey(n) { return String(n || "").trim().toLowerCase().replace(/\s+/g, " "); }
+function rbAllCustomers(curSales) {
+  var map = {};
+  RB_STORES.forEach(function (st) {
+    var list = (st[0] === RB_STORE && curSales) ? curSales : rbStoreSales(st[0]);
+    list.forEach(function (s) {
+      var k = rbCustKey(s.customerName); if (!k) return;
+      var c = map[k] || (map[k] = { key: k, name: String(s.customerName).trim(), mobile: "", stores: {}, total: 0, dues: 0, bills: [] });
+      if (!c.mobile && s.mobile) c.mobile = s.mobile;
+      var sd = c.stores[st[0]] || (c.stores[st[0]] = { count: 0, total: 0, dues: 0 });
+      var tot = Number(s.totalBill) || 0, du = Number(s.dues) || 0;
+      if (!s.isOpening) sd.count++;
+      sd.total += tot; sd.dues += du; c.total += tot; c.dues += du;
+      c.bills.push({ store: st[1], serial: s.serial, date: s.date, total: tot, dues: du, opening: !!s.isOpening });
+    });
+  });
+  return Object.keys(map).map(function (k) { var c = map[k]; c.bills.sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); return c; })
+    .sort(function (x, y) { return y.bills.length - x.bills.length || x.name.localeCompare(y.name); });
+}
+var RB_CUST_CACHE = null;
+function rbCustomerMobile(name) {
+  if (!RB_CUST_CACHE) RB_CUST_CACHE = rbAllCustomers(null);
+  var k = rbCustKey(name);
+  for (var i = 0; i < RB_CUST_CACHE.length; i++) { if (RB_CUST_CACHE[i].key === k) return RB_CUST_CACHE[i].mobile || ""; }
+  return "";
+}
+function RbCustomerDatalist() {
+  var names = React.useMemo(function () { RB_CUST_CACHE = rbAllCustomers(null); return RB_CUST_CACHE.map(function (c) { return c.name; }); }, []);
+  return <datalist id="rb-cust-list">{names.map(function (n, i) { return <option key={i} value={n} />; })}</datalist>;
+}
+function CustomerListView(p) {
+  var q = React.useState(""), query = q[0], setQuery = q[1];
+  var o = React.useState(""), open = o[0], setOpen = o[1];
+  var list = React.useMemo(function () { return rbAllCustomers(p.sales); }, [p.sales]);
+  var qk = rbCustKey(query);
+  var shown = list.filter(function (c) { return !qk || c.key.indexOf(qk) >= 0 || String(c.mobile || "").indexOf(query.trim()) >= 0; });
+  return (
+    <div>
+      <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={p.t("searchCustomer")}
+        style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", marginBottom: 8 })} />
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Kul customer: {shown.length}</div>
+      {shown.length === 0 ? (
+        <EmptyState icon={<Ico name="wallet" size={28} color={TC.concrete} />} text={p.t("searchNoResults")} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {shown.slice(0, 300).map(function (c) {
+            var isOpen = open === c.key;
+            return (
+              <div key={c.key} style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px" }}>
+                <div onClick={function () { setOpen(isOpen ? "" : c.key); }} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer", gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{c.name}</div>
+                    <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{(c.mobile ? c.mobile + " · " : "") + c.bills.length + " bill · kul Rs " + rbMoney(c.total)}</div>
+                  </div>
+                  <div style={{ textAlign: "end" }}>
+                    <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: c.dues > 0 ? TC.stamp : TC.success }}>Rs {rbMoney(c.dues)}</div>
+                    <div style={{ fontSize: 10, color: TC.concrete, marginTop: 2 }}>{c.dues > 0 ? p.t("due") : p.t("paid")}</div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+                  {RB_STORES.map(function (st) {
+                    var d = c.stores[st[0]] || { count: 0, total: 0, dues: 0 };
+                    return (
+                      <div key={st[0]} style={{ border: "1px solid " + TC.paperLine, borderRadius: 6, padding: "6px 8px" }}>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: TC.inkSoft }}>{st[1]} se</div>
+                        <div className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(d.total)}</div>
+                        <div style={{ fontSize: 9.5, color: TC.concrete }}>{d.count} bill · baqi Rs {rbMoney(d.dues)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {isOpen ? (
+                  <div style={{ marginTop: 8, borderTop: "1px dashed " + TC.paperLine, paddingTop: 6 }}>
+                    {c.bills.map(function (b, i) {
+                      return (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, color: TC.ink, padding: "3px 0" }}>
+                          <span>{b.store} · {b.opening ? p.t("openingTag") : "#" + b.serial} · {rbDate(b.date)}</span>
+                          <span className="rb-mono" style={{ whiteSpace: "nowrap" }}>Rs {rbMoney(b.total)}{b.dues > 0 ? " (baqi " + rbMoney(b.dues) + ")" : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 function DuesTab(p) {
   var t = p.t, sales = p.sales, onOpen = p.onOpen, onCollect = p.onCollect, onReceipt = p.onReceipt;
   var a = React.useState("dues"), filter = a[0], setFilter = a[1];
   var b = React.useState(""), query = b[0], setQuery = b[1];
   var c = React.useState(null), collectingFor = c[0], setCollectingFor = c[1];
   var ob = React.useState(false), obOpen = ob[0], setObOpen = ob[1];
+  var cv = React.useState("bills"), dView = cv[0], setDView = cv[1];
   var filtered = sales.filter(function (s) {
     if (filter === "dues" && (s.dues || 0) <= 0) return false;
     if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false;
@@ -2271,6 +2368,13 @@ function DuesTab(p) {
   }
   return (
     <div style={{ padding: "14px 14px 4px" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[["bills", "Bill wise"], ["customers", "Customer List"]].map(function (o) {
+          var on = dView === o[0];
+          return <button key={o[0]} onClick={function () { setDView(o[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>;
+        })}
+      </div>
+      {dView === "customers" ? <CustomerListView t={t} sales={sales} /> : (<React.Fragment>
       <PaymentsSummaryCard t={t} sales={sales} />
       {p.onAddOpening ? (
         <button onClick={function () { setObOpen(true); }} style={{
@@ -2326,6 +2430,7 @@ function DuesTab(p) {
           })}
         </div>
       )}
+      </React.Fragment>)}
       {collectingFor ? (
         <CollectPaymentModal t={t} sale={collectingFor} onClose={function () { setCollectingFor(null); }} onCollect={handleCollect} />
       ) : null}
