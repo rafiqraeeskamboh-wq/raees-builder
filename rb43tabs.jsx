@@ -2290,6 +2290,7 @@ function RbCustomerDatalist() {
 }
 function RbCustomerSuggest(p) {
   var all = React.useMemo(function () { RB_CUST_CACHE = rbAllCustomers(null); return RB_CUST_CACHE; }, []);
+  var sh = React.useState(false), showB = sh[0], setShowB = sh[1];
   var qk = rbCustKey(p.value);
   if (qk.length < 2) return null;
   var exact = null, list = [];
@@ -2298,6 +2299,22 @@ function RbCustomerSuggest(p) {
     return (
       <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 7, background: "#E6F2E1", border: "1.5px solid " + TC.success, fontSize: 11.5, color: TC.ink }}>
         <b>Purana customer hai</b> - {exact.bills.length} bill{exact.mobile ? " · " + exact.mobile : ""} · baqi Rs {rbMoney(exact.dues)}
+        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+          {RB_STORES.map(function (st) { var d = exact.stores[st[0]] || { count: 0, total: 0, dues: 0 }; return <span key={st[0]} style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 10, background: "#fff", border: "1px solid #B9D7AE" }}>{st[1]}: {d.count} bill · Rs {rbMoney(d.total)} · baqi {rbMoney(d.dues)}</span>; })}
+        </div>
+        <button type="button" onClick={function () { setShowB(!showB); }} style={{ marginTop: 6, padding: "5px 10px", borderRadius: 6, border: "1px solid " + TC.success, background: "transparent", color: TC.success, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{showB ? "Bill band karein" : "Purane bill dekhein"}</button>
+        {showB ? (
+          <div style={{ marginTop: 6, borderTop: "1px dashed #B9D7AE", paddingTop: 4 }}>
+            {exact.bills.map(function (b, i) {
+              return (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, padding: "3px 0" }}>
+                  <span>{b.store} · {b.opening ? "Opening" : "#" + b.serial} · {rbDate(b.date)}</span>
+                  <span className="rb-mono" style={{ whiteSpace: "nowrap" }}>Rs {rbMoney(b.total)}{b.dues > 0 ? " (baqi " + rbMoney(b.dues) + ")" : ""}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -2578,7 +2595,22 @@ function SettingsBlock(p) { return (
   );
 }
 
-function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function AdminPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.adminPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "Admin PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi Admin PIN set nahi - naye mobile par Admin bhi bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); }
+function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function SuperPinSetter(p) {
+  var s1 = React.useState(""), val = s1[0], setVal = s1[1];
+  var hasPin = !!(p.security && p.security.superPin);
+  function save() { if (val.length < 4) return; if (p.security && (val === p.security.adminPin || val === p.security.userPin)) { window.alert("Super Admin PIN, Admin aur User PIN se alag rakhein"); return; } p.onSetPin(val); setVal(""); }
+  return (
+    <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
+      <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Super Admin PIN</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Super Admin dono store (Himmat aur Rangpur) dekh sakta hai. Ye PIN set hone ke baad Admin sirf apna store dekhega.{hasPin ? " (PIN set hai)" : ""}</div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit" style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} />
+        <button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button>
+      </div>
+    </div>
+  );
+}
+function AdminPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.adminPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "Admin PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi Admin PIN set nahi - naye mobile par Admin bhi bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); }
 
 function NextSerialSetter(p) {
   var t = p.t;
@@ -2953,6 +2985,7 @@ function ReportsTab(p) {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
             <UserPinSetter security={security} onSetPin={onSetUserPin} />
+            {p.onSetSuperPin && (rbIsSuper() || !security.superPin) ? <SuperPinSetter security={security} onSetPin={p.onSetSuperPin} /> : null}
             
           </div>
         </SettingsBlock>
