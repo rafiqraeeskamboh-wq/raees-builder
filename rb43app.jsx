@@ -877,11 +877,13 @@ function RaeesBuilderApp() {
   var slabVariants = uniqSorted("slab", SLAB_SIZES, customVariants.slab);
   /* ---------------- supplier / cement ---------------- */
   function materialTotals(materialId) {
-    var added = purchases.reduce(function (n, x) { return rbMaterialOf(x) === materialId ? n + rbQtyOf(x) : n; }, 0);
+    var added = purchases.reduce(function (n, x) { return (rbMaterialOf(x) === materialId && (x.store || "himmat") === RB_STORE) ? n + rbQtyOf(x) : n; }, 0);
     var used = materialId === "cement" ? stockLog.reduce(function (n, e) { return n + (Number(e.cementBags) || 0); }, 0) : 0;
     return { added: added, used: used, remaining: added - used };
   }
   var cementTotals = materialTotals("cement");
+  var storePurchases = purchases.filter(function (x) { return (x.store || "himmat") === RB_STORE; });
+  var storeSupPays = supplierPayments.filter(function (x) { return (x.store || "himmat") === RB_STORE; });
 
   function addMaterial(name, unit) {
     var nm = String(name || "").trim();
@@ -930,12 +932,12 @@ function RaeesBuilderApp() {
     return entry.id;
   }
 
-  function addPurchase(supplierId, qty, rate, date, materialId) {
+  function addPurchase(supplierId, qty, rate, date, materialId, storeId) {
     var b = Number(qty) || 0, r = Number(rate) || 0;
     var mid = materialId || "cement";
     if (!supplierId || b <= 0) return;
     var mm = null; materials.forEach(function (x) { if (x.id === mid) mm = x; });
-    var entry = { id: rbUid(), supplierId: supplierId, material: mid, materialName: mm ? mm.name : mid, unit: mm ? mm.unit : "", qty: b, bags: mid === "cement" ? b : 0, rate: r, amount: b * r, date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), supplierId: supplierId, material: mid, materialName: mm ? mm.name : mid, unit: mm ? mm.unit : "", qty: b, bags: mid === "cement" ? b : 0, rate: r, amount: b * r, date: date || rbToday(), store: storeId || RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setPurchases(function (a) { return [entry].concat(a); });
     showToast(t("buyMaterial"));
     logActivity("material_bought", (mm ? mm.name : mid) + " " + b);
@@ -966,7 +968,7 @@ function RaeesBuilderApp() {
   function addSupplierPayment(supplierId, amount, date) {
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
-    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setSupplierPayments(function (a) { return [entry].concat(a); });
     showToast(t("payToSupplier"));
     logActivity("supplier_paid", "Rs " + rbMoney(amt));
@@ -1321,7 +1323,7 @@ function RaeesBuilderApp() {
       purId = rbUid();
       var pEntry = { id: purId, supplierId: pur.supplierId, material: category, materialName: variantLabel(t, category, variant),
         unit: t("pieces"), qty: q, bags: 0, rate: q > 0 ? amt / q : 0, amount: amt, date: date || rbToday(),
-        fromStock: true, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+        fromStock: true, store: (pur.store || RB_STORE), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
       setPurchases(function (a) { return [pEntry].concat(a); });
     }
     var stId = rbUid();
@@ -1331,6 +1333,14 @@ function RaeesBuilderApp() {
     var entry = { id: stId, category: category, variant: variant, qty: q, date: date || rbToday(), cementBags: 0, cementPending: !pur,
       supplierId: pur ? pur.supplierId : null, purchaseId: purId, labourMissing: lres.missing,
       by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null };
+    if (pur && pur.store && pur.store !== RB_STORE) {
+      var oKey = rbKeyFor(pur.store, "stock-log"), oList = [];
+      try { oList = JSON.parse(localStorage.getItem(oKey) || "[]") || []; } catch (e) { oList = []; }
+      localStorage.setItem(oKey, JSON.stringify([entry].concat(oList)));
+      showToast((pur.store === "rangpur" ? "Rangpur" : "Himmat") + " store ke stock mein add ho gaya");
+      logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty + " (" + pur.store + ")");
+      return;
+    }
     setStockLog(function (a) { return [entry].concat(a); });
     showToast(lres.made.length ? t("stockUpdated") + " \u00b7 " + t("labourAutoToast") : t("stockUpdated"));
     logActivity("stock_added", variantLabel(t, category, variant) + " +" + entry.qty + (pur ? " (" + t("stockBought") + ")" : ""));
@@ -1738,7 +1748,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={purchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
@@ -1764,7 +1774,7 @@ function editStockEntry(id, qty, date) {
       setViewingGatePass({ sale: { customerName: g.customerName, date: g.date, serial: g.serial, type: g.type, mobile: g.mobile }, items: g.items, entry: g });
     }} />;
   } else if (tab === "book") {
-    body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={purchases} supplierPayments={supplierPayments}
+    body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
       canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
