@@ -2573,7 +2573,7 @@ function DayBookReport(p) {
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
       <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")}</div>
-        <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book Report</div>
+        <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
@@ -2667,6 +2667,12 @@ function ReportsTab(p) {
 
   return (
     <div style={{ padding: "14px 14px 4px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber }}>Day Book</div>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: TC.cream, fontWeight: 700 }}>Tareekh
+          <input type="date" value={range.preset === "custom" && range.from && range.from === range.to ? range.from : (range.preset === "today" ? rbToday() : "")} onChange={function (ev) { var d = ev.target.value; if (d) setRange({ preset: "custom", from: d, to: d }); }} style={{ padding: "7px 8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
+        </label>
+      </div>
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <RangeFilter t={t} range={range} onChange={setRange} />
