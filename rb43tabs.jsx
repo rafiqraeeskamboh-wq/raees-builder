@@ -2595,7 +2595,25 @@ function SettingsBlock(p) { return (
   );
 }
 
-function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function SuperPinSetter(p) {
+function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onChange = p.onChange; return ( <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 2px", cursor: "pointer" }}> <input type="checkbox" checked={!!checked} onChange={function (ev) { onChange(ev.target.checked); }} style={{ width: 17, height: 17, accentColor: TC.slab, flexShrink: 0 }} /> <span style={{ fontSize: 12.5, color: TC.cream }}>{label}</span> </label> ); } function UserPinSetter(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var hasPin = !!(p.security && p.security.userPin); function save() { if (val.length < 4) return; p.onSetPin(val); setVal(""); } return (<div><div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{hasPin ? "User PIN set hai. Naya PIN dalkar change kar sakte hain." : "Abhi koi PIN set nahi - User role kisi bhi mobile pe bina roktok mil jata hai."}</div><div style={{ display: "flex", gap: 8 }}><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} placeholder="4-6 digit PIN" style={{ flex: 1, padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14 }} /><button onClick={save} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5 }}>{hasPin ? "Change" : "Set"}</button></div></div>); } function RbBioSetting(p) {
+  var s = React.useState(function () { return rbBioGet(); }), bio = s[0], setBio = s[1];
+  var m = React.useState(""), msg = m[0], setMsg = m[1];
+  if (!rbBioSupported()) return <div style={{ fontSize: 11.5, color: "#A39C8A" }}>Ye phone ya browser fingerprint login support nahi karta. PIN se login karein.</div>;
+  function label(b) { return b.role === "admin" ? (b.super ? "Super Admin" : "Admin") : "User"; }
+  function turnOn() { setMsg("Phone par fingerprint lagayein..."); rbBioRegister(p.role, p.role === "admin" && rbIsSuper()).then(function (b) { setBio(b); setMsg("Fingerprint on ho gaya"); }).catch(function (e) { setMsg("Fingerprint on nahi hua (" + ((e && e.name) || "error") + "). Phone mein fingerprint ya screen lock laga hona chahiye."); }); }
+  function turnOff() { rbBioClear(); setBio(null); setMsg("Fingerprint band kar diya"); }
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{bio ? ("Is phone par fingerprint on hai - " + label(bio) + " ke liye. App kholte waqt Fingerprint se login dabayein.") : "Is phone par fingerprint on karein, phir PIN ki jagah fingerprint se login ho jaye ga. Jis role se abhi login hain usi role ke liye on hoga."}</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={turnOn} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{bio ? "Dobara on karein" : "Fingerprint on karein"}</button>
+        {bio ? <button onClick={turnOff} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Band karein</button> : null}
+      </div>
+      {msg ? <div style={{ fontSize: 11.5, color: TC.cream, marginTop: 6 }}>{msg}</div> : null}
+    </div>
+  );
+}
+function SuperPinSetter(p) {
   var s1 = React.useState(""), val = s1[0], setVal = s1[1];
   var hasPin = !!(p.security && p.security.superPin);
   function save() { if (val.length < 4) return; if (p.security && (val === p.security.adminPin || val === p.security.userPin)) { window.alert("Super Admin PIN, Admin aur User PIN se alag rakhein"); return; } p.onSetPin(val); setVal(""); }
@@ -2942,6 +2960,9 @@ function ReportsTab(p) {
           <NextSerialSetter t={t} nextSerial={nextSerial} onSet={onSetNextSerial} />
         </SettingsBlock>
       ) : null}
+      <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Fingerprint Login">
+        <RbBioSetting role={role} />
+      </SettingsBlock>
       <SettingsBlock icon={<Ico name="globe" size={16} color={TC.cream} />} title={t("language")}>
         <div style={{ display: "flex", gap: 8 }}>
           {[["en", "English"], ["ur", "اردو"]].map(function (o) {
