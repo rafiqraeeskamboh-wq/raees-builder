@@ -1497,6 +1497,9 @@ function RbLabourerRename(p) {
 function rbWeekOf(iso) { var d = new Date(String(iso).slice(0, 10) + "T00:00:00"); var add = (4 - d.getDay() + 7) % 7; var e = new Date(d); e.setDate(d.getDate() + add); var st = new Date(e); st.setDate(e.getDate() - 6); return { from: isoOf(st), to: isoOf(e) }; }
 function RbLabourWeekCard(p) {
   var o = React.useState(0), off = o[0], setOff = o[1];
+  var pf = React.useState(null), payFor = pf[0], setPayFor = pf[1];
+  var pa = React.useState(""), pAmt = pa[0], setPAmt = pa[1];
+  var pd = React.useState(""), pDesc = pd[0], setPDesc = pd[1];
   var base = new Date(); base.setDate(base.getDate() + off * 7);
   var wk = rbWeekOf(isoOf(base));
   function sum(list) { return list.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0); }
@@ -1510,14 +1513,14 @@ function RbLabourWeekCard(p) {
     return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi };
   }).filter(function (r) { return r.carry !== 0 || r.work > 0 || r.paid > 0 || r.dues !== 0; });
   var tC = rows.reduce(function (n, r) { return n + r.carry; }, 0), tW = rows.reduce(function (n, r) { return n + r.work; }, 0), tP = rows.reduce(function (n, r) { return n + r.paid; }, 0), tD = rows.reduce(function (n, r) { return n + r.dues; }, 0);
-  function pay(r) {
-    var sug = Math.max(0, r.dues);
-    var v = window.prompt(r.lb.name + " ko kitni adaigi? (Rs)", sug ? String(Math.round(sug)) : "");
-    if (v === null) return;
-    var amt = Number(String(v).replace(/[^0-9.]/g, "")) || 0;
-    if (amt <= 0) return;
+  function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); }
+  function savePay() {
+    var amt = Number(String(pAmt).replace(/[^0-9.]/g, "")) || 0;
+    if (amt <= 0 || !payFor) return;
     var date = off === 0 ? rbToday() : wk.to;
-    p.onPay(r.lb.id, amt, date, "Hafta " + rbDate(wk.from) + " - " + rbDate(wk.to));
+    var tag = "Hafta " + rbDate(wk.from) + " - " + rbDate(wk.to);
+    p.onPay(payFor.id, amt, date, pDesc.trim() ? pDesc.trim() + " (" + tag + ")" : tag);
+    setPayFor(null); setPAmt(""); setPDesc("");
   }
   var nav = { padding: "6px 10px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" };
   var th = { fontSize: 10, color: TC.inkSoft, fontWeight: 700, textAlign: "right", padding: "4px 4px" };
@@ -1538,7 +1541,7 @@ function RbLabourWeekCard(p) {
             {rows.map(function (r) {
               return (
                 <tr key={r.lb.id}>
-                  <td style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700 })}>{r.lb.name}</td>
+                  <td onClick={function () { if (p.onOpen) p.onOpen(r.lb.id); }} style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700, cursor: "pointer", textDecoration: "underline", color: TC.slab || TC.ink })}>{r.lb.name}</td>
                   <td className="rb-mono" style={td}>{rbMoney(r.carry)}</td>
                   <td className="rb-mono" style={td}>{rbMoney(r.work)}</td>
                   <td className="rb-mono" style={Object.assign({}, td, { color: TC.success })}>{rbMoney(r.paid)}</td>
@@ -1558,6 +1561,17 @@ function RbLabourWeekCard(p) {
           </tbody>
         </table>
       )}
+      {payFor ? (
+        <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
+          <input type="number" inputMode="numeric" value={pAmt} onChange={function (e) { setPAmt(e.target.value); }} placeholder="Raqam (Rs)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
+          <input value={pDesc} onChange={function (e) { setPDesc(e.target.value); }} placeholder="Description (jaise: advance, poori adaigi, kiraya)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={function () { setPayFor(null); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Cancel</button>
+            <button disabled={!(Number(pAmt) > 0)} onClick={savePay} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: Number(pAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Adaigi save karein</button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1835,7 +1849,7 @@ function LabourTab(p) {
         </div>
       ) : null}
 
-      <RbLabourWeekCard labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} />
+      <RbLabourWeekCard labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} onOpen={function (id) { setOpenId(id); try { window.scrollTo(0, 0); } catch (e) {} }} />
         {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
 
       {adding ? (
