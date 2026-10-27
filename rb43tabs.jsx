@@ -2667,18 +2667,6 @@ function ReportsTab(p) {
 
   return (
     <div style={{ padding: "14px 14px 4px" }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        {[["book", t("dayBook")], ["pl", t("profitLoss")]].map(function (o) {
-          var id = o[0], label = o[1], on = view === id;
-          return (
-            <button key={id} onClick={function () { setView(id); }} style={{
-              flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"),
-              background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A",
-              fontSize: 13, fontWeight: 700, cursor: "pointer"
-            }}>{label}</button>
-          );
-        })}
-      </div>
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <RangeFilter t={t} range={range} onChange={setRange} />
