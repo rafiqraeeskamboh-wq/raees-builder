@@ -2526,23 +2526,28 @@ function DayBookReport(p) {
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
 
-  /* cash opening = all cash in minus all cash out before the start date */
+  var book = p.book || "admin";
+  function mine(who) { return (who || "admin") === book; }
   var opening = 0;
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (before(pay.date)) opening += num(pay.amount); }); });
-  (all.supplierPayments || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
-  (all.expenses || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
-  (all.labourPayments || []).forEach(function (x) { if (before(x.date)) opening -= num(x.amount); });
-
   var rec = [];
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (inR(pay.date)) rec.push({ date: pay.date, title: s.customerName || "-", part: "Cash Received", vno: s.serial, amt: num(pay.amount) }); }); });
-  rec.sort(byDate);
   var out = [];
-  (all.supplierPayments || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: supName[x.supplierId] || "-", part: x.note || "Supplier Payment", amt: num(x.amount) }); });
-  (all.expenses || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: x.detail || "-", part: "Kharcha", amt: num(x.amount) }); });
-  (all.labourPayments || []).forEach(function (x) { if (inR(x.date)) out.push({ date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance", amt: num(x.amount) }); });
+  function addIn(d, row) { if (before(d)) opening += row.amt; else if (inR(d)) rec.push(row); }
+  function addOut(d, row) { if (before(d)) opening -= row.amt; else if (inR(d)) out.push(row); }
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received", vno: s.serial, amt: num(pay.amount) }); }); });
+  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: x.note || "Supplier Payment", amt: num(x.amount) }); });
+  (all.expenses || []).forEach(function (x) {
+    if (x.transfer) {
+      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer", vno: "", amt: num(x.amount) });
+      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer", amt: num(x.amount) });
+      return;
+    }
+    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha", amt: num(x.amount) });
+  });
+  (all.labourPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance", amt: num(x.amount) }); });
+  rec.sort(byDate);
   out.sort(byDate);
-  var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date); }).sort(byDate);
-  var cp = (all.purchases || []).filter(function (x) { return inR(x.date); }).sort(byDate);
+  var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
+  var cp = (all.purchases || []).filter(function (x) { return inR(x.date) && mine(x.by); }).sort(byDate);
 
   var recT = rec.reduce(function (n, x) { return n + x.amt; }, 0);
   var outT = out.reduce(function (n, x) { return n + x.amt; }, 0);
@@ -2574,6 +2579,7 @@ function DayBookReport(p) {
       <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")}</div>
         <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book</div>
+        <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book === "admin" ? "Bara Cash (Admin)" : "Parchoon Cash (User)"}</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
@@ -2624,6 +2630,9 @@ function ReportsTab(p) {
   var e2 = React.useState(""), expAmt = e2[0], setExpAmt = e2[1];
   var e3 = React.useState(rbToday()), expDate = e3[0], setExpDate = e3[1];
   var r = resolveRange(range);
+  var isAdmin = p.role !== "accountant";
+  var bk = React.useState(isAdmin ? "admin" : "accountant"), book = isAdmin ? bk[0] : "accountant", setBook = bk[1];
+  var tf1 = React.useState(""), tfAmt = tf1[0], setTfAmt = tf1[1];
   function inR(d) { return inDateRange(d, r.from, r.to); }
   var supName = {};
   (p.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
@@ -2639,7 +2648,7 @@ function ReportsTab(p) {
   var supPays = (p.supplierPayments || []).filter(function (x) { return inR(x.date); });
   var stockAdds = (p.stockLog || []).filter(function (x) { return inR(x.date); });
   var wast = (p.wastageLog || []).filter(function (x) { return inR(x.date); });
-  var exps = (p.expenses || []).filter(function (x) { return inR(x.date); });
+  var exps = (p.expenses || []).filter(function (x) { return !x.transfer && inR(x.date); });
   var labName = {};
   (p.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
   var labWork = (p.labourWork || []).filter(function (x) { return inR(x.date); });
@@ -2673,6 +2682,23 @@ function ReportsTab(p) {
           <input type="date" value={range.preset === "custom" && range.from && range.from === range.to ? range.from : (range.preset === "today" ? rbToday() : "")} onChange={function (ev) { var d = ev.target.value; if (d) setRange({ preset: "custom", from: d, to: d }); }} style={{ padding: "7px 8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
         </label>
       </div>
+      {isAdmin ? (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          {[["accountant", "Parchoon Cash (User)"], ["admin", "Bara Cash (Admin)"]].map(function (o) {
+            var on = book === o[0];
+            return <button key={o[0]} onClick={function () { setBook(o[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>;
+          })}
+        </div>
+      ) : null}
+      {p.onCashTransfer ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{isAdmin ? "User ko cash dein" : "Admin ko cash dein"}</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="number" inputMode="numeric" value={tfAmt} onChange={function (ev) { setTfAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
+            <button disabled={!(Number(tfAmt) > 0)} onClick={function () { if (window.confirm("Rs " + rbMoney(tfAmt) + (isAdmin ? " User ko diye?" : " Admin ko diye?"))) { p.onCashTransfer(tfAmt, rbToday()); setTfAmt(""); } }} style={{ padding: "9px 14px", borderRadius: 7, border: "none", background: Number(tfAmt) > 0 ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: Number(tfAmt) > 0 ? "pointer" : "not-allowed" }}>Cash dein</button>
+          </div>
+        </div>
+      ) : null}
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <RangeFilter t={t} range={range} onChange={setRange} />
@@ -2712,7 +2738,7 @@ function ReportsTab(p) {
         </div>
       ) : null}
 
-      {view === "book" ? <DayBookReport t={t} range={r} all={p} /> : rows.length === 0 ? (
+      {view === "book" ? <DayBookReport t={t} range={r} all={p} book={book} /> : rows.length === 0 ? (
         <EmptyState icon={<Ico name="grid" size={28} color={TC.concrete} />} text={t("noEntriesRange")} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
