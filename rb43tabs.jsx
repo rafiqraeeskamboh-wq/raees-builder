@@ -1493,6 +1493,74 @@ function RbLabourerRename(p) {
     </div>
   );
 }
+/* hafta: Jumma se Jumeraat tak */
+function rbWeekOf(iso) { var d = new Date(String(iso).slice(0, 10) + "T00:00:00"); var add = (4 - d.getDay() + 7) % 7; var e = new Date(d); e.setDate(d.getDate() + add); var st = new Date(e); st.setDate(e.getDate() - 6); return { from: isoOf(st), to: isoOf(e) }; }
+function RbLabourWeekCard(p) {
+  var o = React.useState(0), off = o[0], setOff = o[1];
+  var base = new Date(); base.setDate(base.getDate() + off * 7);
+  var wk = rbWeekOf(isoOf(base));
+  function sum(list) { return list.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0); }
+  function inW(x) { return inDateRange(String(x.date || ""), wk.from, wk.to); }
+  var rows = (p.labourers || []).map(function (lb) {
+    var tot = p.labourTotals ? p.labourTotals(lb.id) : { works: [], payments: [], dues: 0 };
+    function after(x) { return String(x.date || "") > wk.to; }
+    var work = sum((tot.works || []).filter(inW)), paid = sum((tot.payments || []).filter(inW));
+    var endBaqi = (Number(tot.dues) || 0) - sum((tot.works || []).filter(after)) + sum((tot.payments || []).filter(after));
+    var carry = endBaqi - work + paid;
+    return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi };
+  }).filter(function (r) { return r.carry !== 0 || r.work > 0 || r.paid > 0 || r.dues !== 0; });
+  var tC = rows.reduce(function (n, r) { return n + r.carry; }, 0), tW = rows.reduce(function (n, r) { return n + r.work; }, 0), tP = rows.reduce(function (n, r) { return n + r.paid; }, 0), tD = rows.reduce(function (n, r) { return n + r.dues; }, 0);
+  function pay(r) {
+    var sug = Math.max(0, r.dues);
+    var v = window.prompt(r.lb.name + " ko kitni adaigi? (Rs)", sug ? String(Math.round(sug)) : "");
+    if (v === null) return;
+    var amt = Number(String(v).replace(/[^0-9.]/g, "")) || 0;
+    if (amt <= 0) return;
+    var date = off === 0 ? rbToday() : wk.to;
+    p.onPay(r.lb.id, amt, date, "Hafta " + rbDate(wk.from) + " - " + rbDate(wk.to));
+  }
+  var nav = { padding: "6px 10px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" };
+  var th = { fontSize: 10, color: TC.inkSoft, fontWeight: 700, textAlign: "right", padding: "4px 4px" };
+  var td = { fontSize: 12, color: TC.ink, textAlign: "right", padding: "6px 4px", borderTop: "1px solid " + TC.paperLine, whiteSpace: "nowrap" };
+  return (
+    <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: TC.ink, marginBottom: 2 }}>Hafta wise adaigi</div>
+      <div style={{ fontSize: 10.5, color: TC.inkSoft, marginBottom: 8 }}>Jo raqam is hafte baqi reh jaye wo khud agle hafte ke Pichla baqi mein chali jati hai.</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <button onClick={function () { setOff(off - 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine })}>‹ Pichla</button>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, textAlign: "center" }}>Jumma {rbDate(wk.from)} – Jumeraat {rbDate(wk.to)}{off === 0 ? " (is hafta)" : ""}</div>
+        <button disabled={off >= 0} onClick={function () { setOff(off + 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine, opacity: off >= 0 ? 0.4 : 1 })}>Agla ›</button>
+      </div>
+      {rows.length === 0 ? <div style={{ fontSize: 12, color: TC.inkSoft }}>Is hafte koi kaam ya baqi nahi</div> : (
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={Object.assign({}, th, { textAlign: "left" })}>Mazdoor</th><th style={th}>Pichla baqi</th><th style={th}>Is hafte kaam</th><th style={th}>Diya</th><th style={th}>Agle hafte</th>{p.isAdmin ? <th style={th}></th> : null}</tr></thead>
+          <tbody>
+            {rows.map(function (r) {
+              return (
+                <tr key={r.lb.id}>
+                  <td style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700 })}>{r.lb.name}</td>
+                  <td className="rb-mono" style={td}>{rbMoney(r.carry)}</td>
+                  <td className="rb-mono" style={td}>{rbMoney(r.work)}</td>
+                  <td className="rb-mono" style={Object.assign({}, td, { color: TC.success })}>{rbMoney(r.paid)}</td>
+                  <td className="rb-mono" style={Object.assign({}, td, { color: r.dues > 0 ? TC.stamp : TC.success, fontWeight: 700 })}>{rbMoney(r.dues)}</td>
+                  {p.isAdmin ? <td style={td}><button onClick={function () { pay(r); }} style={{ padding: "5px 9px", borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Adaigi</button></td> : null}
+                </tr>
+              );
+            })}
+            <tr>
+              <td style={Object.assign({}, td, { textAlign: "left", fontWeight: 700 })}>Kul</td>
+              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700 })}>{rbMoney(tC)}</td>
+              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700 })}>{rbMoney(tW)}</td>
+              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700, color: TC.success })}>{rbMoney(tP)}</td>
+              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700, color: TC.stamp })}>{rbMoney(tD)}</td>
+              {p.isAdmin ? <td style={td}></td> : null}
+            </tr>
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
 function LabourTab(p) {
   var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
   var pendingItems = p.pendingItems || [];
@@ -1582,7 +1650,7 @@ function LabourTab(p) {
           ) : null}
         </div>
 
-        {p.isAdmin && p.onSettle ? (settleAsk ? (
+        {false && p.onSettle ? (settleAsk ? (
           <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
             <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8, lineHeight: 1.5 }}>{t("settleHint")}</div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -1767,7 +1835,8 @@ function LabourTab(p) {
         </div>
       ) : null}
 
-      {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
+      <RbLabourWeekCard labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} />
+        {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
 
       {adding ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
