@@ -1510,7 +1510,7 @@ function RbLabourWeekCard(p) {
     var work = sum((tot.works || []).filter(inW)), paid = sum((tot.payments || []).filter(inW));
     var endBaqi = (Number(tot.dues) || 0) - sum((tot.works || []).filter(after)) + sum((tot.payments || []).filter(after));
     var carry = endBaqi - work + paid;
-    return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi };
+    return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi, weekWorks: (tot.works || []).filter(inW) };
   }).filter(function (r) { return r.carry !== 0 || r.work > 0 || r.paid > 0 || r.dues !== 0; });
   var tC = rows.reduce(function (n, r) { return n + r.carry; }, 0), tW = rows.reduce(function (n, r) { return n + r.work; }, 0), tP = rows.reduce(function (n, r) { return n + r.paid; }, 0), tD = rows.reduce(function (n, r) { return n + r.dues; }, 0);
   function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); }
@@ -1561,6 +1561,40 @@ function RbLabourWeekCard(p) {
           </tbody>
         </table>
       )}
+      {(function () {
+        var byKind = {}, order = [];
+        rows.forEach(function (r) { (r.weekWorks || []).forEach(function (x) { var k = x.kind || "other"; if (!byKind[k]) { byKind[k] = []; order.push(k); } byKind[k].push({ lb: r.lb, x: x }); }); });
+        if (!order.length) return null;
+        var tt = p.t || function (k) { return k; };
+        return (
+          <div style={{ marginTop: 12, borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink, marginBottom: 4 }}>Is hafte ka kaam (qism wise)</div>
+            {order.map(function (k) {
+              var kk = labourKind(k) || {};
+              var unit = kk.unitKey ? tt(kk.unitKey) : "";
+              var list = byKind[k].slice().sort(function (m, n) { return String(m.x.date || "").localeCompare(String(n.x.date || "")); });
+              var tq = list.reduce(function (n, it) { return n + (Number(it.x.qty) || 0); }, 0);
+              var ta = list.reduce(function (n, it) { return n + (Number(it.x.amount) || 0); }, 0);
+              return (
+                <div key={k} style={{ marginTop: 8, background: "rgba(0,0,0,0.03)", borderRadius: 6, padding: "6px 8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, fontWeight: 700, color: TC.ink, marginBottom: 3 }}>
+                    <span>{kk.labelKey ? tt(kk.labelKey) : k}</span>
+                    <span className="rb-mono" style={{ whiteSpace: "nowrap" }}>{tq ? (Math.round(tq * 100) / 100) + " " + unit + " · " : ""}Rs {rbMoney(ta)}</span>
+                  </div>
+                  {list.map(function (it, i) {
+                    return (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, color: TC.inkSoft, padding: "3px 0", borderTop: i ? "1px solid " + TC.paperLine : "none" }}>
+                        <span>{rbDate(it.x.date)} · {it.lb.name}{it.x.qty ? " · " + it.x.qty + " " + unit : ""}</span>
+                        <span className="rb-mono" style={{ whiteSpace: "nowrap", color: TC.ink }}>Rs {rbMoney(it.x.amount)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
       {payFor ? (
         <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
@@ -1849,7 +1883,7 @@ function LabourTab(p) {
         </div>
       ) : null}
 
-      <RbLabourWeekCard labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} onOpen={function (id) { setOpenId(id); try { window.scrollTo(0, 0); } catch (e) {} }} />
+      <RbLabourWeekCard t={t} labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} onOpen={function (id) { setOpenId(id); try { window.scrollTo(0, 0); } catch (e) {} }} />
         {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
 
       {adding ? (
