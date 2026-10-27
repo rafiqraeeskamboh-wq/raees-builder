@@ -898,11 +898,13 @@ function RaeesBuilderApp() {
     logActivity("expense_added", d + " — Rs " + rbMoney(amt));
   }
 
-  function addCashTransfer(amount, date) {
+  function addCashTransfer(amount, date, toWho, name) {
     var amt = Number(amount) || 0;
     if (amt <= 0) return;
-    var to = role === "admin" ? "accountant" : "admin";
-    var entry = { id: rbUid(), detail: role === "admin" ? "User ko cash diya" : "Admin ko cash diya", amount: amt, date: date || rbToday(), by: role, transfer: true, from: role, to: to, createdAt: new Date().toISOString() };
+    var to = toWho || (role === "admin" ? "accountant" : "admin");
+    var from = to === "admin" ? "accountant" : "admin";
+    var nm = String(name || "").trim();
+    var entry = { id: rbUid(), detail: (to === "admin" ? "Admin ko cash diya" : "User ko cash diya") + (nm ? " (" + nm + ")" : ""), name: nm, amount: amt, date: date || rbToday(), by: role, transfer: true, from: from, to: to, createdAt: new Date().toISOString() };
     setExpenses(function (a) { return [entry].concat(a); });
     showToast("Cash transfer: Rs " + rbMoney(amt));
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
