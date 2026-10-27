@@ -60,6 +60,8 @@ var RB_STORE = (function () { try { return localStorage.getItem("raees-store") =
 var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
+function rbIsSuper() { try { return sessionStorage.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
+function rbCanSwitchStore(role) { return role === "admin" && (rbIsSuper() || !rbGet("security", {}).superPin); }
 function rbSwitchStore(st) { try { localStorage.setItem("raees-store", st); } catch (e) {} location.reload(); }
 /* per-login-session role marker (sessionStorage, not localStorage) - cleared when the
    browser tab / installed app is closed, so every fresh open re-asks for a PIN */
@@ -598,7 +600,7 @@ function AppHeader(p) {
           <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
             {RB_STORES.map(function (st) {
               var on = RB_STORE === st[0];
-              if (!on && role !== "admin") return null;
+              if (!on && !rbCanSwitchStore(role)) return null;
               return <button key={st[0]} onClick={function () { if (!on && window.confirm(st[1] + " store kholein?")) rbSwitchStore(st[0]); }} style={{ padding: "4px 12px", borderRadius: 14, border: "1.5px solid " + (on ? "#D9A441" : "#6B6656"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: on ? "default" : "pointer" }}>{st[1]} Store</button>;
             })}
           </div>
@@ -608,7 +610,7 @@ function AppHeader(p) {
             background: role === "admin" ? TC.stamp : TC.slab, color: TC.cream,
             fontSize: 10.5, fontWeight: 700, padding: "5px 10px", borderRadius: 5,
             textTransform: "uppercase", letterSpacing: "0.05em"
-          }}>{role === "admin" ? t("admin") : t("accountant")}</div>
+          }}>{role === "admin" ? (rbIsSuper() ? "Super Admin" : t("admin")) : t("accountant")}</div>
           {p.onLogout ? (
             <button onClick={p.onLogout} style={{
               background: "transparent", border: "1.5px solid #6B6656", color: "#D8CDA9",
