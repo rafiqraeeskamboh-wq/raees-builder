@@ -2624,45 +2624,53 @@ function PermissionCheckRow(p) { var label = p.label, checked = p.checked, onCha
   );
 }
 function RbPeopleManager(p) {
-  var list = (p.security && p.security.people) || [];
+  var all = (p.security && p.security.people) || [];
+  var isSup = rbIsSuper() || !(p.security && p.security.superPin);
+  var list = isSup ? all : all.filter(function (x) { return x.role !== "admin" && (x.store || "himmat") === RB_STORE; });
   var a = React.useState(""), nm = a[0], setNm = a[1];
-  var b = React.useState("accountant"), rl = b[0], setRl = b[1];
+  var b = React.useState(""), mob = b[0], setMob = b[1];
   var c = React.useState(""), pin = c[0], setPin = c[1];
   var d = React.useState(""), msg = d[0], setMsg = d[1];
-  function add() {
+  var f = React.useState(RB_STORE), st = f[0], setSt = f[1];
+  function stName(x) { return x === "rangpur" ? "Rangpur" : "Himmat"; }
+  function add(role) {
     var name = nm.trim();
+    if (role === "admin" && !isSup) return;
     if (!name) { setMsg("Naam likhein"); return; }
     if (pin.length < 4) { setMsg("PIN kam az kam 4 hindson ka ho"); return; }
     var sec = p.security || {};
-    var used = list.some(function (x) { return x.pin === pin; }) || pin === sec.adminPin || pin === sec.userPin || pin === sec.superPin;
+    var used = all.some(function (x) { return x.pin === pin; }) || pin === sec.adminPin || pin === sec.userPin || pin === sec.superPin;
     if (used) { setMsg("Ye PIN pehle se kisi aur ka hai - alag PIN rakhein"); return; }
-    p.onSave(list.concat([{ id: rbUid(), name: name, role: rl, pin: pin }]));
-    setNm(""); setPin(""); setMsg(name + " add ho gaya");
+    var store = isSup ? st : RB_STORE;
+    p.onSave(all.concat([{ id: rbUid(), name: name, mobile: mob.trim(), store: store, role: role, pin: pin, createdBy: rbSessionName() || (rbIsSuper() ? "Super Admin" : "Admin"), createdAt: new Date().toISOString() }]));
+    setNm(""); setMob(""); setPin(""); setMsg(name + " (" + (role === "admin" ? "Admin" : "User") + " - " + stName(store) + ") save ho gaya");
   }
-  function remove(x) { if (window.confirm(x.name + " ko hata dein?")) p.onSave(list.filter(function (y) { return y.id !== x.id; })); }
+  function remove(x) { if (window.confirm(x.name + " ko hata dein?")) p.onSave(all.filter(function (y) { return y.id !== x.id; })); }
   var inp = { padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, minWidth: 0, boxSizing: "border-box" };
+  function btn(on) { return { flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }; }
   return (
     <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
-      <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Log (naam aur PIN)</div>
-      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Har Admin aur User ka apna naam aur PIN banayein. Login par naam chun kar apna PIN darj karein. Har entry par us ka naam likha jaye ga.</div>
+      <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>{isSup ? "Users aur Admins" : "Users (" + stName(RB_STORE) + ")"}</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{isSup ? "Super Admin naye User aur Admin bana sakta hai. Har bande ka naam, mobile, store aur apna PIN." : "Admin apne store ke User bana sakta hai."} Login par naam chun kar apna PIN darj karein. Har entry par us ka naam likha jaye ga.</div>
       {list.map(function (x) {
         return (
           <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 10px", marginBottom: 6, borderRadius: 8, background: TC.appBg, color: TC.cream, fontSize: 13 }}>
-            <span><b>{x.name}</b> <span style={{ color: "#A39C8A", fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"})</span></span>
+            <span style={{ minWidth: 0 }}><b>{x.name}</b> <span style={{ color: "#A39C8A", fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"} · {stName(x.store || "himmat")}{x.mobile ? " · " + x.mobile : ""})</span></span>
             <button onClick={function () { remove(x); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Hatayein</button>
           </div>
         );
       })}
       <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder="Naam (jaise Ali)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
-      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-        {[["accountant", "User"], ["admin", "Admin"]].map(function (o) {
-          var on = rl === o[0];
-          return <button key={o[0]} onClick={function () { setRl(o[0]); }} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{o[1]}</button>;
-        })}
-      </div>
+      <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="Mobile number (03xx xxxxxxx)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
+      {isSup ? (
+        <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+          {RB_STORES.map(function (o) { return <button key={o[0]} type="button" onClick={function () { setSt(o[0]); }} style={btn(st === o[0])}>{o[1]} Store</button>; })}
+        </div>
+      ) : <div style={{ fontSize: 11.5, color: "#D8CDA9", marginBottom: 6 }}>Store: {stName(RB_STORE)}</div>}
+      <input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={function (e) { setPin(e.target.value.replace(/\D/g, "")); }} placeholder="PIN (4-6 digit)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
       <div style={{ display: "flex", gap: 6 }}>
-        <input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={function (e) { setPin(e.target.value.replace(/\D/g, "")); }} placeholder="PIN (4-6 digit)" style={Object.assign({}, inp, { flex: 1 })} />
-        <button onClick={add} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Add</button>
+        <button type="button" onClick={function () { add("accountant"); }} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>+ Add User</button>
+        {isSup ? <button type="button" onClick={function () { add("admin"); }} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7A4E12", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>+ Add Admin</button> : null}
       </div>
       {msg ? <div style={{ fontSize: 11.5, color: TC.cream, marginTop: 6 }}>{msg}</div> : null}
     </div>
