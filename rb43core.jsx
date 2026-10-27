@@ -57,7 +57,7 @@ var RB2_PRE = "rb2:";
 /* do store: Himmat (purana data) aur Rangpur - har store ka data alag */
 var RB_STORES = [["himmat", "Himmat"], ["rangpur", "Rangpur"]];
 var RB_STORE = (function () { try { return localStorage.getItem("raees-store") === "rangpur" ? "rangpur" : "himmat"; } catch (e) { return "himmat"; } })();
-var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1 };
+var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1, "expense-heads": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
 function rbSessionName() { try { return sessionStorage.getItem("rb2-session-name") || ""; } catch (e) { return ""; } }
