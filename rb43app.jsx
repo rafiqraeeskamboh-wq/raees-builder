@@ -1730,8 +1730,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function clearAllData() {
-    if (role !== "admin") return;
-    if (window.RB_ASK_ADMIN_PIN) { window.RB_ASK_ADMIN_PIN(doClearAllData); return; }
+    if (role !== "admin" || !rbIsSuper()) return;
     doClearAllData();
   }
 
