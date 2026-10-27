@@ -62,6 +62,25 @@ function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
 function rbIsSuper() { try { return sessionStorage.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
 function rbCanSwitchStore(role) { return role === "admin" && (rbIsSuper() || !rbGet("security", {}).superPin); }
+/* fingerprint / face login - sirf isi phone par (cloud par nahi jata) */
+var RB_BIO_KEY = "raees-bio";
+function rbBioSupported() { try { return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext); } catch (e) { return false; } }
+function rbBioGet() { try { var r = localStorage.getItem(RB_BIO_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function rbBioClear() { try { localStorage.removeItem(RB_BIO_KEY); } catch (e) {} }
+function rbB64(buf) { var s = ""; var b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
+function rbUnB64(str) { var s = atob(str); var b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+function rbRand(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
+function rbBioRegister(role, isSuper) {
+  var nm = role === "admin" ? (isSuper ? "Super Admin" : "Admin") : "User";
+  return navigator.credentials.create({ publicKey: { challenge: rbRand(32), rp: { name: "Raees Builder" }, user: { id: rbRand(16), name: "raees-" + nm.toLowerCase().replace(" ", "-"), displayName: "Raees Builder " + nm },
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
+    .then(function (cred) { var b = { id: rbB64(cred.rawId), role: role, super: !!isSuper }; localStorage.setItem(RB_BIO_KEY, JSON.stringify(b)); return b; });
+}
+function rbBioVerify() {
+  var b = rbBioGet(); if (!b) return Promise.reject(new Error("none"));
+  return navigator.credentials.get({ publicKey: { challenge: rbRand(32), allowCredentials: [{ type: "public-key", id: rbUnB64(b.id) }], userVerification: "required", timeout: 60000 } }).then(function () { return b; });
+}
 function rbSwitchStore(st) { try { localStorage.setItem("raees-store", st); } catch (e) {} location.reload(); }
 /* per-login-session role marker (sessionStorage, not localStorage) - cleared when the
    browser tab / installed app is closed, so every fresh open re-asks for a PIN */
