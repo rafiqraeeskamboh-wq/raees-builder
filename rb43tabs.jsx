@@ -683,10 +683,11 @@ function AddStockModal(p) {
   var s3 = React.useState(""), amount = s3[0], setAmount = s3[1];
   var s4 = React.useState(false), addingSup = s4[0], setAddingSup = s4[1];
   var s5 = React.useState(""), newSup = s5[0], setNewSup = s5[1];
+  var s6 = React.useState(""), bStore = s6[0], setBStore = s6[1];
   var suppliers = p.suppliers || [];
   var q = Number(qty) || 0;
-  var canSave = q > 0;
   var bought = !!supId;
+  var canSave = q > 0 && (!bought || !!bStore);
   function round2(n) { return Math.round(n * 100) / 100; }
   function onQty(v) { setQty(v); var qq = Number(v) || 0; if (rate !== "") setAmount(String(round2((Number(rate) || 0) * qq))); }
   function onRate(v) { setRate(v); setAmount(v === "" ? "" : String(round2((Number(v) || 0) * q))); }
@@ -725,6 +726,12 @@ function AddStockModal(p) {
         </div>
       ) : null}
       {bought ? (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11.5, color: "#D8CDA9", fontWeight: 700, marginBottom: 6 }}>Ye maal kis store ka hai? (lazmi)</div>
+          <div style={{ display: "flex", gap: 8 }}>{RB_STORES.map(function (st) { var on = bStore === st[0]; return <button key={st[0]} type="button" onClick={function () { setBStore(st[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{st[1]}</button>; })}</div>
+        </div>
+      ) : null}
+      {bought ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
           <div style={{ display: "flex", gap: 6 }}>
             <div style={{ flex: 1 }}>
@@ -745,7 +752,7 @@ function AddStockModal(p) {
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
       <button disabled={!canSave} onClick={function () {
-        p.onSave(qty, date, bought ? { supplierId: supId, amount: Number(amount) || 0 } : null);
+        p.onSave(qty, date, bought ? { supplierId: supId, amount: Number(amount) || 0, store: bStore } : null);
       }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
@@ -969,6 +976,7 @@ function SupplierModal(p) {
   var c2 = React.useState(""), pRate = c2[0], setPRate = c2[1];
   var c3 = React.useState(rbToday()), pDate = c3[0], setPDate = c3[1];
   var m1 = React.useState("cement"), pMat = m1[0], setPMat = m1[1];
+  var m9 = React.useState(""), pStore = m9[0], setPStore = m9[1];
   var m2 = React.useState(false), addMat = m2[0], setAddMat = m2[1];
   var m3 = React.useState(""), matName = m3[0], setMatName = m3[1];
   var m4 = React.useState(""), matUnit = m4[0], setMatUnit = m4[1];
@@ -981,7 +989,7 @@ function SupplierModal(p) {
 
   if (current) {
     var tot = supplierTotals(current.id);
-    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: rbQtyOf(x), unit: x.unit || "", matName: x.materialName || "", rate: x.rate, amount: x.amount }; })
+    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: rbQtyOf(x), unit: x.unit || "", matName: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || ""), rate: x.rate, amount: x.amount }; })
       .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount }; }))
       .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
     return (
@@ -1022,6 +1030,8 @@ function SupplierModal(p) {
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyMaterial")}</div>
+          <div style={{ fontSize: 11, color: "#D8CDA9", fontWeight: 700, marginBottom: 6 }}>Ye maal kis store ka hai? (lazmi)</div>
+          <div style={{ marginBottom: 8 }}><div style={{ display: "flex", gap: 8 }}>{RB_STORES.map(function (st) { var on = pStore === st[0]; return <button key={st[0]} type="button" onClick={function () { setPStore(st[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{st[1]}</button>; })}</div></div>
           <select value={pMat} onChange={function (e) { setPMat(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13, marginBottom: 6 }}>
             {mats.map(function (m) { return <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>; })}
           </select>
@@ -1031,7 +1041,7 @@ function SupplierModal(p) {
           </div>
           <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 6 }} />
           <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{t("total")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>Rs {rbMoney((Number(pBags) || 0) * (Number(pRate) || 0))}</span></div>
-          <button disabled={!(Number(pBags) > 0)} onClick={function () { p.onAddPurchase(current.id, pBags, pRate, pDate, pMat); setPBags(""); setPRate(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: Number(pBags) > 0 ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyMaterial")}</button>
+          <button disabled={!(Number(pBags) > 0 && pStore)} onClick={function () { if (!pStore) return; p.onAddPurchase(current.id, pBags, pRate, pDate, pMat, pStore); setPBags(""); setPRate(""); setPStore(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: (Number(pBags) > 0 && pStore) ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyMaterial")}</button>
         </div>
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
