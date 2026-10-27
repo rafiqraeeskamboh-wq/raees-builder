@@ -2981,24 +2981,37 @@ function RbExpenseHeads(p) {
   var a = React.useState(false), adding = a[0], setAdding = a[1];
   var e = React.useState(false), editing = e[0], setEditing = e[1];
   var n = React.useState(""), nm = n[0], setNm = n[1];
+  var s1 = React.useState(""), sel = s1[0], setSel = s1[1];
+  var s2 = React.useState(""), newName = s2[0], setNewName = s2[1];
   function save(list) { setHeads(list); rbSet("expense-heads", list); }
   function add() { var v = nm.trim(); if (!v) return; if (heads.indexOf(v) < 0) save(heads.concat([v])); p.onPick(v); setNm(""); setAdding(false); }
+  function rename() { var v = newName.trim(); if (!v || !sel) return; if (v !== sel && heads.indexOf(v) >= 0) { window.alert("Ye naam pehle se list mein hai"); return; } save(heads.map(function (x) { return x === sel ? v : x; })); if (p.value === sel) p.onPick(v); setSel(""); setNewName(""); }
+  function remove() { if (!sel) return; if (window.confirm(sel + " list se hata dein?")) { save(heads.filter(function (y) { return y !== sel; })); setSel(""); setNewName(""); } }
   function chip(on) { return { padding: "6px 10px", borderRadius: 14, border: "1.5px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }; }
+  var inp = { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 };
+  var sb = { padding: "8px 12px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12, cursor: "pointer" };
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>Kharche ki qism chunein:</div>
+      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{editing ? "Jis qism ka naam badalna hai us par dabayein:" : "Kharche ki qism chunein:"}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {heads.map(function (hd) {
-          var on = p.value === hd;
-          return <button key={hd} type="button" onClick={function () { if (editing) { if (window.confirm(hd + " list se hata dein?")) save(heads.filter(function (y) { return y !== hd; })); } else p.onPick(hd); }} style={chip(on)}>{hd}{editing ? " ×" : ""}</button>;
+          var on = editing ? sel === hd : p.value === hd;
+          return <button key={hd} type="button" onClick={function () { if (editing) { setSel(hd); setNewName(hd); } else p.onPick(hd); }} style={chip(on)}>{hd}{editing ? " ✎" : ""}</button>;
         })}
-        <button type="button" onClick={function () { setAdding(!adding); setEditing(false); }} style={chip(false)}>+ Nayi qism</button>
-        <button type="button" onClick={function () { setEditing(!editing); setAdding(false); }} style={chip(editing)}>{editing ? "Bas" : "Hatayein"}</button>
+        {p.isAdmin ? <button type="button" onClick={function () { setAdding(!adding); setEditing(false); setSel(""); }} style={chip(false)}>+ Nayi qism</button> : null}
+        {p.isAdmin ? <button type="button" onClick={function () { setEditing(!editing); setAdding(false); setSel(""); }} style={chip(editing)}>{editing ? "Bas" : "Edit"}</button> : null}
       </div>
-      {adding ? (
+      {p.isAdmin && adding ? (
         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-          <input value={nm} onChange={function (ev) { setNm(ev.target.value); }} placeholder="Nayi qism ka naam" style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
-          <button type="button" onClick={add} style={{ padding: "8px 12px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Add</button>
+          <input value={nm} onChange={function (ev) { setNm(ev.target.value); }} placeholder="Nayi qism ka naam" style={inp} />
+          <button type="button" onClick={add} style={sb}>Add</button>
+        </div>
+      ) : null}
+      {p.isAdmin && editing && sel ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+          <input value={newName} onChange={function (ev) { setNewName(ev.target.value); }} placeholder="Naya naam" style={inp} />
+          <button type="button" onClick={rename} style={sb}>Save</button>
+          <button type="button" onClick={remove} style={Object.assign({}, sb, { background: "transparent", border: "1.5px solid #6B6656", color: "#D8CDA9" })}>Hatayein</button>
         </div>
       ) : null}
     </div>
@@ -3113,7 +3126,7 @@ function ReportsTab(p) {
       {p.canAddExpense ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("addExpense")}</div>
-          <RbExpenseHeads value={expDetail} onPick={setExpDetail} />
+          <RbExpenseHeads value={expDetail} onPick={setExpDetail} isAdmin={isAdmin} />
           <input value={expDetail} onChange={function (ev) { setExpDetail(ev.target.value); }} placeholder={t("expenseDetail")} style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
           <div style={{ display: "flex", gap: 6 }}>
             <input type="number" inputMode="numeric" value={expAmt} onChange={function (ev) { setExpAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
