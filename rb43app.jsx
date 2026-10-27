@@ -1712,7 +1712,7 @@ function editStockEntry(id, qty, date) {
     body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={purchases} supplierPayments={supplierPayments}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
-      canAddExpense={role === "admin"} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
+      canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
