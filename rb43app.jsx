@@ -614,11 +614,11 @@ function StartupPinGate(p) { var s1 = React.useState(""), val = s1[0], setVal = 
 
 function RaeesBuilderApp() {
   var la = React.useState(function () { var pr = rbGet("prefs", {}); return pr.lang || "en"; }), lang = la[0], setLang = la[1];
-  var ro = React.useState(function () { var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); if (sr === "admin" || sr === "accountant") return sr; var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1]; var pm = React.useState(function () { var pr = rbGet("prefs", {}); var shared = rbGet("permissions", null); return Object.assign({}, DEFAULT_PERMISSIONS, (shared || pr.permissions || {})); }), permissions = pm[0], setPermissions = pm[1]; function can(feature) { return hasPerm(role, permissions, feature); } function togglePermission(feature, value) { setPermissions(function (prev) { var next = Object.assign({}, prev); next[feature] = value; return next; }); } var secS = React.useState(function () { return rbGet("security", {}); }), security = secS[0], setSecurity = secS[1]; function setUserPin(pin) { var next = Object.assign({}, security, { userPin: pin }); setSecurity(next); rbSet("security", next); showToast("PIN save ho gaya"); } function setAdminPin(pin) { var next2 = Object.assign({}, security, { adminPin: pin }); setSecurity(next2); rbSet("security", next2); showToast("PIN save ho gaya"); }
+  var ro = React.useState(function () { var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); if (sr === "admin" || sr === "accountant") return sr; var pr = rbGet("prefs", {}); return pr.role || "admin"; }), role = ro[0], setRole = ro[1]; var pm = React.useState(function () { var pr = rbGet("prefs", {}); var shared = rbGet("permissions", null); return Object.assign({}, DEFAULT_PERMISSIONS, (shared || pr.permissions || {})); }), permissions = pm[0], setPermissions = pm[1]; function can(feature) { return hasPerm(role, permissions, feature); } function togglePermission(feature, value) { setPermissions(function (prev) { var next = Object.assign({}, prev); next[feature] = value; return next; }); } var secS = React.useState(function () { return rbGet("security", {}); }), security = secS[0], setSecurity = secS[1]; function setUserPin(pin) { var next = Object.assign({}, security, { userPin: pin }); setSecurity(next); rbSet("security", next); showToast("PIN save ho gaya"); } function setAdminPin(pin) { var next2 = Object.assign({}, security, { adminPin: pin }); setSecurity(next2); rbSet("security", next2); showToast("PIN save ho gaya"); } function setSuperPin(pin) { var next3 = Object.assign({}, security, { superPin: pin }); setSecurity(next3); rbSet("security", next3); sessionStorage.setItem("rb2-session-super", "1"); showToast("Super Admin PIN save ho gaya"); }
   var pmS = React.useState(false), pinModalOpen = pmS[0], setPinModalOpen = pmS[1];
-  function confirmUserPin(pin) { var sec = rbGet("security", {}); if (sec.userPin && pin === sec.userPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setPinModalOpen(false); return true; } return false; }
+  function confirmUserPin(pin) { var sec = rbGet("security", {}); if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setPinModalOpen(false); return true; } return false; }
   var apmS = React.useState(false), adminPinModalOpen = apmS[0], setAdminPinModalOpen = apmS[1];
-  function confirmAdminPin(pin) { if (deviceLocked) return false; var sec = rbGet("security", {}); if (sec.adminPin && pin === sec.adminPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setAdminPinModalOpen(false); return true; } return false; }
+  function confirmAdminPin(pin) { if (deviceLocked) return false; var sec = rbGet("security", {}); if (sec.superPin && pin === sec.superPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setAdminPinModalOpen(false); return true; } if (sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setAdminPinModalOpen(false); return true; } return false; }
   var dlS = React.useState(function () { return !!rbGet("deviceLock", false); }), deviceLocked = dlS[0], setDeviceLocked = dlS[1];
   window.RB_LOCK_ROLE = deviceLocked ? "accountant" : null;
   function lockDeviceToUser() {
@@ -647,11 +647,12 @@ function RaeesBuilderApp() {
   var gwS = React.useState(function () { var sec = rbGet("security", {}); var sr = sessionStorage.getItem(RB_SESSION_ROLE_KEY); return !!(sec.adminPin && sr !== "admin" && sr !== "accountant"); }), gateOpen = gwS[0], setGateOpen = gwS[1];
   function confirmStartupPin(pin) {
     var sec = rbGet("security", {});
-    if (!deviceLocked && sec.adminPin && pin === sec.adminPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setGateOpen(false); return true; }
-    if (sec.userPin && pin === sec.userPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setGateOpen(false); return true; }
+    if (!deviceLocked && sec.superPin && pin === sec.superPin) { sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); sessionStorage.setItem("rb2-session-super", "1"); setRole("admin"); setGateOpen(false); return true; }
+    if (!deviceLocked && sec.adminPin && pin === sec.adminPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "admin"); setRole("admin"); setGateOpen(false); return true; }
+    if (sec.userPin && pin === sec.userPin) { sessionStorage.removeItem("rb2-session-super"); sessionStorage.setItem(RB_SESSION_ROLE_KEY, "accountant"); setRole("accountant"); if (tab === "wastage") setTab("sale"); setGateOpen(false); return true; }
     return false;
   }
-  function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
+  function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); sessionStorage.removeItem("rb2-session-super"); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
   var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
   /* agar mojooda tab ki ijazat na ho to pehle jaiz tab par le jayein */
   var TAB_PERMS = { sale: "tabSale", bills: "tabBills", gatepass: "tabGatePass", dues: "tabDues", stock: "stock", wastage: "wastage", supplier: "supplier", labour: "labour", book: "reports" };
@@ -1720,7 +1721,7 @@ function editStockEntry(id, qty, date) {
     body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
     body = <SettingsTab catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
-      onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onLockDevice={lockDeviceToUser} />;
+      onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onLockDevice={lockDeviceToUser} />;
   }
 
   if (gateOpen) {
