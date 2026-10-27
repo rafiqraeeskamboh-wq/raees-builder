@@ -626,7 +626,7 @@ function StartupPinGate(p) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>
             {people.map(function (x) {
               var on = who === x.id;
-              return <button key={x.id} onClick={function () { setWho(on ? "" : x.id); setErr(""); }} style={{ padding: "8px 12px", borderRadius: 16, border: "1.5px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : TC.cream, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{x.name} <span style={{ fontWeight: 500, opacity: 0.75, fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"})</span></button>;
+              return <button key={x.id} onClick={function () { setWho(on ? "" : x.id); setErr(""); }} style={{ padding: "8px 12px", borderRadius: 16, border: "1.5px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : TC.cream, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{x.name} <span style={{ fontWeight: 500, opacity: 0.75, fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"}{x.store ? " · " + (x.store === "rangpur" ? "Rangpur" : "Himmat") : ""})</span></button>;
             })}
           </div>
         ) : null}
@@ -677,6 +677,7 @@ function RaeesBuilderApp() {
     sessionStorage.removeItem("rb2-session-super");
     sessionStorage.setItem(RB_SESSION_ROLE_KEY, person.role);
     sessionStorage.setItem("rb2-session-name", person.name);
+    if (person.store && person.store !== RB_STORE) { try { localStorage.setItem("raees-store", person.store); } catch (e) {} location.reload(); return true; }
     setRole(person.role);
     if (person.role === "accountant" && tab === "wastage") setTab("sale");
     setGateOpen(false); return true;
