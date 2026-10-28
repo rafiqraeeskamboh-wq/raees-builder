@@ -726,6 +726,7 @@ function RaeesBuilderApp() {
   var sl = React.useState(function () { return rbGet("stock-log", []); }), stockLog = sl[0], setStockLog = sl[1];
   var sup = React.useState(function () { return rbGet("suppliers", []); }), suppliers = sup[0], setSuppliers = sup[1];
   var pur = React.useState(function () { return rbGet("purchases", []); }), purchases = pur[0], setPurchases = pur[1];
+  var advS = React.useState(function () { return rbGet("advances", []); }), advances = advS[0], setAdvances = advS[1];
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
   var lbr = React.useState(function () { return rbGet("labourers", []); }), labourers = lbr[0], setLabourers = lbr[1];
@@ -763,6 +764,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("stock-log", stockLog); }, [stockLog]);
   React.useEffect(function () { rbSet("suppliers", suppliers); }, [suppliers]);
   React.useEffect(function () { rbSet("purchases", purchases); }, [purchases]);
+  React.useEffect(function () { rbSet("advances", advances); }, [advances]);
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
   React.useEffect(function () { rbSet("labourers", labourers); }, [labourers]);
@@ -964,6 +966,35 @@ function RaeesBuilderApp() {
     setExpenses(function (a) { return [entry].concat(a); });
     showToast("Cash transfer: Rs " + rbMoney(amt));
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
+  }
+
+  /* advance receipts: bill se pehle liya gaya advance */
+  function advLeft(x) { return (Number(x.amount) || 0) - (Number(x.used) || 0) - (Number(x.returnedAmt) || 0); }
+  function addAdvance(name, mobile, amount, date, note) {
+    var amt = Number(amount) || 0, nm = String(name || "").trim();
+    if (!nm || amt <= 0) return null;
+    var no = advances.reduce(function (m, x) { return Math.max(m, Number(x.no) || 0); }, 0) + 1;
+    var entry = { id: rbUid(), no: no, name: nm, mobile: String(mobile || "").trim(), amount: amt, used: 0, returnedAmt: 0, returns: [], uses: [], date: date || rbToday(), note: String(note || "").trim(), status: "open", store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    setAdvances(function (a) { return [entry].concat(a); });
+    showToast("Advance receipt #" + no + " ban gayi");
+    logActivity("advance_received", nm + " \u2014 Rs " + rbMoney(amt));
+    return entry;
+  }
+  function returnAdvance(id, amount, date) {
+    var amt = Number(amount) || 0;
+    if (amt <= 0) return;
+    setAdvances(function (a) {
+      return a.map(function (x) {
+        if (x.id !== id) return x;
+        var r = Math.min(amt, advLeft(x)); if (r <= 0) return x;
+        var rt = { amount: r, date: date || rbToday(), by: role, byName: rbSessionName() };
+        var nx = Object.assign({}, x, { returnedAmt: (Number(x.returnedAmt) || 0) + r, returns: (x.returns || []).concat([rt]) });
+        if (advLeft(nx) <= 0) nx.status = (Number(nx.used) || 0) > 0 ? "used" : "returned";
+        return nx;
+      });
+    });
+    showToast("Advance wapas: Rs " + rbMoney(amt));
+    logActivity("advance_returned", "Rs " + rbMoney(amt));
   }
 
   function addSupplierPayment(supplierId, amount, date) {
@@ -1676,6 +1707,34 @@ function editStockEntry(id, qty, date) {
     var serial = wantSerial > 0 ? wantSerial : nextSerial;
     var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date, by: role, byName: rbSessionName() }] : [];
     var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() });
+    /* is customer ka advance ho to khud bill mein lag jaye */
+    if (!full.isOpening && typeof rbCustKey === "function") {
+      var advKey = rbCustKey(full.customerName);
+      var openAdv = advances.filter(function (x) { return rbCustKey(x.name) === advKey && advLeft(x) > 0; }).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+      var dueLeft = Math.max(0, (Number(full.totalBill) || 0) - (Number(full.advance) || 0));
+      var useMap = {}, usedTot = 0;
+      openAdv.forEach(function (x) {
+        if (dueLeft <= 0) return;
+        var u = Math.min(advLeft(x), dueLeft); if (u <= 0) return;
+        dueLeft -= u; usedTot += u; useMap[x.id] = u;
+        full.payments = (full.payments || []).concat([{ id: rbUid(), amount: u, date: full.date, by: role, byName: rbSessionName(), fromAdvance: x.id, note: "Advance receipt #" + x.no }]);
+      });
+      if (usedTot > 0) {
+        full.advance = (Number(full.advance) || 0) + usedTot;
+        full.dues = Math.max(0, (Number(full.totalBill) || 0) - full.advance);
+        if (full.dues <= 0) full.paidInFull = true;
+        full.advanceUsed = usedTot;
+        setAdvances(function (a) {
+          return a.map(function (x) {
+            if (!useMap[x.id]) return x;
+            var nx = Object.assign({}, x, { used: (Number(x.used) || 0) + useMap[x.id], uses: (x.uses || []).concat([{ amount: useMap[x.id], serial: serial, saleId: full.id, date: full.date }]) });
+            if (advLeft(nx) <= 0) nx.status = "used";
+            return nx;
+          });
+        });
+        showToast("Advance Rs " + rbMoney(usedTot) + " bill #" + serial + " mein lag gaya");
+      }
+    }
     /* paimaishi bill ki chhat fitting mazdoori khud-ba-khud, bill ke kul sq ft par */
     if (full.type === "customized" && !full.isOpening) {
       var billSqft = (full.items || []).reduce(function (n, it) { return n + (Number(it.sqft) || 0); }, 0);
@@ -1795,13 +1854,13 @@ function editStockEntry(id, qty, date) {
       setViewingGatePass({ sale: { customerName: g.customerName, date: g.date, serial: g.serial, type: g.type, mobile: g.mobile }, items: g.items, entry: g });
     }} />;
   } else if (tab === "book") {
-    body = can("reports") ? <ReportsTab t={t} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
+    body = can("reports") ? <ReportsTab t={t} advances={advances} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
       canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
-    body = <DuesTab t={t} role={role} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
+    body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
     body = <SettingsTab catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
