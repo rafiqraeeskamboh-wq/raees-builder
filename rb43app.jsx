@@ -1112,7 +1112,19 @@ function RaeesBuilderApp() {
         by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null,
         createdAt: new Date().toISOString()
       };
-      setLabourWork(function (a) { return [entry].concat(a); });
+      if (kind === "garder") {
+        /* garder bharai: ek din = ek bharai, ek hi rate - us din ke saare garder isi mein */
+        var gLbl = (srcLabel || "") + (q ? " x" + q : "");
+        var gDay = entry.date, gLb = cfg.labourerId;
+        entry.qty = 1; entry.amount = labourEntryAmount(1, cfg.rate, 0, 0); entry.note = gLbl; entry.pieces = q; entry.dayBharai = true;
+        setLabourWork(function (a) {
+          var ex = null; a.forEach(function (x) { if (!ex && x.kind === "garder" && x.dayBharai && x.date === gDay && x.labourerId === gLb) ex = x; });
+          if (ex) return a.map(function (x) { return x === ex ? Object.assign({}, x, { note: (x.note ? x.note + ", " : "") + gLbl, pieces: (Number(x.pieces) || 0) + q }) : x; });
+          return [entry].concat(a);
+        });
+      } else {
+        setLabourWork(function (a) { return [entry].concat(a); });
+      }
       made.push(kind);
       logActivity("labour_auto", t(labourKind(kind).labelKey) + " \u2014 Rs " + rbMoney(entry.amount));
     });
@@ -1169,6 +1181,7 @@ function RaeesBuilderApp() {
 
   function postPendingLabour(item, labourerId, rate, extra, date, note, remember) {
     var q = Number(item.qty) || 0, rt = Math.max(0, Number(rate) || 0), ex = Math.max(0, Number(extra) || 0);
+    if (item.kind === "garder") q = 1; /* garder bharai: ek din = ek bharai */
     var amt = labourEntryAmount(q, rt, ex, 0);
     if (!labourerId || !(amt > 0)) return;
     var entry = {
