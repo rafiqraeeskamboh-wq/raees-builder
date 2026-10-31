@@ -6,7 +6,7 @@ function blankRow(mode) {
 }
 
 function variantLabel(t, category, variant) {
-  var base = category === "garden" ? t("garden") + " " + variant + " ft" : t("slab") + " " + variant;
+  var base = category === "garden" ? t("garden") + " " + variant + " ft" : t("slab") + " " + rbVariantNum(category, variant);
   var custom = variantCustomLabel(category, variant);
   return custom ? base + " " + custom : base;
 }
@@ -120,7 +120,7 @@ function ItemPickerModal(p) {
                   textAlign: "start", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #3A362C",
                   background: TC.appBg2, cursor: "pointer"
                 }}>
-                  <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{v}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
+                  <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
                   <div style={{ fontSize: 10.5, color: remaining > 0 ? "#9FBE8A" : TC.stamp, marginTop: 2 }}>{remaining} {t("inStock")}</div>
                 </button>
               );
@@ -571,7 +571,7 @@ function EditVariantModal(p) {
     <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18 }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{t("editSize")}</div>
-        <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t(cat)} &middot; {v}{cat === "garden" ? " ft" : ""}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t(cat)} &middot; {rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}</div>
         <input type="number" inputMode="decimal" value={val} onChange={function (e) { setVal(e.target.value); }} placeholder={t("sizeValue")} style={Object.assign({}, inp, { marginBottom: 8 })} />
         <input value={lbl} onChange={function (e) { setLbl(e.target.value); }} placeholder={t("sizeLabelOptional")} style={Object.assign({}, inp, { marginBottom: 8 })} />
         <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 12 }}>{t("sizeMoved")}</div>
@@ -2180,7 +2180,7 @@ function StockTab(p) {
           var remaining = remainingFor(cat, v);
           return (
             <div key={v} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="rb-mono" style={{ minWidth: 50, fontSize: 14, fontWeight: 700, color: TC.ink }}>{v}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
+              <div className="rb-mono" style={{ minWidth: 50, fontSize: 14, fontWeight: 700, color: TC.ink }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
               <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
                 <StatBlock label={t("added")} value={added} />
                 <StatBlock label={t("sold")} value={sold} />
@@ -2399,7 +2399,7 @@ function WastageTab(p) {
           var wasted = stockTotals.wasted[cat][v] || 0;
           return (
             <div key={v} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-              <div className="rb-mono" style={{ minWidth: 50, fontSize: 14, fontWeight: 700, color: TC.ink }}>{v}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
+              <div className="rb-mono" style={{ minWidth: 50, fontSize: 14, fontWeight: 700, color: TC.ink }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
               <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
                 <StatBlock label={t("remaining")} value={remaining} bold color={remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft)} />
                 <StatBlock label={t("wasted")} value={wasted} color={wasted > 0 ? TC.stamp : TC.inkSoft} />

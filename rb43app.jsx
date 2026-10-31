@@ -315,7 +315,7 @@ function GatePassBuilderModal(p) {
                   textAlign: "start", padding: "10px 12px", borderRadius: 8,
                   border: "1.5px solid " + (inCart > 0 ? TC.garden : "#3A362C"), background: TC.appBg2, cursor: "pointer", position: "relative"
                 }}>
-                  <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{v}{cat === "garden" ? " ft" : ""}</div>
+                  <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}</div>
                   <div style={{ fontSize: 10.5, color: remaining > 0 ? "#9FBE8A" : TC.stamp, marginTop: 2 }}>{remaining} {t("inStock")}</div>
                   {inCart > 0 ? (
                     <span style={{ position: "absolute", top: 6, right: 6, background: TC.garden, color: TC.cream, fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px" }}>+{inCart}</span>

@@ -29,7 +29,11 @@ var GARDEN_LENGTHS = (function () {
   return arr;
 })();
 
-var SLAB_SIZES = [3, 3.25, 3.5, 3.75, 4.08, 4.25, 4.58, 4.75, 5, 5.5, 6, 6.5];
+/* "bacha" slab: andar ka number asal size ke aage "1" laga kar (3.5 -> 3.51) taake normal size se alag rahe; dikhaya asal size jata hai */
+var SLAB_BACHA = [3.51, 4.081, 4.251, 4.581, 4.751, 5.01, 5.51, 6.01, 6.51];
+var SLAB_SIZES = [3, 3.25, 3.5, 3.75, 4.08, 4.25, 4.58, 4.75, 5, 5.5, 6, 6.5].concat(SLAB_BACHA);
+function rbIsDefaultBacha(category, variant) { return category === "slab" && SLAB_BACHA.some(function (x) { return String(x) === String(variant); }); }
+function rbVariantNum(category, variant) { return rbIsDefaultBacha(category, variant) ? String(variant).slice(0, -1) : variant; }
 
 function isoOf(d) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -101,7 +105,7 @@ function rbSet(key, val) {
 function variantCustomLabel(category, variant) {
   var labels = rbGet("variant-labels", {});
   var catLabels = labels[category] || {};
-  return catLabels[variant] || "";
+  return catLabels[variant] || (rbIsDefaultBacha(category, variant) ? "Bacha" : "");
 }
 
 var ACTION_LABELS = {
