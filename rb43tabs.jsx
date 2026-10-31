@@ -773,6 +773,7 @@ function BulkStockModal(p) {
   var f = React.useState(""), bStore = f[0], setBStore = f[1];
   var g = React.useState(false), addingSup = g[0], setAddingSup = g[1];
   var h = React.useState(""), newSup = h[0], setNewSup = h[1];
+  var cg = React.useState({ garden: "", slab: "" }), cem = cg[0], setCem = cg[1];
   var suppliers = p.suppliers || [];
   var bought = !!supId;
   function key(cc, v) { return cc + "|" + v; }
@@ -781,6 +782,17 @@ function BulkStockModal(p) {
   var totalPcs = rows.reduce(function (n, r) { return n + r.qty; }, 0);
   var totalAmt = rows.reduce(function (n, r) { return n + (Number(r.rate) || 0) * r.qty; }, 0);
   var canSave = rows.length > 0 && (!bought || !!bStore);
+  /* cement ki bori har category ke sizes mein tadaad ke hisaab se baant di jati hai */
+  if (!bought) ["garden", "slab"].forEach(function (cc) {
+    if (cem[cc] === "" || cem[cc] == null) return;
+    var list = rows.filter(function (r) { return r.category === cc; }); if (!list.length) return;
+    var total = Math.max(0, Math.round(Number(cem[cc]) || 0)), tq = list.reduce(function (n, r) { return n + r.qty; }, 0), used = 0, rem = [];
+    list.forEach(function (r) { var ex = tq > 0 ? total * r.qty / tq : 0, base = Math.floor(ex); r.bags = base; used += base; rem.push({ r: r, f: ex - base }); });
+    rem.sort(function (x, y) { return y.f - x.f; });
+    for (var i = 0; i < total - used && i < rem.length; i++) rem[i].r.bags += 1;
+  });
+  function catPcs(cc) { return rows.filter(function (r) { return r.category === cc; }).reduce(function (n, r) { return n + r.qty; }, 0); }
+  var lp = (!bought && rows.length && p.labourPreview) ? p.labourPreview(rows, date) : null;
   function catCount(cc) { return rows.filter(function (r) { return r.category === cc; }).length; }
   function setQ(k, v) { var n = Object.assign({}, qtys); n[k] = v; setQtys(n); }
   function setR(k, v) { var n = Object.assign({}, rates); n[k] = v; setRates(n); }
@@ -838,6 +850,28 @@ function BulkStockModal(p) {
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>
           {rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}{bought && r.rate ? " × " + rbMoney(Number(r.rate)) : ""}</div>; })}
           <div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>Kul: {totalPcs} {t("pieces")}{bought ? " · Rs " + rbMoney(totalAmt) : ""}</div>
+        </div>
+      ) : null}
+      {rows.length && !bought ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Aaj ka hisaab ({rbDate(date)})</div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#D8CDA9", padding: "3px 0" }}><span>Naya maal - {t("garden")}</span><b>{catPcs("garden")} {t("pieces")}</b></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#D8CDA9", padding: "3px 0" }}><span>Naya maal - {t("slab")}</span><b>{catPcs("slab")} {t("pieces")}</b></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: TC.cream, padding: "3px 0 8px", borderBottom: "1px dashed #3A362C", fontWeight: 700 }}><span>Kul naya maal</span><span>{totalPcs} {t("pieces")}</span></div>
+          <div style={{ fontSize: 11.5, color: "#A39C8A", margin: "8px 0 4px", fontWeight: 700 }}>Labour ke paise (khud bante hain)</div>
+          {lp ? Object.keys(lp.byKind).map(function (k) { var x = lp.byKind[k]; return (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#D8CDA9", padding: "2px 0" }}>
+              <span>{t(labourKind(k).labelKey)}{k === "garder" ? (x.already ? " (aaj ki bharai pehle se lagi hai)" : " (1 din bharai)") : " (" + x.qty + " × " + rbMoney(x.rate) + ")"}</span><b>Rs {rbMoney(x.amount)}</b>
+            </div>); }) : null}
+          {lp && lp.missing.length ? <div style={{ fontSize: 11, color: "#F0A08A", padding: "2px 0" }}>{lp.missing.map(function (k) { return t(labourKind(k).labelKey); }).join(", ")}: labour ka banda/rate set nahi - Labour settings mein set karein</div> : null}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: TC.cream, padding: "4px 0 8px", borderBottom: "1px dashed #3A362C", fontWeight: 700 }}><span>Kul labour</span><span>Rs {rbMoney(lp ? lp.total : 0)}</span></div>
+          <div style={{ fontSize: 11.5, color: "#A39C8A", margin: "8px 0 6px", fontWeight: 700 }}>Cement kitni lagi? (bori)</div>
+          {["garden", "slab"].filter(function (cc) { return catPcs(cc) > 0; }).map(function (cc) { return (
+            <div key={cc} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <div style={{ flex: 1, fontSize: 12.5, color: "#D8CDA9" }}>{t(cc)} ({catPcs(cc)} {t("pieces")})</div>
+              <input type="number" inputMode="numeric" value={cem[cc]} onChange={function (ev) { var n = Object.assign({}, cem); n[cc] = ev.target.value; setCem(n); }} placeholder="bori" style={Object.assign({}, small, { width: 90 })} />
+            </div>); })}
+          <div style={{ fontSize: 10.5, color: "#A39C8A" }}>Cement khaali chhorein to baad mein poochi jayegi.</div>
         </div>
       ) : null}
       <button disabled={!canSave} onClick={function () { p.onSave(rows, date, bought ? { supplierId: supId, store: bStore } : null); }} style={{
@@ -2187,10 +2221,10 @@ function StockTab(p) {
           onDelete={function (id) { onDeleteStock(id); }} />
       ) : null}
       {bulkOpen ? (
-        <BulkStockModal t={t} startCat={cat} variantsFor={variantsFor} canSupplier={p.canSupplier} suppliers={p.suppliers} onAddSupplier={p.onAddSupplier}
+        <BulkStockModal t={t} startCat={cat} variantsFor={variantsFor} labourPreview={p.labourPreview} canSupplier={p.canSupplier} suppliers={p.suppliers} onAddSupplier={p.onAddSupplier}
           onClose={function () { setBulkOpen(false); }}
           onSave={function (rows, date, sup) {
-            rows.forEach(function (r) { onAddStock(r.category, r.variant, r.qty, date, sup ? { supplierId: sup.supplierId, amount: Math.round((Number(r.rate) || 0) * r.qty * 100) / 100, store: sup.store } : null); });
+            rows.forEach(function (r) { onAddStock(r.category, r.variant, r.qty, date, sup ? { supplierId: sup.supplierId, amount: Math.round((Number(r.rate) || 0) * r.qty * 100) / 100, store: sup.store } : null, sup ? null : r.bags); });
             setBulkOpen(false);
           }} />
       ) : null}

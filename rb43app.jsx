@@ -1430,7 +1430,26 @@ function RaeesBuilderApp() {
     if (r === "accountant" && (tab === "wastage" || (tab === "supplier" && !hasPerm("accountant", permissions, "supplier")) || (tab === "labour" && !hasPerm("accountant", permissions, "labour")) || (tab === "book" && !hasPerm("accountant", permissions, "reports")))) setTab("sale");
   }
 
-  function addStockEntry(category, variant, qty, date, purchase) {
+  /* List se stock: save se pehle labour ke paise ka andaza (wohi qaida jo autoLabourFor mein hai) */
+  function labourPreviewFor(rows, date) {
+    var d = date || rbToday(), byKind = {}, missing = {}, total = 0;
+    var qByKind = {};
+    (rows || []).forEach(function (r) { labourKindsForCategory(r.category).forEach(function (k) { qByKind[k] = (qByKind[k] || 0) + (Number(r.qty) || 0); }); });
+    Object.keys(qByKind).forEach(function (k) {
+      var cfg = labourCfg(k), q = qByKind[k];
+      if (!cfg.labourerId || !(cfg.rate > 0) || !(q > 0)) { missing[k] = 1; return; }
+      var amt;
+      if (k === "garder") {
+        var has = labourWork.some(function (x) { return x.kind === "garder" && x.dayBharai && x.date === d && x.labourerId === cfg.labourerId; });
+        amt = has ? 0 : labourEntryAmount(1, cfg.rate, 0, 0);
+        byKind[k] = { amount: amt, qty: q, already: has };
+      } else { amt = labourEntryAmount(q, cfg.rate, 0, 0); byKind[k] = { amount: amt, qty: q, rate: cfg.rate }; }
+      total += amt;
+    });
+    return { byKind: byKind, missing: Object.keys(missing), total: total };
+  }
+
+  function addStockEntry(category, variant, qty, date, purchase, cementBags) {
     /* Cement ab yahan nahi - poora stock add hone ke baad ek saath poochi jati hai.
        Agar kisi factory (supplier) se kharida ho to us ke ledger mein bhi jama ho jata hai. */
     var q = Number(qty) || 0;
@@ -1448,7 +1467,8 @@ function RaeesBuilderApp() {
     /* apni factory ka banaya hua maal = mazdoori banti hai (khareede hue maal par nahi) */
     var lres = pur ? { made: [], missing: [] }
       : autoLabourFor(labourKindsForCategory(category), q, date, "stock", stId, variantLabel(t, category, variant));
-    var entry = { id: stId, category: category, variant: variant, qty: q, date: date || rbToday(), cementBags: 0, cementPending: !pur,
+    var cbGiven = !pur && cementBags != null && cementBags !== "";
+    var entry = { id: stId, category: category, variant: variant, qty: q, date: date || rbToday(), cementBags: cbGiven ? Math.max(0, Number(cementBags) || 0) : 0, cementPending: !pur && !cbGiven,
       supplierId: pur ? pur.supplierId : null, purchaseId: purId, labourMissing: lres.missing,
       by: role, verified: role === "admin", verifiedBy: role === "admin" ? role : null };
     if (pur && pur.store && pur.store !== RB_STORE) {
@@ -1896,7 +1916,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} labourPreview={labourPreviewFor} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
