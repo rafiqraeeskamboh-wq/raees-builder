@@ -1818,6 +1818,7 @@ function editStockEntry(id, qty, date) {
     setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); setCustomVariants({ garden: [], slab: [] }); setActivityLog([]);
+    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
     showToast(t("clearData"));
   }
 
