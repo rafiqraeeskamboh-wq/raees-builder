@@ -1043,7 +1043,7 @@ function RaeesBuilderApp() {
     var out = { garden: {}, slab: {} };
     function R(c, v) { if (!out[c]) return null; var k = String(v); if (!out[c][k]) out[c][k] = { variant: v, opening: 0, made: 0, sold: 0, wasted: 0, conv: 0 }; return out[c][k]; }
     function where(d) { d = String(d || ""); if (from && d < from) return "before"; if (to && d > to) return "after"; return "in"; }
-    stockLog.forEach(function (e) { var r = R(e.category, e.variant); if (!r) return; var q = Number(e.qty) || 0, w = where(e.date); if (w === "before") r.opening += q; else if (w === "in") r.made += q; });
+    stockLog.forEach(function (e) { var r = R(e.category, e.variant); if (!r) return; var q = Number(e.qty) || 0, w = where(e.date); if (e.isOpening) { if (w !== "after") r.opening += q; return; } if (w === "before") r.opening += q; else if (w === "in") r.made += q; });
     gatePasses.forEach(function (g) { var w = where(g.date); (g.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; }); });
     returnLog.forEach(function (x) { var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening += q; else if (w === "in") r.sold -= q; }); });
     wastageLog.forEach(function (x) { var r = R(x.category, x.variant); if (!r) return; var q = Number(x.qty) || 0, w = where(x.date); if (w === "before") r.opening -= q; else if (w === "in") r.wasted += q; });
@@ -1576,6 +1576,21 @@ function RaeesBuilderApp() {
     return { byKind: byKind, missing: Object.keys(missing), total: total };
   }
 
+  /* Super Admin: app shuru karte waqt pehle se para maal (opening stock) - na labour, na cement, na "bana" mein */
+  function addOpeningStock(rows, date) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    var d = date || rbToday();
+    var list = (rows || []).filter(function (r) { return Number(r.qty) > 0; }).map(function (r) {
+      return { id: rbUid(), category: r.category, variant: r.variant, qty: Number(r.qty) || 0, date: d, cementBags: 0, cementPending: false,
+        isOpening: true, labourMissing: [], by: role, byName: rbSessionName(), verified: true, verifiedBy: role, createdAt: new Date().toISOString() };
+    });
+    if (!list.length) return;
+    setStockLog(function (a) { return list.concat(a); });
+    var n = list.reduce(function (x, e) { return x + e.qty; }, 0);
+    showToast("Purana stock darj: " + n + " pieces");
+    logActivity("stock_added", "Opening stock " + n + " pcs (" + list.length + " size)");
+  }
+
   function addStockEntry(category, variant, qty, date, purchase, cementBags) {
     /* Cement ab yahan nahi - poora stock add hone ke baad ek saath poochi jati hai.
        Agar kisi factory (supplier) se kharida ho to us ke ledger mein bhi jama ho jata hai. */
@@ -2043,7 +2058,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {

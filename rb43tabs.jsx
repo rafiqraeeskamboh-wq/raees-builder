@@ -510,7 +510,7 @@ function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, 
   var t = p.t, stockLog = p.stockLog;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
   var r = resolveRange(range);
-  var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); });
+  var filtered = stockLog.filter(function (e) { return !e.isOpening && inDateRange(e.date, r.from, r.to); });
   var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0);
   var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0);
   var sorted = filtered.slice().sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); });
@@ -541,7 +541,7 @@ function BillsTab(p) { var t = p.t, sales = p.sales, gatePasses = p.gatePasses, 
   );
 }
 
-function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function CatNamesSetter(p) {
+function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1]; var r = resolveRange(range); var filtered = stockLog.filter(function (e) { return !e.isOpening && inDateRange(e.date, r.from, r.to); }); var totalGarden = filtered.filter(function (e) { return e.category === "garden"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); var totalSlab = filtered.filter(function (e) { return e.category === "slab"; }).reduce(function (s, e) { return s + Number(e.qty || 0); }, 0); function sortedFor(category) { return filtered.filter(function (e) { return e.category === category; }) .sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); } var gardenSorted = sortedFor("garden"); var slabSorted = sortedFor("slab"); function renderList(list) { return list.length > 0 ? ( <div style={{ maxHeight: 150, overflowY: "auto" }}> {list.map(function (e) { return ( <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft }}> <span>{rbDate(e.date)} · {variantLabel(t, e.category, e.variant)}</span> <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>+{e.qty}</span> </div> ); })} </div> ) : ( <div style={{ fontSize: 11, color: TC.concrete, textAlign: "center", padding: "6px 0" }}>{t("noEntriesRange")}</div> ); } return ( <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}> <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("stockSummary")}</div> <RangeFilter t={t} range={range} onChange={setRange} /> <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}> <StatBlock label={t("garden")} value={totalGarden} /> <StatBlock label={t("slab")} value={totalSlab} /> <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.success} /> </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("garden")}</div> {renderList(gardenSorted)} </div> <div style={{ borderTop: "1px dashed " + TC.paperLine, paddingTop: 8, marginTop: 8 }}> <div style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 4 }}>{t("slab")}</div> {renderList(slabSorted)} </div> </div> ); } function CatNamesSetter(p) {
   var t = p.t, names = p.names || {};
   var a = React.useState(names.garden || ""), g = a[0], setG = a[1];
   var b = React.useState(names.slab || ""), sl = b[0], setSl = b[1];
@@ -2085,6 +2085,8 @@ function StockTab(p) {
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
   var c = React.useState(false), addingVariant = c[0], setAddingVariant = c[1];
   var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
+  var osk = React.useState(false), openStockOpen = osk[0], setOpenStockOpen = osk[1];
+  var isSuperAdm = canEdit && rbIsSuper() && !!p.onAddOpeningStock;
   React.useEffect(function () { rbUiSet("open:bulkstock", bulkOpen ? 1 : null); if (!bulkOpen) rbDraftClear("bulkstock"); }, [bulkOpen]);
   var variants = variantsFor(cat);
   var anyStock = Object.keys(stockTotals.added.garden).length > 0 || Object.keys(stockTotals.added.slab).length > 0;
@@ -2177,6 +2179,10 @@ function StockTab(p) {
           color: TC.cream, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6
         }}><Ico name="plus" size={15} /> List se stock add karein (sab size ek saath)</button>
       ) : null}
+      {isSuperAdm ? (
+        <button onClick={function () { setOpenStockOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "11px", borderRadius: 8, border: "1.5px dashed " + TC.amber, background: "transparent", color: TC.amber, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Purana stock darj karein (opening) - Super Admin</button>
+      ) : null}
+      {openStockOpen ? <RbOpeningStockModal t={t} variantsFor={variantsFor} startCat={cat} onClose={function () { setOpenStockOpen(false); }} onSave={function (rows, d) { p.onAddOpeningStock(rows, d); rbDraftClear("openingstock"); setOpenStockOpen(false); }} /> : null}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {variants.map(function (v) {
@@ -4228,5 +4234,43 @@ function RbStockRangeReport(p) {
       </table>
       <div style={{ fontSize: 10, color: TC.concrete, marginTop: 6 }}>Bika = gate pass se nikla maal (wapsi minus). Maujood = aakhri tareekh par stock mein.</div>
     </div>
+  );
+}
+
+/* ---------- Super Admin: opening stock (app shuru karte waqt pehle se para maal) ---------- */
+function RbOpeningStockModal(p) {
+  var t = p.t;
+  var a = rbUseDraft("openingstock", "cat", p.startCat || "slab"), cat = a[0], setCat = a[1];
+  var b = rbUseDraft("openingstock", "qtys", {}), qtys = b[0], setQtys = b[1];
+  var d = React.useState(rbToday()), date = d[0], setDate = d[1];
+  function key(c, v) { return c + "|" + v; }
+  var rows = [];
+  ["garden", "slab"].forEach(function (cc) { rbBachaLast(cc, p.variantsFor(cc)).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) rows.push({ category: cc, variant: v, qty: q }); }); });
+  var totalPcs = rows.reduce(function (n, r) { return n + r.qty; }, 0);
+  function catCount(cc) { return rows.filter(function (r) { return r.category === cc; }).length; }
+  var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 90 });
+  return (
+    <ModalShell onClose={p.onClose} title="Purana stock (opening)">
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>App shuru karte waqt jo maal pehle se ahate mein maujood hai wo yahan likhein. Is par labour ke paise aur cement nahi lagti, aur ye "bana" mein nahi gina jata - sirf stock mein judta hai.</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[["garden", TC.garden], ["slab", TC.slab]].map(function (o) { var on = cat === o[0], n = catCount(o[0]); return <button key={o[0]} onClick={function () { setCat(o[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? o[1] : "#3A362C"), background: on ? o[1] : "transparent", color: on ? TC.cream : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{t(o[0])}{n ? " (" + n + ")" : ""}</button>; })}
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        {rbBachaLast(cat, p.variantsFor(cat)).map(function (v) {
+          var k = key(cat, v), bacha = rbIsBacha(cat, v), filled = (Number(qtys[k]) || 0) > 0;
+          return (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderBottom: "1px dashed #3A362C", background: bacha ? RB_BACHA_BG : "transparent", borderRadius: bacha ? 6 : 0 }}>
+              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: bacha ? RB_BACHA_COLOR : (filled ? "#E6C875" : TC.cream) }}>{variantLabel(t, cat, v)}</div>
+              <input type="number" inputMode="numeric" value={qtys[k] || ""} onChange={function (ev) { var n = Object.assign({}, qtys); n[k] = ev.target.value; setQtys(n); }} placeholder="0" style={small} />
+            </div>
+          );
+        })}
+      </div>
+      <Field label={t("date")}>
+        <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={rbInput()} />
+      </Field>
+      {rows.length ? <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>{rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}</div>; })}<div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>Kul: {totalPcs} {t("pieces")}</div></div> : null}
+      <button disabled={!rows.length} onClick={function () { if (window.confirm("Purana stock darj karein? Kul " + totalPcs + " pieces")) p.onSave(rows, date); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: rows.length ? TC.amber : "#4A4638", color: rows.length ? TC.ink : TC.cream, fontSize: 13.5, fontWeight: 800, cursor: rows.length ? "pointer" : "not-allowed" }}>{rows.length ? "Purana stock save karein (" + rows.length + " size)" : "Purana stock save karein"}</button>
+    </ModalShell>
   );
 }
