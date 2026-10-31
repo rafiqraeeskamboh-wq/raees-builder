@@ -1656,7 +1656,7 @@ function RbLabourWeekCard(p) {
   function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); }
   function savePay() {
     var amt = Number(String(pAmt).replace(/[^0-9.]/g, "")) || 0;
-    if (amt <= 0 || !payFor) return;
+    if (amt <= 0 || !payFor || !pDesc.trim()) return;
     var date = off === 0 ? rbToday() : wk.to;
     var tag = "Hafta " + rbDate(wk.from) + " - " + rbDate(wk.to);
     p.onPay(payFor.id, amt, date, pDesc.trim() ? pDesc.trim() + " (" + tag + ")" : tag);
@@ -1739,10 +1739,10 @@ function RbLabourWeekCard(p) {
         <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
           <input type="number" inputMode="numeric" value={pAmt} onChange={function (e) { setPAmt(e.target.value); }} placeholder="Raqam (Rs)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
-          <input value={pDesc} onChange={function (e) { setPDesc(e.target.value); }} placeholder="Description (jaise: advance, poori adaigi, kiraya)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
+          <input value={pDesc} onChange={function (e) { setPDesc(e.target.value); }} placeholder="Description - lazmi (jaise: advance, poori adaigi, kiraya)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid " + (pDesc.trim() ? "#3A362C" : TC.stamp), background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={function () { setPayFor(null); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Cancel</button>
-            <button disabled={!(Number(pAmt) > 0)} onClick={savePay} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: Number(pAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Adaigi save karein</button>
+            <button disabled={!(Number(pAmt) > 0 && pDesc.trim())} onClick={savePay} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: (Number(pAmt) > 0 && pDesc.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Adaigi save karein</button>
           </div>
         </div>
       ) : null}
@@ -1768,6 +1768,7 @@ function LabourTab(p) {
   var w7 = React.useState(""), wExtra = w7[0], setWExtra = w7[1];
   var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
   var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
+  var d3 = React.useState(""), payNote = d3[0], setPayNote = d3[1];
   var o1 = React.useState(""), obAmt = o1[0], setObAmt = o1[1];
   var o2 = React.useState("due"), obDir = o2[0], setObDir = o2[1];
   var o3 = React.useState(rbToday()), obDate = o3[0], setObDate = o3[1];
@@ -1897,7 +1898,8 @@ function LabourTab(p) {
             <input type="number" inputMode="decimal" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={Object.assign({}, inp, { flex: 1 })} />
             <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={Object.assign({}, inp, { flex: 1 })} />
           </div>
-          <button disabled={!(Number(payAmt) > 0)} onClick={function () { p.onAddPayment(current.id, payAmt, payDate); setPayAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 7, border: "none", background: Number(payAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("labourAdvance")}</button>
+          <input value={payNote} onChange={function (e) { setPayNote(e.target.value); }} placeholder="Description - lazmi (jaise: advance, hafta, poori adaigi)" style={Object.assign({}, inp, { marginTop: 6, border: "2px solid " + (payNote.trim() ? "#3A362C" : TC.stamp) })} />
+          <button disabled={!(Number(payAmt) > 0 && payNote.trim())} onClick={function () { p.onAddPayment(current.id, payAmt, payDate, payNote.trim()); setPayAmt(""); setPayNote(""); }} style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && payNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("labourAdvance")}</button>
         </div>
 
         {rows.length === 0 ? (
@@ -2478,8 +2480,9 @@ function CollectPaymentModal(p) {
   var a = React.useState(String(sale.dues || 0)), amount = a[0], setAmount = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
   var dsc = React.useState(""), discountInput = dsc[0], setDiscountInput = dsc[1];
+  var nt = React.useState(""), note = nt[0], setNote = nt[1];
   var discAmt = Math.max(0, Number(discountInput) || 0);
-  var canSave = (Number(amount) > 0 || discAmt > 0) && (Number(amount) || 0) + discAmt <= sale.dues + 0.001;
+  var canSave = (Number(amount) > 0 || discAmt > 0) && (Number(amount) || 0) + discAmt <= sale.dues + 0.001 && !!note.trim();
   return (
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
@@ -2496,7 +2499,10 @@ function CollectPaymentModal(p) {
       <Field label={t("discount")}>
         <input type="number" inputMode="decimal" value={discountInput} onChange={function (e) { setDiscountInput(e.target.value); }} placeholder="0" style={rbInput()} />
       </Field>
-      <button disabled={!canSave} onClick={function () { p.onCollect(amount, date, discountInput); }} style={{
+      <Field label="Description (lazmi)">
+        <input value={note} onChange={function (e) { setNote(e.target.value); }} placeholder="Jaise: cash, bank, JazzCash, kis ke haath" style={Object.assign({}, rbInput(), { border: "2px solid " + (note.trim() ? "#3A362C" : TC.stamp) })} />
+      </Field>
+      <button disabled={!canSave} onClick={function () { p.onCollect(amount, date, discountInput, note.trim()); }} style={{
         width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
         background: canSave ? TC.success : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700,
         cursor: canSave ? "pointer" : "not-allowed"
@@ -2751,8 +2757,8 @@ function DuesTab(p) {
     if (query && String(s.customerName).toLowerCase().indexOf(query.toLowerCase()) < 0) return false;
     return true;
   });
-  function handleCollect(amount, date, discount) {
-    var updated = onCollect(collectingFor.id, amount, date, discount);
+  function handleCollect(amount, date, discount, note) {
+    var updated = onCollect(collectingFor.id, amount, date, discount, note);
     setCollectingFor(null);
     if (updated) onReceipt({ sale: updated, amount: Number(amount) || 0, date: date, discount: Number(discount) || 0 });
   }
@@ -3134,7 +3140,7 @@ function DayBookReport(p) {
     (x.returns || []).forEach(function (rt) { if (mine(rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount) }); });
   });
   (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund) }); });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.note ? " (" + pay.note + ")" : "") + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
   (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
@@ -3771,7 +3777,7 @@ function rbCustomerLedgerRows(name) {
       if (s.isOpening) {
         var amt = Math.abs(Number(s.openingDir === "adv" ? s.advance : s.dues) || 0);
         rows.push(s.openingDir === "adv" ? { date: s.date, detail: tag + "Purana advance (jama)", b: amt } : { date: s.date, detail: tag + "Purana baqi", a: amt });
-        (s.payments || []).forEach(function (pay) { if (Number(pay.amount) > 0) rows.push({ date: pay.date, detail: tag + "Wasooli (purana baqi)", b: Number(pay.amount) }); if (Number(pay.discount) > 0) rows.push({ date: pay.date, detail: tag + "Riayat (discount)", b: Number(pay.discount) }); });
+        (s.payments || []).forEach(function (pay) { if (Number(pay.amount) > 0) rows.push({ date: pay.date, detail: tag + "Wasooli (purana baqi)" + (pay.note ? " - " + pay.note : ""), b: Number(pay.amount) }); if (Number(pay.discount) > 0) rows.push({ date: pay.date, detail: tag + "Riayat (discount)", b: Number(pay.discount) }); });
         return;
       }
       var payDisc = (s.payments || []).reduce(function (n, pay) { return n + (Number(pay.discount) || 0); }, 0);
@@ -3780,7 +3786,7 @@ function rbCustomerLedgerRows(name) {
       (s.payments || []).forEach(function (pay) {
         var amt = Number(pay.amount) || 0;
         if (pay.fromAdvance && mineAdv[pay.fromAdvance]) { /* advance pehle hi jama ho chuka */ }
-        else if (amt > 0) rows.push({ date: pay.date, detail: tag + (pay.fromAdvance ? "Advance se (bill #" + s.serial + ")" : "Wasooli (bill #" + s.serial + ")"), b: amt });
+        else if (amt > 0) rows.push({ date: pay.date, detail: tag + (pay.fromAdvance ? "Advance se (bill #" + s.serial + ")" : "Wasooli (bill #" + s.serial + ")") + (pay.note && !pay.fromAdvance ? " - " + pay.note : ""), b: amt });
         if (Number(pay.discount) > 0) rows.push({ date: pay.date, detail: tag + "Riayat (bill #" + s.serial + ")", b: Number(pay.discount) });
       });
     });
@@ -3815,7 +3821,7 @@ function rbPeopleLedgers(all) {
   var map = {};
   function P(nm, role) { var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
   ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || ""), a: Number(pay.amount) }); }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount) }); }); });
   (all.advances || []).forEach(function (x) {
     P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Advance liya #" + (x.no || "-") + " - " + (x.name || ""), a: Number(x.amount) || 0 });
     (x.returns || []).forEach(function (rt) { P(rt.byName, rt.by || "admin").rows.push({ date: rt.date, detail: "Advance wapas diya #" + (x.no || "-") + " - " + (x.name || ""), b: Number(rt.amount) || 0 }); });

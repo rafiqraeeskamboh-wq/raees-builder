@@ -1987,7 +1987,7 @@ function editStockEntry(id, qty, date) {
     logActivity("opening_deleted", gone.customerName + " — Rs " + rbMoney(Math.abs(Number(gone.dues) || 0)));
   }
 
-  function collectPayment(saleId, amount, date, discount) {
+  function collectPayment(saleId, amount, date, discount, note) {
     var amt = Number(amount) || 0;
     var disc = Math.max(0, Number(discount) || 0);
     if (amt <= 0 && disc <= 0) return null;
@@ -1997,7 +1997,7 @@ function editStockEntry(id, qty, date) {
       var newTotal = Math.max(0, Number(s.totalBill || 0) - disc);
       var newAdvance = Math.min(newTotal, (s.advance || 0) + amt);
       var newDues = Math.max(0, newTotal - newAdvance);
-      var payments = (s.payments || []).concat([{ id: rbUid(), amount: amt, discount: disc, date: date || rbToday(), by: role, byName: rbSessionName() }]);
+      var payments = (s.payments || []).concat([{ id: rbUid(), amount: amt, discount: disc, date: date || rbToday(), by: role, byName: rbSessionName(), note: String(note || "").trim() }]);
       updated = Object.assign({}, s, { totalBill: newTotal, discount: Number(s.discount || 0) + disc, advance: newAdvance, dues: newDues, payments: payments });
       return updated;
     });
