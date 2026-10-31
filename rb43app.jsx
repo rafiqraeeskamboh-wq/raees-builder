@@ -1038,6 +1038,20 @@ function RaeesBuilderApp() {
     return { added: added, sold: sold, wasted: wasted, convertedOut: convertedOut, convertedIn: convertedIn };
   }, [stockLog, gatePasses, wastageLog, conversionLog, returnLog]);
 
+  /* tareekh se tareekh: kitna bana, bika, wastage, aur aakhri tareekh par kitna maujood */
+  function stockReport(from, to) {
+    var out = { garden: {}, slab: {} };
+    function R(c, v) { if (!out[c]) return null; var k = String(v); if (!out[c][k]) out[c][k] = { variant: v, opening: 0, made: 0, sold: 0, wasted: 0, conv: 0 }; return out[c][k]; }
+    function where(d) { d = String(d || ""); if (from && d < from) return "before"; if (to && d > to) return "after"; return "in"; }
+    stockLog.forEach(function (e) { var r = R(e.category, e.variant); if (!r) return; var q = Number(e.qty) || 0, w = where(e.date); if (w === "before") r.opening += q; else if (w === "in") r.made += q; });
+    gatePasses.forEach(function (g) { var w = where(g.date); (g.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; }); });
+    returnLog.forEach(function (x) { var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening += q; else if (w === "in") r.sold -= q; }); });
+    wastageLog.forEach(function (x) { var r = R(x.category, x.variant); if (!r) return; var q = Number(x.qty) || 0, w = where(x.date); if (w === "before") r.opening -= q; else if (w === "in") r.wasted += q; });
+    conversionLog.forEach(function (c) { var w = where(c.date), q = Number(c.qty) || 0; var a = R(c.category, c.fromVariant), b = R(c.category, c.toVariant); if (!a || !b) return; if (w === "before") { a.opening -= q; b.opening += q; } else if (w === "in") { a.conv -= q; b.conv += q; } });
+    Object.keys(out).forEach(function (c) { Object.keys(out[c]).forEach(function (k) { var r = out[c][k]; r.closing = r.opening + r.made - r.sold - r.wasted + r.conv; }); });
+    return out;
+  }
+
   function remainingFor(category, variant) {
     var added = stockTotals.added[category][variant] || 0;
     var sold = stockTotals.sold[category][variant] || 0;
@@ -2029,7 +2043,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} labourPreview={labourPreviewFor} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {

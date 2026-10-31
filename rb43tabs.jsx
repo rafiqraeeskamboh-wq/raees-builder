@@ -2101,6 +2101,7 @@ function StockTab(p) {
 
   return (
     <div style={{ padding: "14px 14px 4px" }}>
+      {p.stockReport ? <RbStockRangeReport t={t} report={p.stockReport} variantsFor={variantsFor} /> : null}
       <StockSummaryCard t={t} stockLog={stockLog} />
 
       <CementSummaryCard t={t} stockLog={stockLog} purchases={p.purchases} suppliers={p.suppliers} cementTotals={p.cementTotals} />
@@ -4153,6 +4154,70 @@ function RbLabourDayLedger(p) {
           <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>Hafta Jumma se Jumeraat tak. Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance).</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ---------- Stock: is tareekh se us tareekh tak - bana, bika, wastage, maujood ---------- */
+function RbStockRangeReport(p) {
+  var t = p.t;
+  var a = React.useState({ preset: "7d" }), range = a[0], setRange = a[1];
+  var c = React.useState("slab"), cat = c[0], setCat = c[1];
+  var r = resolveRange(range);
+  var rep = p.report(r.from, r.to);
+  function rowsFor(cc) {
+    var seen = {}, list = [];
+    rbBachaLast(cc, p.variantsFor(cc)).forEach(function (v) { seen[String(v)] = 1; list.push(v); });
+    Object.keys(rep[cc] || {}).forEach(function (k) { if (!seen[k]) list.push(rep[cc][k].variant); });
+    return list.map(function (v) { var x = (rep[cc] || {})[String(v)] || { made: 0, sold: 0, wasted: 0, closing: 0, opening: 0, conv: 0 }; return { v: v, x: x }; })
+      .filter(function (o) { return o.x.made || o.x.sold || o.x.wasted || o.x.closing || o.x.conv; });
+  }
+  function tot(cc) { return rowsFor(cc).reduce(function (n, o) { n.made += o.x.made; n.sold += o.x.sold; n.wasted += o.x.wasted; n.closing += o.x.closing; return n; }, { made: 0, sold: 0, wasted: 0, closing: 0 }); }
+  var rows = rowsFor(cat), T = tot(cat);
+  var th = { fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, textAlign: "right", padding: "5px 4px", borderBottom: "1.5px solid " + TC.paperLine };
+  var td = { fontSize: 12.5, color: TC.ink, textAlign: "right", padding: "6px 4px", borderBottom: "1px dashed " + TC.paperLine, whiteSpace: "nowrap" };
+  var label = !r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " se " + (r.to ? rbDate(r.to) : rbDate(rbToday())) + " tak";
+  return (
+    <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
+      <div className="rb-display" style={{ fontSize: 13, color: TC.ink, fontWeight: 700, marginBottom: 8 }}>Stock hisaab - tareekh se tareekh</div>
+      <RangeFilter t={t} range={range} onChange={setRange} />
+      <div style={{ fontSize: 11.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+        {["garden", "slab"].map(function (cc) { var x = tot(cc), on = cat === cc; return (
+          <button key={cc} onClick={function () { setCat(cc); }} style={{ textAlign: "start", padding: "8px 10px", borderRadius: 8, border: "2px solid " + (on ? (cc === "garden" ? TC.garden : TC.slab) : TC.paperLine), background: on ? (cc === "garden" ? "#E3EBD9" : "#DCE6EA") : "transparent", cursor: "pointer" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: TC.ink, marginBottom: 3 }}>{t(cc)}</div>
+            <div style={{ fontSize: 11, color: TC.ink }}>Bana: <b>{x.made}</b> · Bika: <b>{x.sold}</b></div>
+            <div style={{ fontSize: 11, color: TC.ink }}>Wastage: <b>{x.wasted}</b> · Maujood: <b style={{ color: x.closing < 0 ? TC.stamp : TC.success }}>{x.closing}</b></div>
+          </button>); })}
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr>
+          <th style={Object.assign({}, th, { textAlign: "left" })}>Size</th>
+          <th style={th}>Bana</th><th style={th}>Bika</th><th style={th}>Wastage</th><th style={th}>Maujood</th>
+        </tr></thead>
+        <tbody>
+          {rows.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, td, { textAlign: "center", color: TC.concrete })}>Is waqt mein koi hisaab nahi</td></tr> : rows.map(function (o) {
+            var bacha = rbIsBacha(cat, o.v);
+            return (
+              <tr key={String(o.v)}>
+                <td className="rb-mono" style={Object.assign({}, td, { textAlign: "left", fontWeight: 700, color: bacha ? "#1C6FA8" : TC.ink })}>{rbVariantNum(cat, o.v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, o.v) ? " " + variantCustomLabel(cat, o.v) : ""}</td>
+                <td style={td}>{o.x.made || ""}</td>
+                <td style={td}>{o.x.sold || ""}</td>
+                <td style={td}>{o.x.wasted || ""}</td>
+                <td style={Object.assign({}, td, { fontWeight: 800, color: o.x.closing < 0 ? TC.stamp : TC.success })}>{o.x.closing}</td>
+              </tr>
+            );
+          })}
+          <tr>
+            <td style={Object.assign({}, td, { textAlign: "left", fontWeight: 800, borderBottom: "none" })}>Kul</td>
+            <td style={Object.assign({}, td, { fontWeight: 800, borderBottom: "none" })}>{T.made}</td>
+            <td style={Object.assign({}, td, { fontWeight: 800, borderBottom: "none" })}>{T.sold}</td>
+            <td style={Object.assign({}, td, { fontWeight: 800, borderBottom: "none" })}>{T.wasted}</td>
+            <td style={Object.assign({}, td, { fontWeight: 800, borderBottom: "none", color: TC.success })}>{T.closing}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style={{ fontSize: 10, color: TC.concrete, marginTop: 6 }}>Bika = gate pass se nikla maal (wapsi minus). Maujood = aakhri tareekh par stock mein.</div>
     </div>
   );
 }
