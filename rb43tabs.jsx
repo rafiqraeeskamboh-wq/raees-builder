@@ -2498,31 +2498,65 @@ function CollectPaymentModal(p) {
 
 function CustomerOpeningModal(p) {
   var t = p.t;
-  var a = React.useState(""), nm = a[0], setNm = a[1];
-  var b = React.useState(""), amt = b[0], setAmt = b[1];
-  var c = React.useState("due"), dirn = c[0], setDirn = c[1];
+  /* list-wise: bohat se customers ka purana baqi ek dafa mein (adhoori list isi phone par yaad rehti hai) */
+  function blank() { return { id: rbUid(), nm: "", mob: "", amt: "", dirn: "due" }; }
+  var a = rbUseDraft("opening", "rows", function () { return [blank(), blank(), blank(), blank(), blank()]; }), rows = a[0], setRows = a[1];
   var d = React.useState(rbToday()), dt = d[0], setDt = d[1];
   var names = {};
   (p.sales || []).forEach(function (x) { var n = String(x.customerName || "").trim(); if (n) names[n.toLowerCase()] = n; });
   var nameList = Object.keys(names).map(function (k) { return names[k]; }).sort();
   var openings = (p.sales || []).filter(function (x) { return x.isOpening; })
     .slice().sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
-  var canSave = nm.trim() && Number(amt) > 0;
+  var hasOpening = {}; openings.forEach(function (x) { hasOpening[String(x.customerName || "").trim().toLowerCase()] = 1; });
+  function upd(id, patch) { setRows(rows.map(function (r) { return r.id === id ? Object.assign({}, r, patch) : r; })); }
+  var ready = rows.filter(function (r) { return String(r.nm).trim() && Number(r.amt) > 0; });
+  var half = rows.filter(function (r) { return (String(r.nm).trim() && !(Number(r.amt) > 0)) || (!String(r.nm).trim() && Number(r.amt) > 0); });
+  var totDue = ready.reduce(function (n, r) { return n + (r.dirn === "adv" ? 0 : Number(r.amt)); }, 0);
+  var totAdv = ready.reduce(function (n, r) { return n + (r.dirn === "adv" ? Number(r.amt) : 0); }, 0);
+  var canSave = ready.length > 0 && half.length === 0;
+  function saveAll() {
+    if (!canSave) return;
+    ready.forEach(function (r) { p.onAdd(String(r.nm).trim(), r.amt, r.dirn, dt, r.mob); });
+    rbDraftClear("opening"); setRows([blank(), blank(), blank(), blank(), blank()]);
+  }
+  var inS = { width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 0 };
   return (
     <ModalShell onClose={p.onClose} title={t("openingBalance")}>
-      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 10 }}>{t("openingHintCust")}</div>
-      <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-        <input list="rb-cust-names" value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("openingCustomer")}
-          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
-        <datalist id="rb-cust-names">{nameList.map(function (n) { return <option key={n} value={n} />; })}</datalist>
-        <OpeningDirPicker value={dirn} onChange={setDirn} dueLabel={t("openingCustDue")} advLabel={t("openingCustAdv")} />
-        <input type="number" inputMode="decimal" value={amt} onChange={function (e) { setAmt(e.target.value); }} placeholder={t("openingAmount")}
-          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
-        <input type="date" value={dt} onChange={function (e) { setDt(e.target.value); }}
-          style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 }} />
-        <button disabled={!canSave} onClick={function () { p.onAdd(nm, amt, dirn, dt); setNm(""); setAmt(""); setDirn("due"); }}
-          style={{ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "not-allowed" }}>{t("save")}</button>
-      </div>
+      <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 10 }}>{t("openingHintCust")} Neeche list mein jitne customer chahein likh dein, phir ek dafa save karein.</div>
+      <datalist id="rb-cust-names">{nameList.map(function (n) { return <option key={n} value={n} />; })}</datalist>
+      {rows.map(function (r, idx) {
+        var dup = String(r.nm).trim() && hasOpening[String(r.nm).trim().toLowerCase()];
+        var bad = half.indexOf(r) >= 0;
+        return (
+          <div key={r.id} style={{ background: TC.appBg2, borderRadius: 8, padding: 8, marginBottom: 8, border: "1.5px solid " + (bad ? TC.stamp : "transparent") }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+              <div style={{ width: 18, fontSize: 11, color: "#A39C8A", textAlign: "center" }}>{idx + 1}</div>
+              <input list="rb-cust-names" value={r.nm} onChange={function (e) { upd(r.id, { nm: e.target.value }); }} placeholder={t("openingCustomer")} style={Object.assign({}, inS, { flex: 2 })} />
+              <input type="tel" inputMode="numeric" value={r.mob} onChange={function (e) { upd(r.id, { mob: e.target.value }); }} placeholder="Mobile" style={Object.assign({}, inS, { flex: 1.3 })} />
+              <button onClick={function () { setRows(rows.length > 1 ? rows.filter(function (x) { return x.id !== r.id; }) : [blank()]); }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}><Ico name="x" size={15} /></button>
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", paddingLeft: 24 }}>
+              <input type="number" inputMode="decimal" value={r.amt} onChange={function (e) { upd(r.id, { amt: e.target.value }); }} placeholder={t("openingAmount")} style={Object.assign({}, inS, { flex: 1 })} />
+              {[["due", "Baqi"], ["adv", "Advance"]].map(function (o) { var on = r.dirn === o[0]; return (
+                <button key={o[0]} onClick={function () { upd(r.id, { dirn: o[0] }); }} style={{ padding: "8px 8px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{o[1]}</button>); })}
+            </div>
+            {dup ? <div style={{ fontSize: 10.5, color: "#E6C875", marginTop: 4, paddingLeft: 24 }}>Is customer ka purana baqi pehle se darj hai - dobara to nahi?</div> : null}
+            {bad ? <div style={{ fontSize: 10.5, color: "#F0A08A", marginTop: 4, paddingLeft: 24 }}>Naam aur raqam dono likhein</div> : null}
+          </div>
+        );
+      })}
+      <button onClick={function () { setRows(rows.concat([blank(), blank(), blank()])); }} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1.5px dashed #6B6656", background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>+ Aur customer (3 line)</button>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>Tareekh (sab ke liye)</div>
+      <input type="date" value={dt} onChange={function (e) { setDt(e.target.value); }} style={Object.assign({}, inS, { marginBottom: 10 })} />
+      {ready.length ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12.5, color: "#D8CDA9" }}>
+          <div>Customer: <b>{ready.length}</b></div>
+          <div>Kul baqi (customers ne dena hai): <b style={{ color: "#F0A08A" }}>Rs {rbMoney(totDue)}</b></div>
+          {totAdv ? <div>Kul advance (customers ka jama): <b style={{ color: "#9FBE8A" }}>Rs {rbMoney(totAdv)}</b></div> : null}
+        </div>
+      ) : null}
+      <button disabled={!canSave} onClick={saveAll}
+        style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 13.5, cursor: canSave ? "pointer" : "not-allowed", marginBottom: 14 }}>{ready.length ? "Sab save karein (" + ready.length + " customer)" : t("save")}</button>
       {openings.length === 0 ? (
         <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "12px 0" }}>{t("openingNone")}</div>
       ) : (
@@ -2780,7 +2814,7 @@ function DuesTab(p) {
       ) : null}
       {obOpen ? (
         <CustomerOpeningModal t={t} sales={sales} canDelete={p.role === "admin"}
-          onAdd={function (nm, amt, dirn, dt) { p.onAddOpening(nm, amt, dirn, dt); }}
+          onAdd={function (nm, amt, dirn, dt, mob) { p.onAddOpening(nm, amt, dirn, dt, mob); }}
           onDelete={p.onDeleteOpening}
           onClose={function () { setObOpen(false); }} />
       ) : null}
