@@ -2088,6 +2088,7 @@ function StockTab(p) {
   var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
   var osk = React.useState(false), openStockOpen = osk[0], setOpenStockOpen = osk[1];
   var mok = React.useState(false), matOpenOpen = mok[0], setMatOpenOpen = mok[1];
+  var sld = React.useState(false), stockLedger = sld[0], setStockLedger = sld[1];
   var svw = React.useState(function () { return rbUiGet("stockView", "list") || "list"; }), stockView = svw[0], setStockView = svw[1];
   var isSuperAdm = canEdit && rbIsSuper() && !!p.onAddOpeningStock;
   React.useEffect(function () { rbUiSet("open:bulkstock", bulkOpen ? 1 : null); if (!bulkOpen) rbDraftClear("bulkstock"); }, [bulkOpen]);
@@ -2192,14 +2193,17 @@ function StockTab(p) {
       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
         {[["list", "List"], ["card", "Card"]].map(function (o) { var on = stockView === o[0]; return <button key={o[0]} onClick={function () { setStockView(o[0]); rbUiSet("stockView", o[0]); }} style={{ flex: 1, padding: "7px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
       </div>
+      {p.stockLedgerRows ? <RbLedgerButton onClick={function () { setStockLedger(true); }} label={"Stock ka ledger - " + t(cat)} /> : null}
+      {stockLedger ? <RbStockLedger t={t} cat={cat} variants={rbBachaLast(cat, variants)} rowsFor={p.stockLedgerRows} onClose={function () { setStockLedger(false); }} /> : null}
       {stockView === "list" ? (
         <div style={{ background: TC.paper, borderRadius: 10, padding: "6px 8px" }}>
+          {variants.every(function (v) { return remainingFor(cat, v) === 0; }) ? <div style={{ fontSize: 12, color: TC.concrete, textAlign: "center", padding: "10px 0" }}>Is waqt {t(cat)} stock mein kuch maujood nahi</div> : null}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr>
               {["Size", t("added"), t("sold"), t("remaining"), ""].map(function (h, hi) { return <th key={hi} style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, textAlign: hi === 0 ? "left" : "right", padding: "6px 4px", borderBottom: "1.5px solid " + TC.paperLine }}>{h}</th>; })}
             </tr></thead>
             <tbody>
-              {rbBachaLast(cat, variants).map(function (v) {
+              {rbBachaLast(cat, variants).filter(function (v) { return remainingFor(cat, v) !== 0; }).map(function (v) {
                 var added = stockTotals.added[cat][v] || 0, sold = stockTotals.sold[cat][v] || 0, remaining = remainingFor(cat, v), bacha = rbIsBacha(cat, v);
                 var td = { fontSize: 13, color: TC.ink, textAlign: "right", padding: "7px 4px", borderBottom: "1px dashed " + TC.paperLine, whiteSpace: "nowrap" };
                 var ib = { width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", marginLeft: 3, verticalAlign: "middle" };
@@ -4336,4 +4340,20 @@ function RbMaterialOpeningModal(p) {
       <button onClick={function () { if (window.confirm("Maal ka purana stock save karein?")) p.onSave(vals, date); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>Save karein</button>
     </ModalShell>
   );
+}
+
+/* ---------- Stock ka ledger: bana, opening, gate pass, wapsi, wastage, badla - har line ke baad maujood ---------- */
+function RbStockLedger(p) {
+  var t = p.t;
+  var a = React.useState(""), sel = a[0], setSel = a[1];
+  var v = sel === "" ? null : p.variants.filter(function (x) { return String(x) === sel; })[0];
+  var rows = p.rowsFor(p.cat, sel === "" ? null : v);
+  var top = (
+    <select value={sel} onChange={function (ev) { setSel(ev.target.value); }} style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", fontSize: 14, marginBottom: 10 })}>
+      <option value="">Sab size ({t(p.cat)})</option>
+      {p.variants.map(function (x) { return <option key={String(x)} value={String(x)}>{variantLabel(t, p.cat, x)}</option>; })}
+    </select>
+  );
+  return <RbLedgerModal t={t} title={sel === "" ? "Stock - " + t(p.cat) + " (sab size)" : "Stock - " + variantLabel(t, p.cat, v)} subtitle={rbStoreName() + " store"} rows={rows} colA="Aaya" colB="Gaya" balLabel="Maujood" top={top} onClose={p.onClose}
+    note="Aaya = bana, purana stock, khareeda, wapas aaya. Gaya = gate pass, wastage, dusre size mein badla." />;
 }

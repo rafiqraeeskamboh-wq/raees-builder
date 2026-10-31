@@ -1040,6 +1040,23 @@ function RaeesBuilderApp() {
     return { added: added, sold: sold, wasted: wasted, convertedOut: convertedOut, convertedIn: convertedIn };
   }, [stockLog, gatePasses, wastageLog, conversionLog, returnLog]);
 
+  /* stock ka ledger: har aamad / nikasi line-wise (variant null = us category ke sab size) */
+  function stockLedgerRows(cat, variant) {
+    var rows = [];
+    function ok(c, v) { return c === cat && (variant === null || variant === undefined || String(v) === String(variant)); }
+    function nm(c, v) { return variant === null || variant === undefined ? variantLabel(t, c, v) + " - " : ""; }
+    stockLog.forEach(function (e) { if (!ok(e.category, e.variant)) return; rows.push({ date: e.date, detail: nm(e.category, e.variant) + (e.isOpening ? "Purana stock (opening)" : (e.supplierId ? "Khareeda (supplier)" : "Bana")) + (e.byName ? " - " + e.byName : ""), a: Number(e.qty) || 0 }); });
+    gatePasses.forEach(function (g) { (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (g.serial || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
+    returnLog.forEach(function (x) { (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: x.date, detail: nm(it.category, it.variant) + "Maal wapas aaya (bill #" + (x.serial || "-") + ") - " + (x.customerName || ""), a: Number(it.qty) || 0 }); }); });
+    wastageLog.forEach(function (x) { if (!ok(x.category, x.variant)) return; rows.push({ date: x.date, detail: nm(x.category, x.variant) + "Wastage" + (x.reason ? " - " + x.reason : (x.note ? " - " + x.note : "")), b: Number(x.qty) || 0 }); });
+    conversionLog.forEach(function (c) {
+      var q = Number(c.qty) || 0;
+      if (ok(c.category, c.fromVariant)) rows.push({ date: c.date, detail: nm(c.category, c.fromVariant) + "Badla gaya: " + variantLabel(t, c.category, c.toVariant) + " mein", b: q });
+      if (ok(c.category, c.toVariant)) rows.push({ date: c.date, detail: nm(c.category, c.toVariant) + "Badal kar aaya: " + variantLabel(t, c.category, c.fromVariant) + " se", a: q });
+    });
+    return rbLedgerSort(rows);
+  }
+
   /* tareekh se tareekh: kitna bana, bika, wastage, aur aakhri tareekh par kitna maujood */
   function stockReport(from, to) {
     var out = { garden: {}, slab: {} };
@@ -2075,7 +2092,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
