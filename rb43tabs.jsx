@@ -3214,7 +3214,7 @@ function ReportsTab(p) {
     </div>
   );
 }
-  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "custom-variants", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns"];
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "custom-variants", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "trash"];
 function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
@@ -3398,7 +3398,136 @@ function SettingsTab(p) {
 
       <div style={{ background: TC.appBg2, borderRadius: 8, padding: 12, fontSize: 11.5, color: "#A39C8A" }}>{t("dataShared")}</div>
 
+      {role === "admin" && rbIsSuper() && p.superData ? <RbSuperRecords d={p.superData} /> : null}
+      {role === "admin" && rbIsSuper() && p.superData ? <RbSuperTrash d={p.superData} /> : null}
       {role === "admin" && rbIsSuper() ? <RbSuperDataTools onClear={onClear} /> : null}
+    </div>
+  );
+}
+
+/* ---------- Super Admin: sab records edit / delete, aur Recycle Bin ---------- */
+var RB_SUM_NAME = ["customerName", "name", "supplierName", "labourerName", "person", "head", "title", "variantLabel", "note"];
+var RB_SUM_AMT = ["total", "amount", "amt", "qty", "paid", "rate"];
+function rbRecSummary(x) {
+  if (!x || typeof x !== "object") return String(x);
+  var parts = [];
+  if (x.serial != null) parts.push("#" + x.serial);
+  var dt = x.date || x.at || x.createdAt; if (dt) parts.push(rbDate(String(dt).slice(0, 10)));
+  for (var i = 0; i < RB_SUM_NAME.length; i++) { var v = x[RB_SUM_NAME[i]]; if (v != null && v !== "" && typeof v !== "object") { parts.push(String(v)); break; } }
+  if (x.category) parts.push(String(x.category) + (x.variant ? " " + x.variant : ""));
+  for (var j = 0; j < RB_SUM_AMT.length; j++) { var w = x[RB_SUM_AMT[j]]; if (typeof w === "number") { parts.push(RB_SUM_AMT[j] + ": " + rbMoney(w)); break; } }
+  return parts.join(" · ") || ("id " + x.id);
+}
+var rbSupBox = { background: TC.appBg2, borderRadius: 8, padding: 12, marginBottom: 12 };
+var rbSupIn = { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 7, border: "1.5px solid #3A362C", background: "#1A1813", color: TC.cream, fontSize: 14, marginBottom: 6 };
+var rbSupBtn = { padding: "7px 10px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" };
+var rbSupRed = Object.assign({}, rbSupBtn, { border: "none", background: TC.stamp, color: TC.cream });
+var rbSupRow = { background: "#1F1C16", borderRadius: 7, padding: "8px 10px", marginBottom: 6, fontSize: 12.5, color: TC.cream };
+
+function RbRecordEditor(p) {
+  var item = p.item;
+  var keys = Object.keys(item).filter(function (k) { return k !== "id"; });
+  var s0 = {}; keys.forEach(function (k) { var v = item[k]; s0[k] = (v !== null && typeof v === "object") ? JSON.stringify(v, null, 1) : (v == null ? "" : String(v)); });
+  var a = React.useState(s0), vals = a[0], setVals = a[1];
+  var b = React.useState(""), err = b[0], setErr = b[1];
+  function save() {
+    var out = { id: item.id };
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], orig = item[k], v = vals[k];
+      if (typeof orig === "number") { var n = Number(v); if (v === "" || isNaN(n)) { setErr(k + ": number likhein"); return; } out[k] = n; }
+      else if (typeof orig === "boolean") out[k] = v === "true";
+      else if (orig !== null && typeof orig === "object") { try { out[k] = JSON.parse(v); } catch (e) { setErr(k + ": format sahi nahi"); return; } }
+      else if (orig === null) out[k] = v === "" ? null : v;
+      else out[k] = v;
+    }
+    p.onSave(out);
+  }
+  return (
+    <div style={{ background: "#3A2A22", borderRadius: 8, padding: 10, marginBottom: 8 }}>
+      {keys.map(function (k) {
+        var orig = item[k];
+        var label = <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 2 }}>{k}</div>;
+        if (typeof orig === "boolean") return <div key={k}>{label}<select value={vals[k]} onChange={function (e) { var n = Object.assign({}, vals); n[k] = e.target.value; setVals(n); }} style={rbSupIn}><option value="true">Haan (true)</option><option value="false">Nahi (false)</option></select></div>;
+        if (orig !== null && typeof orig === "object") return <div key={k}>{label}<textarea rows={4} value={vals[k]} onChange={function (e) { var n = Object.assign({}, vals); n[k] = e.target.value; setVals(n); }} style={Object.assign({}, rbSupIn, { fontSize: 12, fontFamily: "monospace" })} /></div>;
+        return <div key={k}>{label}<input inputMode={typeof orig === "number" ? "decimal" : "text"} value={vals[k]} onChange={function (e) { var n = Object.assign({}, vals); n[k] = e.target.value; setVals(n); }} style={rbSupIn} /></div>;
+      })}
+      {err ? <div style={{ fontSize: 12, color: "#F0A08A", marginBottom: 6 }}>{err}</div> : null}
+      <div style={{ display: "flex", gap: 6 }}>
+        <button onClick={save} style={Object.assign({}, rbSupRed, { flex: 1 })}>Save</button>
+        <button onClick={p.onCancel} style={Object.assign({}, rbSupBtn, { flex: 1 })}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function RbSuperRecords(p) {
+  var d = p.d, colls = d.colls;
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState("sales"), coll = b[0], setColl = b[1];
+  var c = React.useState(""), q = c[0], setQ = c[1];
+  var e = React.useState(null), editId = e[0], setEditId = e[1];
+  var f = React.useState(30), lim = f[0], setLim = f[1];
+  var list = ((colls[coll] && colls[coll].list) || []).filter(function (x) { return x && x.id != null; });
+  var qq = q.trim().toLowerCase();
+  var shown = qq ? list.filter(function (x) { return JSON.stringify(x).toLowerCase().indexOf(qq) >= 0; }) : list;
+  return (
+    <div style={rbSupBox}>
+      <div onClick={function () { setOpen(!open); }} style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, cursor: "pointer" }}>{open ? "▾" : "▸"} Sab records - Edit / Delete (sirf Super Admin)</div>
+      {open ? (
+        <div style={{ marginTop: 10 }}>
+          <select value={coll} onChange={function (ev) { setColl(ev.target.value); setEditId(null); setLim(30); }} style={rbSupIn}>
+            {Object.keys(colls).map(function (k) { return <option key={k} value={k}>{colls[k].label + " (" + ((colls[k].list || []).length) + ")"}</option>; })}
+          </select>
+          <input value={q} onChange={function (ev) { setQ(ev.target.value); setLim(30); }} placeholder="Talash karein (naam, bill no, raqam...)" style={rbSupIn} />
+          {shown.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A" }}>Koi record nahi</div> : null}
+          {shown.slice(0, lim).map(function (x) {
+            if (editId === x.id) return <RbRecordEditor key={x.id} item={x} onCancel={function () { setEditId(null); }} onSave={function (n) { d.onSave(coll, n); setEditId(null); }} />;
+            return (
+              <div key={x.id} style={rbSupRow}>
+                <div style={{ marginBottom: 6 }}>{rbRecSummary(x)}</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={function () { setEditId(x.id); }} style={rbSupBtn}>Edit</button>
+                  <button onClick={function () { if (window.confirm("Ye record delete karein? (Recycle Bin se wapas la sakte hain)")) d.onDelete(coll, x.id); }} style={Object.assign({}, rbSupBtn, { borderColor: TC.stamp, color: TC.stamp })}>Delete</button>
+                </div>
+              </div>
+            );
+          })}
+          {shown.length > lim ? <button onClick={function () { setLim(lim + 30); }} style={Object.assign({}, rbSupBtn, { width: "100%" })}>Aur dikhayein</button> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RbSuperTrash(p) {
+  var d = p.d, colls = d.colls, trash = d.trash || [];
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState(30), lim = b[0], setLim = b[1];
+  function when(s) { try { var dt = new Date(s); return rbDate(String(s).slice(0, 10)) + " " + dt.toTimeString().slice(0, 5); } catch (e) { return ""; } }
+  return (
+    <div style={rbSupBox}>
+      <div onClick={function () { setOpen(!open); }} style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, cursor: "pointer" }}>{open ? "▾" : "▸"} Recycle Bin - Wapas layein / Reback ({trash.length})</div>
+      {open ? (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Jo bhi record delete ya edit hua (kisi ne bhi kiya ho), us ki purani halat yahan hai. "Wapas layein" dabayein to wo purani halat wapas aa jaye gi.</div>
+          {trash.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A" }}>Abhi kuch nahi</div> : null}
+          {trash.slice(0, lim).map(function (x) {
+            return (
+              <div key={x.id} style={rbSupRow}>
+                <div style={{ fontSize: 11, color: x.kind === "delete" ? "#F0A08A" : "#E6C875", fontWeight: 700 }}>{(x.kind === "delete" ? "DELETE hua" : "EDIT hua (purani halat)") + " · " + ((colls[x.coll] && colls[x.coll].label) || x.coll)}</div>
+                <div style={{ margin: "3px 0 6px" }}>{rbRecSummary(x.item)}</div>
+                <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{when(x.at) + (x.by ? " · " + x.by : "")}</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={function () { if (window.confirm(x.kind === "delete" ? "Ye record wapas layein?" : "Is record ki ye purani halat wapas layein?")) d.onRestore(x); }} style={rbSupRed}>Wapas layein</button>
+                  <button onClick={function () { if (window.confirm("Recycle Bin se hamesha ke liye hata dein?")) d.onForget(x.id); }} style={rbSupBtn}>Bin se hatayein</button>
+                </div>
+              </div>
+            );
+          })}
+          {trash.length > lim ? <button onClick={function () { setLim(lim + 30); }} style={Object.assign({}, rbSupBtn, { width: "100%" })}>Aur dikhayein</button> : null}
+          {trash.length ? <button onClick={function () { if (window.confirm("Poora Recycle Bin khali karein? Phir kuch wapas nahi aa sake ga.")) d.onForget("ALL"); }} style={Object.assign({}, rbSupBtn, { width: "100%", marginTop: 6 })}>Recycle Bin khali karein</button> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

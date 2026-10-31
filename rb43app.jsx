@@ -749,6 +749,7 @@ function RaeesBuilderApp() {
   var alS = React.useState(function () { return rbGet("activity-log", []); }), activityLog = alS[0], setActivityLog = alS[1];
   var rlS = React.useState(function () { return rbGet("returns", []); }), returnLog = rlS[0], setReturnLog = rlS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
+  var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
   var vr = React.useState(null), viewingReceipt = vr[0], setViewingReceipt = vr[1];
   var vg = React.useState(null), viewingGatePass = vg[0], setViewingGatePass = vg[1];
@@ -783,6 +784,70 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("cat-names", catNames); }, [catNames]);
   React.useEffect(function () { rbSet("activity-log", activityLog); }, [activityLog]);
   React.useEffect(function () { rbSet("returns", returnLog); }, [returnLog]);
+  React.useEffect(function () { rbSet("trash", trash); }, [trash]);
+
+  /* ---- Super Admin: har record ka edit / delete / wapas (reback) ---- */
+  var RB_COLLS = {
+    sales: { list: sales, set: setSales, label: "Bills (Sale)" },
+    stockLog: { list: stockLog, set: setStockLog, label: "Stock entries" },
+    suppliers: { list: suppliers, set: setSuppliers, label: "Suppliers" },
+    purchases: { list: purchases, set: setPurchases, label: "Supplier khareedari" },
+    supplierPayments: { list: supplierPayments, set: setSupplierPayments, label: "Supplier payments" },
+    advances: { list: advances, set: setAdvances, label: "Advance" },
+    expenses: { list: expenses, set: setExpenses, label: "Kharche (Expenses)" },
+    labourers: { list: labourers, set: setLabourers, label: "Labour (mazdoor)" },
+    labourWork: { list: labourWork, set: setLabourWork, label: "Labour kaam" },
+    labourPayments: { list: labourPayments, set: setLabourPayments, label: "Labour payments" },
+    gatePasses: { list: gatePasses, set: setGatePasses, label: "Gate pass" },
+    wastageLog: { list: wastageLog, set: setWastageLog, label: "Wastage" },
+    conversionLog: { list: conversionLog, set: setConversionLog, label: "Conversion" },
+    returnLog: { list: returnLog, set: setReturnLog, label: "Returns" },
+    materials: { list: materials, set: setMaterials, label: "Materials" }
+  };
+  var trackPrev = React.useRef(null), trackMute = React.useRef(false);
+  React.useEffect(function () {
+    var cur = {}; Object.keys(RB_COLLS).forEach(function (k) { cur[k] = RB_COLLS[k].list; });
+    var prev = trackPrev.current; trackPrev.current = cur;
+    if (!prev) return;
+    if (trackMute.current) { trackMute.current = false; return; }
+    var found = [], at = new Date().toISOString(), by = rbSessionName() || (role === "admin" ? (rbIsSuper() ? "Super Admin" : "Admin") : "User");
+    Object.keys(cur).forEach(function (k) {
+      var a = prev[k], b = cur[k];
+      if (a === b || !Array.isArray(a) || !Array.isArray(b)) return;
+      var m = {}; b.forEach(function (x) { if (x && x.id != null) m[x.id] = x; });
+      a.forEach(function (x) {
+        if (!x || x.id == null) return;
+        var y = m[x.id];
+        if (!y) found.push({ id: rbUid(), at: at, by: by, kind: "delete", coll: k, item: x });
+        else if (y !== x && JSON.stringify(y) !== JSON.stringify(x)) found.push({ id: rbUid(), at: at, by: by, kind: "edit", coll: k, item: x });
+      });
+    });
+    if (found.length) setTrash(function (tl) { return found.concat(tl || []).slice(0, 500); });
+  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
+  function superSaveRecord(coll, item) {
+    if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
+    RB_COLLS[coll].set(function (l) { return l.map(function (x) { return x && x.id === item.id ? item : x; }); });
+    showToast("Tabdeeli save ho gayi"); logActivity("super_edit", RB_COLLS[coll].label);
+  }
+  function superDeleteRecord(coll, id) {
+    if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
+    RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
+    showToast("Delete ho gaya - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", RB_COLLS[coll].label);
+  }
+  function superRestore(entry) {
+    if (role !== "admin" || !rbIsSuper() || !entry || !RB_COLLS[entry.coll]) return;
+    var it = entry.item;
+    RB_COLLS[entry.coll].set(function (l) {
+      var has = l.some(function (x) { return x && x.id === it.id; });
+      return has ? l.map(function (x) { return x && x.id === it.id ? it : x; }) : [it].concat(l);
+    });
+    setTrash(function (tl) { return tl.filter(function (x) { return x.id !== entry.id; }); });
+    showToast("Wapas aa gaya"); logActivity("super_restore", RB_COLLS[entry.coll].label);
+  }
+  function superForget(id) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    setTrash(function (tl) { return id === "ALL" ? [] : tl.filter(function (x) { return x.id !== id; }); });
+  }
 
   function t(k) {
     var dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
@@ -1818,6 +1883,7 @@ function editStockEntry(id, qty, date) {
     setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); setCustomVariants({ garden: [], slab: [] }); setActivityLog([]);
+    trackMute.current = true; setTrash([]);
     setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
     showToast(t("clearData"));
   }
@@ -1864,7 +1930,7 @@ function editStockEntry(id, qty, date) {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
     body = <SettingsTab catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
-      onClear={clearAllData} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
+      onClear={clearAllData} superData={{ colls: RB_COLLS, trash: trash, onSave: superSaveRecord, onDelete: superDeleteRecord, onRestore: superRestore, onForget: superForget }} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
   }
 
   if (gateOpen) {
