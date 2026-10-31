@@ -762,6 +762,92 @@ function AddStockModal(p) {
   );
 }
 
+/* List se stock: saare size ek hi list mein, jitne bane hon un ki tadaad likhein aur ek dafa save */
+function BulkStockModal(p) {
+  var t = p.t;
+  var a = React.useState(p.startCat || "garden"), cat = a[0], setCat = a[1];
+  var b = React.useState({}), qtys = b[0], setQtys = b[1];
+  var c = React.useState({}), rates = c[0], setRates = c[1];
+  var d = React.useState(rbToday()), date = d[0], setDate = d[1];
+  var e = React.useState(""), supId = e[0], setSupId = e[1];
+  var f = React.useState(""), bStore = f[0], setBStore = f[1];
+  var g = React.useState(false), addingSup = g[0], setAddingSup = g[1];
+  var h = React.useState(""), newSup = h[0], setNewSup = h[1];
+  var suppliers = p.suppliers || [];
+  var bought = !!supId;
+  function key(cc, v) { return cc + "|" + v; }
+  var rows = [];
+  ["garden", "slab"].forEach(function (cc) { p.variantsFor(cc).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) rows.push({ category: cc, variant: v, qty: q, rate: rates[key(cc, v)] }); }); });
+  var totalPcs = rows.reduce(function (n, r) { return n + r.qty; }, 0);
+  var totalAmt = rows.reduce(function (n, r) { return n + (Number(r.rate) || 0) * r.qty; }, 0);
+  var canSave = rows.length > 0 && (!bought || !!bStore);
+  function catCount(cc) { return rows.filter(function (r) { return r.category === cc; }).length; }
+  function setQ(k, v) { var n = Object.assign({}, qtys); n[k] = v; setQtys(n); }
+  function setR(k, v) { var n = Object.assign({}, rates); n[k] = v; setRates(n); }
+  var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center" });
+  return (
+    <ModalShell onClose={p.onClose} title="List se stock add karein">
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[["garden", TC.garden], ["slab", TC.slab]].map(function (o) {
+          var on = cat === o[0], n = catCount(o[0]);
+          return <button key={o[0]} onClick={function () { setCat(o[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? o[1] : "#3A362C"), background: on ? o[1] : "transparent", color: on ? TC.cream : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{t(o[0])}{n ? " (" + n + ")" : ""}</button>;
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 6, fontSize: 10.5, color: "#A39C8A", padding: "0 2px 4px" }}>
+        <div style={{ flex: 1 }}>Size</div>
+        <div style={{ width: 80, textAlign: "center" }}>{t("qty")}</div>
+        {bought ? <div style={{ width: 80, textAlign: "center" }}>{t("ratePerPiece")}</div> : null}
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        {p.variantsFor(cat).map(function (v) {
+          var k = key(cat, v), filled = (Number(qtys[k]) || 0) > 0;
+          return (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 2px", borderBottom: "1px dashed #3A362C" }}>
+              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: filled ? "#E6C875" : TC.cream }}>{variantLabel(t, cat, v)}</div>
+              <input type="number" inputMode="numeric" value={qtys[k] || ""} onChange={function (ev) { setQ(k, ev.target.value); }} placeholder="0" style={Object.assign({}, small, { width: 80 })} />
+              {bought ? <input type="number" inputMode="decimal" value={rates[k] || ""} onChange={function (ev) { setR(k, ev.target.value); }} placeholder="0" style={Object.assign({}, small, { width: 80 })} /> : null}
+            </div>
+          );
+        })}
+      </div>
+      {p.canSupplier ? (
+        <Field label={t("purchasedFrom")}>
+          <select value={supId} onChange={function (ev) { var v = ev.target.value; if (v === "__new") { setAddingSup(true); return; } setSupId(v); setAddingSup(false); }} style={Object.assign({}, rbInput(), { fontSize: 14 })}>
+            <option value="">{t("ownFactory")}</option>
+            {suppliers.map(function (s) { return <option key={s.id} value={s.id}>{s.name}</option>; })}
+            <option value="__new">+ {t("addSupplier")}</option>
+          </select>
+        </Field>
+      ) : null}
+      {addingSup ? (
+        <div style={{ display: "flex", gap: 6, marginTop: -6, marginBottom: 10 }}>
+          <input value={newSup} onChange={function (ev) { setNewSup(ev.target.value); }} placeholder={t("newSupplierName")} style={Object.assign({}, rbInput(), { flex: 1, marginBottom: 0 })} />
+          <button disabled={!newSup.trim()} onClick={function () { var id = p.onAddSupplier ? p.onAddSupplier(newSup, "") : null; if (id) setSupId(id); setNewSup(""); setAddingSup(false); }} style={{ padding: "0 14px", borderRadius: 8, border: "none", background: newSup.trim() ? TC.garden : "#4A4638", color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{t("add")}</button>
+        </div>
+      ) : null}
+      {bought ? (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11.5, color: "#D8CDA9", fontWeight: 700, marginBottom: 6 }}>Ye maal kis store ka hai? (lazmi)</div>
+          <div style={{ display: "flex", gap: 8 }}>{RB_STORES.map(function (st) { var on = bStore === st[0]; return <button key={st[0]} type="button" onClick={function () { setBStore(st[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{st[1]}</button>; })}</div>
+        </div>
+      ) : null}
+      <Field label={t("date")}>
+        <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={rbInput()} />
+      </Field>
+      {rows.length ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>
+          {rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}{bought && r.rate ? " × " + rbMoney(Number(r.rate)) : ""}</div>; })}
+          <div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>Kul: {totalPcs} {t("pieces")}{bought ? " · Rs " + rbMoney(totalAmt) : ""}</div>
+        </div>
+      ) : null}
+      <button disabled={!canSave} onClick={function () { p.onSave(rows, date, bought ? { supplierId: supId, store: bStore } : null); }} style={{
+        width: "100%", marginTop: 6, padding: "12px", borderRadius: 8, border: "none",
+        background: canSave ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13.5, fontWeight: 700, cursor: canSave ? "pointer" : "not-allowed"
+      }}>{rows.length ? "Sab stock add karein (" + rows.length + " size)" : t("addStock")}</button>
+    </ModalShell>
+  );
+}
+
 /* Stock poora add karne ke baad cement - Garder aur Slab ki alag alag */
 function CementPromptModal(p) {
   var t = p.t;
@@ -1940,6 +2026,7 @@ function StockTab(p) {
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
   var c = React.useState(false), addingVariant = c[0], setAddingVariant = c[1];
+  var bk = React.useState(false), bulkOpen = bk[0], setBulkOpen = bk[1];
   var variants = variantsFor(cat);
   var anyStock = Object.keys(stockTotals.added.garden).length > 0 || Object.keys(stockTotals.added.slab).length > 0;
 
@@ -2024,6 +2111,13 @@ function StockTab(p) {
         <div style={{ marginBottom: 12, fontSize: 11.5, color: TC.concrete, textAlign: "center" }}>{t("noStockYet")}</div>
       ) : null}
 
+      {canAdd ? (
+        <button onClick={function () { setBulkOpen(true); }} style={{
+          width: "100%", marginBottom: 10, padding: "12px", borderRadius: 8, border: "none", background: TC.garden,
+          color: TC.cream, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+        }}><Ico name="plus" size={15} /> List se stock add karein (sab size ek saath)</button>
+      ) : null}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {variants.map(function (v) {
           var added = stockTotals.added[cat][v] || 0;
@@ -2091,6 +2185,14 @@ function StockTab(p) {
           onVerifyStock={p.onVerifyStock}
           onEdit={function (id, qty, date) { onEditStock(id, qty, date); }}
           onDelete={function (id) { onDeleteStock(id); }} />
+      ) : null}
+      {bulkOpen ? (
+        <BulkStockModal t={t} startCat={cat} variantsFor={variantsFor} canSupplier={p.canSupplier} suppliers={p.suppliers} onAddSupplier={p.onAddSupplier}
+          onClose={function () { setBulkOpen(false); }}
+          onSave={function (rows, date, sup) {
+            rows.forEach(function (r) { onAddStock(r.category, r.variant, r.qty, date, sup ? { supplierId: sup.supplierId, amount: Math.round((Number(r.rate) || 0) * r.qty * 100) / 100, store: sup.store } : null); });
+            setBulkOpen(false);
+          }} />
       ) : null}
       {addingVariant ? (
         <AddVariantModal t={t} category={cat} onClose={function () { setAddingVariant(false); }}
