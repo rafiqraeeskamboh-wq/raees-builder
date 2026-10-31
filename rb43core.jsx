@@ -29,7 +29,7 @@ var GARDEN_LENGTHS = (function () {
   return arr;
 })();
 
-var SLAB_SIZES = [3, 3.25, 3.5, 3.75, 4.08, 4.25, 4.58];
+var SLAB_SIZES = [3, 3.25, 3.5, 3.75, 4.08, 4.25, 4.58, 4.75, 5, 5.5, 6, 6.5];
 
 function isoOf(d) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
