@@ -1,6 +1,7 @@
 /* Raees Builder App v2 - bill / gate pass / receipt modals + app shell */
 
 function BillModal(p) {
+  rbUseBack(true, p.onClose);
   var showToast = p.showToast || function () {};
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass, gatePassEntry = p.gatePassEntry;
   var shotRef = React.useRef(null);
@@ -355,6 +356,7 @@ function GatePassBuilderModal(p) {
 }
 
 function GatePassModal(p) {
+  rbUseBack(true, p.onClose);
   var showToast = p.showToast || function () {};
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, items = p.items, onClose = p.onClose, onEdit = p.onEdit;
   var shotRef = React.useRef(null);
@@ -467,6 +469,7 @@ function ReceiptLine(p) {
 }
 
 function PaymentReceiptModal(p) {
+  rbUseBack(true, p.onClose);
   var showToast = p.showToast || function () {};
   var shotRef = React.useRef(null);
   var t = p.t, data = p.data, onClose = p.onClose;
@@ -536,6 +539,7 @@ function PaymentReceiptModal(p) {
 }
 /* ---------------- app shell ---------------- */
 function ReturnModal(p) {
+  rbUseBack(true, p.onClose);
   var t = p.t, sale = p.sale, onClose = p.onClose, onSave = p.onSave;
   var a = React.useState(function () {
     return (sale.items || []).map(function (it) {
@@ -614,17 +618,20 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor, urdu = lang === "ur";
   var init = (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
   function key(c, v) { return c + "|" + v; }
-  var a = React.useState(function () {
+  var gScope = "gp:" + (p.isEdit ? "e:" : "") + (sale.id || sale.serial || "x");
+  var a = rbUseDraft(gScope, "cat", function () {
     var c0 = "garden"; init.forEach(function (it) { if (it.category === "garden") c0 = "garden"; }); if (!init.some(function (it) { return it.category === "garden"; }) && init.some(function (it) { return it.category === "slab"; })) c0 = "slab"; return c0;
   }), cat = a[0], setCat = a[1];
-  var b = React.useState(function () { var m = {}; init.forEach(function (it) { if (it.category === "garden" || it.category === "slab") { var k = key(it.category, it.variant); m[k] = String((Number(m[k]) || 0) + (Number(it.qty) || 0)); } }); return m; }), qtys = b[0], setQtys = b[1];
-  var c = React.useState(function () { return init.filter(function (it) { return it.category === "custom"; }).map(function (it) { return Object.assign({}, it); }); }), customs = c[0], setCustoms = c[1];
+  var b = rbUseDraft(gScope, "qtys", function () { var m = {}; init.forEach(function (it) { if (it.category === "garden" || it.category === "slab") { var k = key(it.category, it.variant); m[k] = String((Number(m[k]) || 0) + (Number(it.qty) || 0)); } }); return m; }), qtys = b[0], setQtys = b[1];
+  var c = rbUseDraft(gScope, "customs", function () { return init.filter(function (it) { return it.category === "custom"; }).map(function (it) { return Object.assign({}, it); }); }), customs = c[0], setCustoms = c[1];
   var d = React.useState(false), addingCustom = d[0], setAddingCustom = d[1];
   var e = React.useState(""), cDesc = e[0], setCDesc = e[1];
   var f = React.useState(""), cQty = f[0], setCQty = f[1];
+  /* list: saare size + bill ka koi aisa size jo ab list mein na ho */
+  function listFor(cc) { var l = rbBachaLast(cc, variantsFor(cc)).slice(), seen = {}; l.forEach(function (v) { seen[String(v)] = 1; }); Object.keys(qtys).forEach(function (k) { var pr = k.split("|"); if (pr[0] === cc && !seen[pr[1]]) { seen[pr[1]] = 1; l.push(pr[1]); } }); return l; }
   function avail(cc, v) { return Math.max(0, (remainingFor(cc, v) || 0) + (p.backQty ? p.backQty(cc, v) : 0)); }
   var rows = [], over = [];
-  ["garden", "slab"].forEach(function (cc) { rbBachaLast(cc, variantsFor(cc)).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) { rows.push({ category: cc, variant: v, qty: q }); if (q > avail(cc, v)) over.push(variantLabel(t, cc, v)); } }); });
+  ["garden", "slab"].forEach(function (cc) { listFor(cc).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) { rows.push({ category: cc, variant: v, qty: q }); if (q > avail(cc, v)) over.push(variantLabel(t, cc, v)); } }); });
   var totalPieces = rows.reduce(function (n, r) { return n + r.qty; }, 0) + customs.reduce(function (n, x) { return n + (Number(x.qty) || 0); }, 0);
   var canSave = (rows.length + customs.length) > 0 && over.length === 0;
   function catCount(cc) { return rows.filter(function (r) { return r.category === cc; }).length; }
@@ -632,12 +639,13 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   function create() {
     if (!canSave) return;
     var items = rows.map(function (r) { return { id: rbUid(), category: r.category, variant: r.variant, qty: r.qty, desc: variantLabel(t, r.category, r.variant) }; }).concat(customs);
+    rbDraftClear(gScope);
     p.onCreate(items);
   }
   var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 80 });
   var title = (p.isEdit ? t("edit") : t("makeGatePass")) + " — " + sale.customerName;
   return (
-    <ModalShell onClose={p.onClose} title={title}>
+    <ModalShell onClose={function () { rbDraftClear(gScope); p.onClose(); }} title={title}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[["garden", TC.garden, "sprout"], ["slab", TC.slab, "grid"]].map(function (o) {
           var on = cat === o[0], n = catCount(o[0]);
@@ -648,7 +656,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
         <div style={{ flex: 1 }}>Size</div><div style={{ width: 60, textAlign: "center" }}>{t("inStock")}</div><div style={{ width: 80, textAlign: "center" }}>{t("qty")}</div>
       </div>
       <div style={{ marginBottom: 12 }}>
-        {rbBachaLast(cat, variantsFor(cat)).map(function (v) {
+        {listFor(cat).map(function (v) {
           var k = key(cat, v), q = Number(qtys[k]) || 0, av = avail(cat, v), bad = q > av, bacha = rbIsBacha(cat, v);
           return (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderBottom: "1px dashed #3A362C", background: bacha ? RB_BACHA_BG : "transparent", borderRadius: bacha ? 6 : 0 }}>
@@ -689,7 +697,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
     </ModalShell>
   );
 }
- function PinPromptModal(p) { var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var s2 = React.useState(""), err = s2[0], setErr = s2[1]; function submit() { if (!val) return; if (p.onSubmit(val)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } } return (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: TC.appBg2, borderRadius: 14, padding: 20, width: "100%", maxWidth: 320 }}><div style={{ fontSize: 15, fontWeight: 700, color: TC.cream, marginBottom: 10 }}>{p.title}</div><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} onKeyDown={function (e) { if (e.key === "Enter") submit(); }} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 18, letterSpacing: 4, textAlign: "center", marginBottom: 8 }} autoFocus />{err ? <div style={{ color: "#ff8a80", fontSize: 12, marginBottom: 8 }}>{err}</div> : null}<div style={{ display: "flex", gap: 8 }}><button onClick={p.onCancel} style={{ flex: 1, padding: 10, borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 600 }}>Cancel</button><button onClick={submit} style={{ flex: 1, padding: 10, borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700 }}>Unlock</button></div></div></div>); }
+ function PinPromptModal(p) { rbUseBack(true, p.onCancel); var s1 = React.useState(""), val = s1[0], setVal = s1[1]; var s2 = React.useState(""), err = s2[0], setErr = s2[1]; function submit() { if (!val) return; if (p.onSubmit(val)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } } return (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: TC.appBg2, borderRadius: 14, padding: 20, width: "100%", maxWidth: 320 }}><div style={{ fontSize: 15, fontWeight: 700, color: TC.cream, marginBottom: 10 }}>{p.title}</div><input type="password" inputMode="numeric" maxLength={6} value={val} onChange={function (e) { setVal(e.target.value.replace(/\D/g, "")); }} onKeyDown={function (e) { if (e.key === "Enter") submit(); }} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 18, letterSpacing: 4, textAlign: "center", marginBottom: 8 }} autoFocus />{err ? <div style={{ color: "#ff8a80", fontSize: 12, marginBottom: 8 }}>{err}</div> : null}<div style={{ display: "flex", gap: 8 }}><button onClick={p.onCancel} style={{ flex: 1, padding: 10, borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 600 }}>Cancel</button><button onClick={submit} style={{ flex: 1, padding: 10, borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700 }}>Unlock</button></div></div></div>); }
 function StartupPinGate(p) {
   var s1 = React.useState(""), val = s1[0], setVal = s1[1];
   var s2 = React.useState(""), err = s2[0], setErr = s2[1];
@@ -786,7 +794,25 @@ function RaeesBuilderApp() {
     setGateOpen(false); return true;
   }
   function logoutSession() { sessionStorage.removeItem(RB_SESSION_ROLE_KEY); sessionStorage.removeItem("rb2-session-super"); sessionStorage.removeItem("rb2-session-name"); setPinModalOpen(false); setAdminPinModalOpen(false); setGateOpen(true); }
-  var tb = React.useState("sale"), tab = tb[0], setTab = tb[1];
+  var tb = React.useState(function () { return rbUiGet("tab", "sale") || "sale"; }), tab = tb[0], setTab = tb[1];
+  /* tab yaad rakhein + mobile back se pichla tab */
+  var tabHist = React.useRef([]), tabPrev = React.useRef(tab), tabFromBack = React.useRef(false);
+  React.useEffect(function () {
+    rbUiSet("tab", tab);
+    if (tabFromBack.current) { tabFromBack.current = false; }
+    else if (tabPrev.current !== tab) { tabHist.current.push(tabPrev.current); if (tabHist.current.length > 20) tabHist.current.shift(); rbNavSync(); }
+    tabPrev.current = tab;
+  }, [tab]);
+  React.useEffect(function () {
+    RB_NAV.root = function () {
+      var h = tabHist.current;
+      while (h.length && h[h.length - 1] === tabPrev.current) h.pop();
+      if (h.length) { tabFromBack.current = true; setTab(h.pop()); return true; }
+      if (tabPrev.current !== "sale") { tabFromBack.current = true; setTab("sale"); return true; }
+      return false;
+    };
+    RB_NAV.onExitHint = function () { showToast("App band karne ke liye dobara back dabayein"); };
+  });
   /* agar mojooda tab ki ijazat na ho to pehle jaiz tab par le jayein */
   var TAB_PERMS = { sale: "tabSale", bills: "tabBills", gatepass: "tabGatePass", dues: "tabDues", stock: "stock", wastage: "wastage", supplier: "supplier", labour: "labour", book: "reports" };
   React.useEffect(function () {
@@ -834,6 +860,9 @@ function RaeesBuilderApp() {
   var vr = React.useState(null), viewingReceipt = vr[0], setViewingReceipt = vr[1];
   var vg = React.useState(null), viewingGatePass = vg[0], setViewingGatePass = vg[1];
   var gb = React.useState(null), gatePassBuilderFor = gb[0], setGatePassBuilderFor = gb[1];
+  /* gate pass banate hue app band hui ho to dobara wahin khule */
+  React.useEffect(function () { var id = rbUiGet("open:gp", null); if (!id) return; var s0 = null; sales.forEach(function (x) { if (x.id === id) s0 = x; }); if (s0) setGatePassBuilderFor(s0); }, []);
+  React.useEffect(function () { rbUiSet("open:gp", gatePassBuilderFor && gatePassBuilderFor.id ? gatePassBuilderFor.id : null); }, [gatePassBuilderFor]);
   var ge = React.useState(null), gatePassEditTarget = ge[0], setGatePassEditTarget = ge[1];
   var esS = React.useState(null), editingSale = esS[0], setEditingSale = esS[1];
   var ts = React.useState(""), toast = ts[0], setToast = ts[1];

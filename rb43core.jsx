@@ -560,7 +560,56 @@ function EmptyState(p) {
     </div>
   );
 }
+/* ---------- Mobile back button + jahan chhora wahin se shuru ---------- */
+/* har khula modal apni ek "back" entry rakhta hai; back dabane par sab se upar wala band hota hai,
+   koi modal na ho to pichla tab, aur Sale tab par dobara dabane se app band */
+var RB_NAV = { stack: [], pushed: 0, ignore: 0, root: null, onExitHint: null };
+function rbNavPush() { try { history.pushState({ rbnav: 1 }, ""); RB_NAV.pushed++; } catch (e) {} }
+function rbNavSync() { var n = 0; while (RB_NAV.pushed < RB_NAV.stack.length + 1 && n < 20) { rbNavPush(); n++; } }
+(function () {
+  try {
+    window.addEventListener("popstate", function () {
+      if (RB_NAV.ignore > 0) { RB_NAV.ignore--; return; }
+      RB_NAV.pushed = Math.max(0, RB_NAV.pushed - 1);
+      if (RB_NAV.stack.length) { var top = RB_NAV.stack[RB_NAV.stack.length - 1]; try { top.fn(); } catch (e) {} setTimeout(rbNavSync, 60); return; }
+      var handled = false; try { handled = RB_NAV.root ? !!RB_NAV.root() : false; } catch (e) {}
+      if (handled) { rbNavSync(); return; }
+      if (RB_NAV.pushed > 0) { RB_NAV.ignore++; var k = RB_NAV.pushed; RB_NAV.pushed = 0; try { history.go(-k); } catch (e) {} }
+      if (RB_NAV.onExitHint) RB_NAV.onExitHint();
+    });
+    var first = function () { rbNavSync(); window.removeEventListener("pointerdown", first, true); };
+    window.addEventListener("pointerdown", first, true);
+  } catch (e) {}
+})();
+function rbUseBack(active, fn) {
+  var ref = React.useRef(fn); ref.current = fn;
+  React.useEffect(function () {
+    if (!active) return;
+    var en = { fn: function () { if (ref.current) ref.current(); } };
+    RB_NAV.stack.push(en); rbNavSync();
+    return function () { var i = RB_NAV.stack.indexOf(en); if (i >= 0) RB_NAV.stack.splice(i, 1); };
+  }, [active]);
+}
+/* adhoora likha hua kaam isi phone par mehfooz (cloud par nahi jata) */
+function rbUiGet(k, def) { try { var v = localStorage.getItem("rbui:" + RB_STORE + ":" + k); return v === null ? def : JSON.parse(v); } catch (e) { return def; } }
+function rbUiSet(k, v) { try { if (v === null || v === undefined) localStorage.removeItem("rbui:" + RB_STORE + ":" + k); else localStorage.setItem("rbui:" + RB_STORE + ":" + k, JSON.stringify(v)); } catch (e) {} }
+function rbDraftClear(scope) { rbUiSet("d:" + scope, null); }
+function rbUseDraft(scope, name, init) {
+  var st = React.useState(function () {
+    var d = scope ? rbUiGet("d:" + scope, null) : null;
+    if (d && Object.prototype.hasOwnProperty.call(d, name)) return d[name];
+    return typeof init === "function" ? init() : init;
+  });
+  var val = st[0];
+  React.useEffect(function () {
+    if (!scope) return;
+    var d = rbUiGet("d:" + scope, {}) || {}; d[name] = val; rbUiSet("d:" + scope, d);
+  }, [scope, val]);
+  return st;
+}
+
 function ModalShell(p) {
+  rbUseBack(true, p.onClose);
   return (
     <div onClick={p.onClose} className="no-print" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9070,

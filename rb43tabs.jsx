@@ -141,16 +141,17 @@ function NewSaleTab(p) {
   var nextSerial = p.nextSerial, saleRole = p.role;
   var canEditSerial = saleRole === "admin"; /* bill number sirf Admin badal sakta hai */
   var sn = React.useState(null), serialEdit = sn[0], setSerialEdit = sn[1];
-  var a = React.useState("cash"), saleType = a[0], setSaleType = a[1];
-  var b = React.useState(""), customerName = b[0], setCustomerName = b[1];
-  var c = React.useState(""), mobile = c[0], setMobile = c[1];
+  var dScope = p.editingSale ? null : "sale"; /* adhoora bill isi phone par yaad rehta hai */
+  var a = rbUseDraft(dScope, "saleType", "cash"), saleType = a[0], setSaleType = a[1];
+  var b = rbUseDraft(dScope, "customerName", ""), customerName = b[0], setCustomerName = b[1];
+  var c = rbUseDraft(dScope, "mobile", ""), mobile = c[0], setMobile = c[1];
   var d = React.useState(rbToday()), date = d[0], setDate = d[1];
-  var e = React.useState([]), rows = e[0], setRows = e[1];
+  var e = rbUseDraft(dScope, "rows", []), rows = e[0], setRows = e[1];
   var f = React.useState(false), pickerOpen = f[0], setPickerOpen = f[1];
-  var g = React.useState(""), labourRate = g[0], setLabourRate = g[1];
-  var h = React.useState(false), paidInFull = h[0], setPaidInFull = h[1];
-  var i = React.useState(""), advanceInput = i[0], setAdvanceInput = i[1];
-  var dsc = React.useState(""), discountInput = dsc[0], setDiscountInput = dsc[1];
+  var g = rbUseDraft(dScope, "labourRate", ""), labourRate = g[0], setLabourRate = g[1];
+  var h = rbUseDraft(dScope, "paidInFull", false), paidInFull = h[0], setPaidInFull = h[1];
+  var i = rbUseDraft(dScope, "advanceInput", ""), advanceInput = i[0], setAdvanceInput = i[1];
+  var dsc = rbUseDraft(dScope, "discountInput", ""), discountInput = dsc[0], setDiscountInput = dsc[1];
   var j = React.useState(false), submitting = j[0], setSubmitting = j[1];
   var mode = saleType === "cash" ? "piece" : "area";
   var isEditing = !!editingSale;
@@ -556,6 +557,7 @@ function StockSummaryCard(p) { var t = p.t, stockLog = p.stockLog; var a = React
 }
 
 function EditVariantModal(p) {
+  rbUseBack(true, p.onClose);
   var t = p.t, cat = p.category, v = p.variant;
   var a = React.useState(String(v)), val = a[0], setVal = a[1];
   var b = React.useState(variantCustomLabel(cat, v) || ""), lbl = b[0], setLbl = b[1];
@@ -770,15 +772,15 @@ function rbBachaLast(cat, list) { if (cat !== "slab") return list; return list.f
 /* List se stock: saare size ek hi list mein, jitne bane hon un ki tadaad likhein aur ek dafa save */
 function BulkStockModal(p) {
   var t = p.t;
-  var a = React.useState(p.startCat || "garden"), cat = a[0], setCat = a[1];
-  var b = React.useState({}), qtys = b[0], setQtys = b[1];
-  var c = React.useState({}), rates = c[0], setRates = c[1];
+  var a = rbUseDraft("bulkstock", "cat", p.startCat || "garden"), cat = a[0], setCat = a[1];
+  var b = rbUseDraft("bulkstock", "qtys", {}), qtys = b[0], setQtys = b[1];
+  var c = rbUseDraft("bulkstock", "rates", {}), rates = c[0], setRates = c[1];
   var d = React.useState(rbToday()), date = d[0], setDate = d[1];
-  var e = React.useState(""), supId = e[0], setSupId = e[1];
-  var f = React.useState(""), bStore = f[0], setBStore = f[1];
+  var e = rbUseDraft("bulkstock", "supId", ""), supId = e[0], setSupId = e[1];
+  var f = rbUseDraft("bulkstock", "bStore", ""), bStore = f[0], setBStore = f[1];
   var g = React.useState(false), addingSup = g[0], setAddingSup = g[1];
   var h = React.useState(""), newSup = h[0], setNewSup = h[1];
-  var cg = React.useState({ garden: "", slab: "" }), cem = cg[0], setCem = cg[1];
+  var cg = rbUseDraft("bulkstock", "cem", { garden: "", slab: "" }), cem = cg[0], setCem = cg[1];
   var suppliers = p.suppliers || [];
   var bought = !!supId;
   function key(cc, v) { return cc + "|" + v; }
@@ -889,6 +891,7 @@ function BulkStockModal(p) {
 
 /* Stock poora add karne ke baad cement - Garder aur Slab ki alag alag */
 function CementPromptModal(p) {
+  rbUseBack(!p.blocking, p.onLater);
   var t = p.t;
   var entries = p.entries || [];
   var blocking = !!p.blocking;
@@ -1420,6 +1423,7 @@ function LabourPendingRow(p) {
 }
 
 function LabourPromptModal(p) {
+  rbUseBack(!p.blocking, p.onLater || p.onClose);
   var t = p.t, items = p.items || [];
   return (
     <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
@@ -1443,6 +1447,7 @@ function LabourPromptModal(p) {
 
 /* ---- admin: kisi bhi labour entry ki tarmeem ---- */
 function LabourWorkEditModal(p) {
+  rbUseBack(true, p.onClose);
   var t = p.t, w = p.entry, labourers = p.labourers || [];
   var a = React.useState(w.kind || "garder"), kind = a[0], setKind = a[1];
   var b = React.useState(w.labourerId), lid = b[0], setLid = b[1];
@@ -1488,6 +1493,7 @@ function LabourWorkEditModal(p) {
 }
 
 function LabourKhataModal(p) {
+  rbUseBack(true, p.onClose);
   var t = p.t, lb = p.labourer, tot = p.totals;
   var showToast = p.showToast || function () {};
   var shotRef = React.useRef(null);
@@ -2065,7 +2071,8 @@ function StockTab(p) {
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
   var c = React.useState(false), addingVariant = c[0], setAddingVariant = c[1];
-  var bk = React.useState(false), bulkOpen = bk[0], setBulkOpen = bk[1];
+  var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
+  React.useEffect(function () { rbUiSet("open:bulkstock", bulkOpen ? 1 : null); if (!bulkOpen) rbDraftClear("bulkstock"); }, [bulkOpen]);
   var variants = variantsFor(cat);
   var anyStock = Object.keys(stockTotals.added.garden).length > 0 || Object.keys(stockTotals.added.slab).length > 0;
 
