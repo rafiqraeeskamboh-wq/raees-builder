@@ -2015,7 +2015,7 @@ function editStockEntry(id, qty, date) {
   function doClearAllData() {
     setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
-    setWastageLog([]); setConversionLog([]); setCustomVariants({ garden: [], slab: [] }); setActivityLog([]);
+    setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
     trackMute.current = true; setTrash([]);
     setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
     showToast(t("clearData"));
