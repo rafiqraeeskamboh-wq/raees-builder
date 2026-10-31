@@ -1522,7 +1522,7 @@ function LabourKhataModal(p) {
         </div>
 
         <RbLedgerButton onClick={function () { setLabLedger(true); }} label="Labour ka ledger" />
-        {labLedger ? <RbLedgerModal t={t} title={lb.name} subtitle="Labour" rows={rbLabourLedgerRows(t, lb, tot)} colA="Kaam (mazdoori)" colB="Payment di" balLabel="Baqi" onClose={function () { setLabLedger(false); }} note="Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance)." /> : null}
+        {labLedger ? <RbLabourDayLedger t={t} lb={lb} tot={tot} onClose={function () { setLabLedger(false); }} /> : null}
         <button onClick={function () { rbShareNode(shotRef.current, "khata.png", waText, lb.mobile || "", note); }} className="no-print" style={Object.assign({}, btn, { background: "#128C7E", color: "#FFFFFF" })}>
           <Ico name="chat" size={15} /> {t("khataShare")}
         </button>
@@ -4043,6 +4043,108 @@ function RbAdvanceView(p) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ---------- Labour ledger: din-wise list (har din ka kaam), har hafte ka total: mazdoori, mila, baqi ---------- */
+function rbLabourQty(x) {
+  if (x.kind === "garder") return Number(x.pieces) || 0;
+  return Number(x.qty) || 0;
+}
+function rbLabourUnitWord(t, kind) { return kind === "garder" ? "garder" : (kind === "slab" ? "slab" : (kind === "ring" ? "ring" : (kind === "fitting" ? "sq ft" : ""))); }
+function RbLabourDayLedger(p) {
+  rbUseBack(true, p.onClose);
+  var t = p.t, lb = p.lb, tot = p.tot;
+  var a = React.useState({ preset: "all" }), range = a[0], setRange = a[1];
+  var r = resolveRange(range);
+  var oa = Math.max(0, Number(lb.opening) || 0), opening = lb.openingDir === "adv" ? -oa : oa;
+  var days = {};
+  function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, work: 0, paid: 0, notes: [] }; return days[k]; }
+  (tot.works || []).forEach(function (x) { var d = D(x.date); var q = rbLabourQty(x); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + q; d.work += Number(x.amount) || 0; });
+  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; if (x.note) d.notes.push(x.note); });
+  var list = Object.keys(days).sort().map(function (k) { return days[k]; });
+  /* range se pehle ka sab "pichla baqi" */
+  var carry = opening, shown = [];
+  list.forEach(function (d) { if (r.from && d.date < r.from) carry += d.work - d.paid; else if (!r.to || d.date <= r.to) shown.push(d); });
+  function kindsText(kinds) { return Object.keys(kinds).map(function (k) { return kinds[k] + " " + (rbLabourUnitWord(t, k) || t(labourKind(k).labelKey)); }).join(", "); }
+  /* lines + hafta total */
+  var lines = [], bal = carry, wk = null, wAgg = null, gW = 0, gP = 0;
+  function closeWeek() { if (!wAgg) return; lines.push({ week: true, from: wk.from, to: wk.to, kinds: wAgg.kinds, work: wAgg.work, paid: wAgg.paid, bal: bal }); }
+  shown.forEach(function (d) {
+    var w = rbWeekOf(d.date || rbToday());
+    if (!wk || w.from !== wk.from) { closeWeek(); wk = w; wAgg = { kinds: {}, work: 0, paid: 0 }; }
+    bal += d.work - d.paid; gW += d.work; gP += d.paid;
+    Object.keys(d.kinds).forEach(function (k) { wAgg.kinds[k] = (wAgg.kinds[k] || 0) + d.kinds[k]; });
+    wAgg.work += d.work; wAgg.paid += d.paid;
+    lines.push({ d: d, bal: bal });
+  });
+  closeWeek();
+  var idRef = React.useRef("rbll" + rbUid());
+  function printIt() {
+    var el = document.getElementById(idRef.current); if (!el) return;
+    var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+  }
+  var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11, color: "#222", verticalAlign: "top" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  var wkC = Object.assign({}, cell, { background: "#FFF3D6", fontWeight: 700 });
+  function m(v) { return v ? rbMoney(v) : ""; }
+  function bt(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: 14, background: TC.appBg }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
+          <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+        </div>
+        <RangeFilter t={t} range={range} onChange={setRange} />
+        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+          <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{t("appName")}</div>
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Labour Ledger - {lb.name}</div>
+          <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>
+              <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
+              <th style={head}>Kaam</th>
+              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Mazdoori</th>
+              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Mila</th>
+              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Baqi</th>
+            </tr></thead>
+            <tbody>
+              {carry ? <tr><td style={cell}>{r.from ? rbDate(r.from) : (lb.openingDate ? rbDate(lb.openingDate) : "-")}</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>{r.from ? "Pichla baqi" : "Purana baqi"}</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{bt(carry)}</td></tr> : null}
+              {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
+                if (l.week) return (
+                  <tr key={i}>
+                    <td colSpan={2} style={wkC}>Hafta {rbDate(l.from)} - {rbDate(l.to)}{Object.keys(l.kinds).length ? ": " + kindsText(l.kinds) : ""}</td>
+                    <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.work)}</td>
+                    <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.paid)}</td>
+                    <td style={Object.assign({}, wkC, { textAlign: "right", color: "#B0262B" })}>{bt(l.bal)}</td>
+                  </tr>
+                );
+                var d = l.d, kt = kindsText(d.kinds);
+                return (
+                  <tr key={i}>
+                    <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{kt || (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td colSpan={2} style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>Kul</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(gW)}</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(gP)}</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{bt(bal)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>Hafta Jumma se Jumeraat tak. Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance).</div>
+        </div>
+      </div>
     </div>
   );
 }
