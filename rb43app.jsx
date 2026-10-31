@@ -1305,6 +1305,13 @@ function RaeesBuilderApp() {
     logActivity("labour_config", t(labourKind(kind).labelKey) + " \u2014 Rs " + rbMoney(rt));
   }
 
+  function renameSupplier(supplierId, name, mobile) {
+    var nm = String(name || "").trim();
+    if (!supplierId || !nm || role !== "admin" || !rbIsSuper()) return;
+    setSuppliers(function (a) { return a.map(function (x) { return x.id === supplierId ? Object.assign({}, x, { name: nm, mobile: String(mobile || "").trim() }) : x; }); });
+    showToast("Supplier ka naam save ho gaya");
+    logActivity("supplier_edit", nm);
+  }
   function renameLabourer(labourerId, name, mobile) {
     var nm = String(name || "").trim();
     if (!labourerId || !nm || role !== "admin") return;
@@ -2057,7 +2064,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
@@ -2068,7 +2075,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "supplier") {
     body = can("supplier") ? <SupplierTab t={t} suppliers={suppliers} supplierTotals={supplierTotals} materials={materials}
       isAdmin={role === "admin"} onAddMaterial={addMaterial} onAddSupplier={addSupplier}
-      onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} onSetSupplierOpening={setSupplierOpening} />
+      onAddPurchase={addPurchase} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} />
       : <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "labour") {
     body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}

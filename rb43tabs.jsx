@@ -1128,6 +1128,7 @@ function SupplierModal(p) {
     return (
       <Shell onClose={p.onClose} title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
+        {p.isAdmin && rbIsSuper() && p.onRenameSupplier ? <RbLabourerRename lb={current} onSave={p.onRenameSupplier} /> : null}
         <RbLedgerButton onClick={function () { setSupLedger(true); }} label="Supplier ka ledger" />
         {supLedger ? <RbLedgerModal t={t} title={current.name} subtitle="Supplier" rows={rbSupplierLedgerRows(current, tot)} colA="Maal liya" colB="Payment di" balLabel="Baqi" onClose={function () { setSupLedger(false); }} note="Baqi = hum ne supplier ko dena hai. Minus (-) = hum ne zyada diya hua hai." /> : null}
         <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
@@ -1293,7 +1294,7 @@ function SupplierTab(p) {
   return (
     <SupplierModal inline t={p.t} suppliers={p.suppliers} supplierTotals={p.supplierTotals} materials={p.materials}
       isAdmin={p.isAdmin} onAddMaterial={p.onAddMaterial} onAddSupplier={p.onAddSupplier}
-      onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier} onSetSupplierOpening={p.onSetSupplierOpening} />
+      onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier} onRenameSupplier={p.onRenameSupplier} onSetSupplierOpening={p.onSetSupplierOpening} />
   );
 }
 /* ---- labour: banda kaunsa kaam karta hai (chips) ---- */
@@ -2266,7 +2267,7 @@ function StockTab(p) {
       ) : null}
       {supplierOpen ? (
         <SupplierModal t={t} suppliers={p.suppliers} supplierTotals={p.supplierTotals} materials={p.materials} isAdmin={p.isAdmin} onAddMaterial={p.onAddMaterial}
-          onAddSupplier={p.onAddSupplier} onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier}
+          onAddSupplier={p.onAddSupplier} onAddPurchase={p.onAddPurchase} onPaySupplier={p.onPaySupplier} onRenameSupplier={p.onRenameSupplier}
           onClose={function () { setSupplierOpen(false); }} />
       ) : null}
     </div>
