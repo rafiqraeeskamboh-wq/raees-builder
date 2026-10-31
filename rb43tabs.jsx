@@ -2621,6 +2621,14 @@ function rbAllCustomers(curSales) {
       sd.total += tot; sd.dues += du; c.total += tot; c.dues += du;
       c.bills.push({ store: st[1], serial: s.serial, date: s.date, total: tot, dues: du, opening: !!s.isOpening });
     });
+    /* advance dene wale bhi customer list / talash mein aayen (chahe abhi bill na bana ho) */
+    rbLsList(st[0], "advances").forEach(function (x) {
+      var k = rbCustKey(x.name); if (!k) return;
+      var c = map[k] || (map[k] = { key: k, name: String(x.name).trim(), mobile: "", stores: {}, total: 0, dues: 0, bills: [] });
+      if (!c.mobile && x.mobile) c.mobile = x.mobile;
+      c.advLeft = (c.advLeft || 0) + Math.max(0, rbAdvLeftOf(x));
+      c.advCount = (c.advCount || 0) + 1;
+    });
   });
   return Object.keys(map).map(function (k) { var c = map[k]; c.bills.sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")); }); return c; })
     .sort(function (x, y) { return y.bills.length - x.bills.length || x.name.localeCompare(y.name); });
@@ -2647,6 +2655,7 @@ function RbCustomerSuggest(p) {
     return (
       <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 7, background: "#E6F2E1", border: "1.5px solid " + TC.success, fontSize: 11.5, color: TC.ink }}>
         <b>Purana customer hai</b> - {exact.bills.length} bill{exact.mobile ? " · " + exact.mobile : ""} · baqi Rs {rbMoney(exact.dues)}
+        {exact.advLeft > 0 ? <div style={{ marginTop: 4, fontWeight: 700, color: "#1E6B33" }}>Advance jama: Rs {rbMoney(exact.advLeft)} (bill banne par khud lag jaye ga)</div> : null}
         <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
           {RB_STORES.map(function (st) { var d = exact.stores[st[0]] || { count: 0, total: 0, dues: 0 }; return <span key={st[0]} style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 10, background: "#fff", border: "1px solid #B9D7AE" }}>{st[1]}: {d.count} bill · Rs {rbMoney(d.total)} · baqi {rbMoney(d.dues)}</span>; })}
         </div>
@@ -2675,7 +2684,7 @@ function RbCustomerSuggest(p) {
           <div key={c.key} onClick={function () { p.onPick(c); }} style={{ padding: "8px 10px", borderTop: "1px solid #EAD9A8", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: 8 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{c.name}</div>
-              <div style={{ fontSize: 10, color: TC.inkSoft }}>{(c.mobile ? c.mobile + " · " : "") + c.bills.length + " bill"}</div>
+              <div style={{ fontSize: 10, color: TC.inkSoft }}>{(c.mobile ? c.mobile + " · " : "") + c.bills.length + " bill"}{c.advLeft > 0 ? <b style={{ color: "#1E6B33" }}>{" · Advance Rs " + rbMoney(c.advLeft)}</b> : null}</div>
             </div>
             <div className="rb-mono" style={{ fontSize: 11.5, fontWeight: 700, color: c.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(c.dues)}</div>
           </div>
