@@ -60,7 +60,7 @@ function BillModal(p) {
           </a>
         ) : null}
 
-        <button onClick={function () { rbShareNode(shotRef.current, "bill.png", waText, sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
+        <button onClick={function () { rbShareNode(shotRef.current, "bill-" + (sale.serial || "") + ".png", "", sale.mobile, function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }, false, true); }} className="no-print" style={{
           width: "100%", marginBottom: 12, padding: "12px", borderRadius: 8, border: "none",
           background: "#128C7E", color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
@@ -68,7 +68,7 @@ function BillModal(p) {
           <Ico name="chat" size={15} /> {t("whatsappImage")}
         </button>
 
-        <button onClick={function () { rbSaveNode(shotRef.current, "bill.png", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
+        <button onClick={function () { rbSaveNode(shotRef.current, "bill-" + (sale.serial || "") + ".png", function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); }); }} className="no-print" style={{
           width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px solid " + TC.concrete,
           background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box"
@@ -76,8 +76,8 @@ function BillModal(p) {
           <Ico name="printer" size={14} /> {t("saveImage")}
         </button>
 
-        <div className="print-area" ref={shotRef}>
-        <div style={{
+        <div className="print-area">
+        <div ref={shotRef} style={{
           background: TC.paper, borderRadius: 10, padding: 20, position: "relative", overflow: "hidden",
           backgroundImage: "repeating-linear-gradient(45deg, " + TC.paperDark + " 0, " + TC.paperDark + " 1px, transparent 1px, transparent 14px)"
         }}>

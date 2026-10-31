@@ -460,7 +460,7 @@ var ICON_PATHS = {
 };
 
 /* bill/gate pass ko tasveer bana kar WhatsApp (ya kisi bhi app) par bhejna */
-function rbShareNode(node, filename, text, phone, onNote, onlySave) {
+function rbShareNode(node, filename, text, phone, onNote, onlySave, saveToo) {
   if (!node) return;
   if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
   if (onNote) onNote("busy");
@@ -470,7 +470,8 @@ function rbShareNode(node, filename, text, phone, onNote, onlySave) {
       var file = null;
       try { file = new File([blob], filename, { type: "image/png" }); } catch (e) { file = null; }
       if (!onlySave && file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-        navigator.share({ files: [file], text: text || "" }).catch(function () {});
+        if (saveToo) { try { var su = URL.createObjectURL(blob), sa = document.createElement("a"); sa.href = su; sa.download = filename; document.body.appendChild(sa); sa.click(); document.body.removeChild(sa); setTimeout(function () { URL.revokeObjectURL(su); }, 5000); } catch (e) {} }
+        navigator.share(text ? { files: [file], text: text } : { files: [file] }).catch(function () {});
         return;
       }
       var url = URL.createObjectURL(blob);
