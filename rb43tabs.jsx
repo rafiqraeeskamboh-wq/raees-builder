@@ -1115,6 +1115,7 @@ function SupplierModal(p) {
   var curMat = null; mats.forEach(function (x) { if (x.id === pMat) curMat = x; });
   var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
   var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
+  var d3s = React.useState(""), supNote = d3s[0], setSupNote = d3s[1];
   var lgSp = React.useState(false), supLedger = lgSp[0], setSupLedger = lgSp[1];
   var current = null;
   suppliers.forEach(function (x) { if (x.id === openId) current = x; });
@@ -1184,7 +1185,8 @@ function SupplierModal(p) {
             <input type="number" inputMode="numeric" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
             <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
           </div>
-          <button disabled={!(Number(payAmt) > 0)} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate); setPayAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: Number(payAmt) > 0 ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("payToSupplier")}</button>
+          <input value={supNote} onChange={function (e) { setSupNote(e.target.value); }} placeholder="Description - lazmi (jaise: cash, bank, cheque, kis ke haath)" style={{ width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 9px", borderRadius: 7, border: "2px solid " + (supNote.trim() ? "#3A362C" : TC.stamp), background: "transparent", color: TC.cream, fontSize: 13 }} />
+          <button disabled={!(Number(payAmt) > 0 && supNote.trim())} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate, supNote.trim()); setPayAmt(""); setSupNote(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && supNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("payToSupplier")}</button>
         </div>
 
         {rows.length === 0 ? (
@@ -3836,7 +3838,7 @@ function rbPeopleLedgers(all) {
     P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0 });
   });
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
-  (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || ""), b: Number(x.amount) || 0 }); });
+  (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0 }); });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
   (all.labourPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Labour ko payment - " + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
   return Object.keys(map).map(function (k) { map[k].rows = rbLedgerSort(map[k].rows); return map[k]; })

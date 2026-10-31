@@ -1175,10 +1175,10 @@ function RaeesBuilderApp() {
     logActivity("advance_returned", "Rs " + rbMoney(amt));
   }
 
-  function addSupplierPayment(supplierId, amount, date) {
+  function addSupplierPayment(supplierId, amount, date, note) {
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
-    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, date: date || rbToday(), store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    var entry = { id: rbUid(), supplierId: supplierId, amount: amt, note: String(note || "").trim(), date: date || rbToday(), store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setSupplierPayments(function (a) { return [entry].concat(a); });
     showToast(t("payToSupplier"));
     logActivity("supplier_paid", "Rs " + rbMoney(amt));
