@@ -2759,12 +2759,12 @@ function DuesTab(p) {
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        {[["bills", "Bill wise"], ["customers", "Customer List"]].map(function (o) {
+        {[["bills", "Bill wise"], ["customers", "Customer List"], ["advance", "Advance"]].map(function (o) {
           var on = dView === o[0];
           return <button key={o[0]} onClick={function () { setDView(o[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>;
         })}
       </div>
-      {dView === "customers" ? <CustomerListView t={t} sales={sales} /> : (<React.Fragment>
+      {dView === "advance" ? <RbAdvanceView t={t} advances={p.advances || []} sales={sales} onAdd={p.onAddAdvance} onReturn={p.onReturnAdvance} /> : dView === "customers" ? <CustomerListView t={t} sales={sales} /> : (<React.Fragment>
       <PaymentsSummaryCard t={t} sales={sales} />
       {p.onAddOpening ? (
         <button onClick={function () { setObOpen(true); }} style={{
@@ -3926,5 +3926,110 @@ function RbPersonLedgerModal(p) {
         );
       })}
     </ModalShell>
+  );
+}
+
+/* ---------- Advance: lena (customer se, sale se pehle) aur wapas dena ---------- */
+function rbAdvLeftOf(x) { return (Number(x.amount) || 0) - (Number(x.used) || 0) - (Number(x.returnedAmt) || 0); }
+function RbAdvanceView(p) {
+  var t = p.t, advances = p.advances || [];
+  var m = React.useState(""), mode = m[0], setMode = m[1]; /* "" | "take" | id (wapsi) */
+  var a = React.useState(""), nm = a[0], setNm = a[1];
+  var b = React.useState(""), mob = b[0], setMob = b[1];
+  var c = React.useState(""), amt = c[0], setAmt = c[1];
+  var d = React.useState(rbToday()), dt = d[0], setDt = d[1];
+  var e = React.useState(""), note = e[0], setNote = e[1];
+  var f = React.useState("open"), filter = f[0], setFilter = f[1];
+  var g = React.useState(""), q = g[0], setQ = g[1];
+  var names = {}; (p.sales || []).forEach(function (x) { var n = String(x.customerName || "").trim(); if (n) names[n.toLowerCase()] = n; }); advances.forEach(function (x) { var n = String(x.name || "").trim(); if (n) names[n.toLowerCase()] = n; });
+  var nameList = Object.keys(names).map(function (k) { return names[k]; }).sort();
+  var totLeft = advances.reduce(function (n, x) { return n + Math.max(0, rbAdvLeftOf(x)); }, 0);
+  var openCount = advances.filter(function (x) { return rbAdvLeftOf(x) > 0; }).length;
+  var qk = q.trim().toLowerCase();
+  var list = advances.filter(function (x) { if (filter === "open" && rbAdvLeftOf(x) <= 0) return false; if (qk && String(x.name || "").toLowerCase().indexOf(qk) < 0 && String(x.mobile || "").indexOf(q.trim()) < 0) return false; return true; })
+    .slice().sort(function (x, y) { return String(y.date || "").localeCompare(String(x.date || "")) || ((Number(y.no) || 0) - (Number(x.no) || 0)); });
+  function reset() { setMode(""); setNm(""); setMob(""); setAmt(""); setNote(""); setDt(rbToday()); }
+  var inS = Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", marginBottom: 8 });
+  var big = { flex: 1, padding: "14px 8px", borderRadius: 10, border: "none", fontSize: 14, fontWeight: 800, cursor: "pointer", color: TC.cream };
+  var takeOk = nm.trim() && Number(amt) > 0;
+  var cur = null; advances.forEach(function (x) { if (x.id === mode) cur = x; });
+  var curLeft = cur ? rbAdvLeftOf(cur) : 0;
+  var retOk = cur && Number(amt) > 0 && Number(amt) <= curLeft;
+  return (
+    <div>
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <StatBlock label="Advance jama (hamare paas)" value={"Rs " + rbMoney(totLeft)} bold color={TC.stamp} />
+        <StatBlock label="Khule advance" value={openCount} bold />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button onClick={function () { reset(); setMode("take"); }} style={Object.assign({}, big, { background: TC.garden })}>+ Advance lein</button>
+        <button onClick={function () { reset(); setMode("pick"); }} style={Object.assign({}, big, { background: TC.stamp })}>− Advance wapas dein</button>
+      </div>
+
+      {mode === "take" ? (
+        <div style={{ background: "#26301F", border: "1.5px solid " + TC.garden, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: TC.cream, marginBottom: 8 }}>Advance lein (customer se, sale se pehle)</div>
+          <input list="rb-adv-names" value={nm} onChange={function (ev) { setNm(ev.target.value); }} placeholder="Customer ka naam" style={inS} />
+          <datalist id="rb-adv-names">{nameList.map(function (n) { return <option key={n} value={n} />; })}</datalist>
+          <input type="tel" inputMode="numeric" value={mob} onChange={function (ev) { setMob(ev.target.value); }} placeholder="Mobile (zaroori nahi)" style={inS} />
+          <input type="number" inputMode="decimal" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="Raqam (Rs)" style={Object.assign({}, inS, { fontSize: 18, fontWeight: 700 })} />
+          <input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={inS} />
+          <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder="Note (zaroori nahi)" style={inS} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 8 }}>Is customer ka bill banega to ye advance khud us bill mein lag jaye ga. Raqam aap ki Day Book mein aaye gi.</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={reset} style={{ flex: 1, padding: 11, borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+            <button disabled={!takeOk} onClick={function () { if (p.onAdd(nm, mob, amt, dt, note)) reset(); }} style={{ flex: 2, padding: 11, borderRadius: 8, border: "none", background: takeOk ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 800, cursor: takeOk ? "pointer" : "not-allowed" }}>Advance save karein</button>
+          </div>
+        </div>
+      ) : null}
+
+      {mode === "pick" ? (
+        <div style={{ background: "#3A2A22", border: "1.5px solid " + TC.stamp, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 12.5, color: "#E8C9B8" }}>
+          Neeche list mein jis customer ko advance wapas dena hai us ke aage <b>"Wapas dein"</b> dabayein.
+          <button onClick={reset} style={{ display: "block", marginTop: 8, background: "none", border: "none", color: "#A39C8A", cursor: "pointer", padding: 0, fontSize: 12 }}>Band karein</button>
+        </div>
+      ) : null}
+
+      {cur ? (
+        <div style={{ background: "#3A2A22", border: "1.5px solid " + TC.stamp, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: TC.cream, marginBottom: 4 }}>Advance wapas dein - {cur.name}</div>
+          <div style={{ fontSize: 11.5, color: "#E8C9B8", marginBottom: 8 }}>Receipt #{cur.no} · baqi advance: Rs {rbMoney(curLeft)}</div>
+          <input type="number" inputMode="decimal" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="Kitne wapas diye (Rs)" style={Object.assign({}, inS, { fontSize: 18, fontWeight: 700 })} />
+          <button onClick={function () { setAmt(String(curLeft)); }} style={{ background: "none", border: "none", color: TC.amber, cursor: "pointer", padding: 0, fontSize: 12, marginBottom: 8 }}>Poora (Rs {rbMoney(curLeft)})</button>
+          <input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={inS} />
+          {Number(amt) > curLeft ? <div style={{ fontSize: 11.5, color: "#F0A08A", marginBottom: 8 }}>Baqi advance se zyada nahi de sakte</div> : null}
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 8 }}>Ye raqam aap ki Day Book se kam ho gi.</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={reset} style={{ flex: 1, padding: 11, borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+            <button disabled={!retOk} onClick={function () { if (window.confirm("Rs " + rbMoney(amt) + " " + cur.name + " ko wapas dein?")) { p.onReturn(cur.id, amt, dt); reset(); } }} style={{ flex: 2, padding: 11, borderRadius: 8, border: "none", background: retOk ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 800, cursor: retOk ? "pointer" : "not-allowed" }}>Wapas de diye</button>
+          </div>
+        </div>
+      ) : null}
+
+      <input value={q} onChange={function (ev) { setQ(ev.target.value); }} placeholder="Naam / mobile se talash" style={inS} />
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {[["open", "Khule advance"], ["all", "Sab"]].map(function (o) { var on = filter === o[0]; return <button key={o[0]} onClick={function () { setFilter(o[0]); }} style={{ flex: 1, padding: "8px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
+      </div>
+      {list.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>Koi advance nahi</div> : list.map(function (x) {
+        var left = rbAdvLeftOf(x);
+        return (
+          <div key={x.id} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{x.name}</div>
+                <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{x.no} · {rbDate(x.date)}{x.mobile ? " · " + x.mobile : ""}{x.byName ? " · " + x.byName : ""}</div>
+                {x.note ? <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{x.note}</div> : null}
+              </div>
+              <div style={{ textAlign: "end" }}>
+                <div className="rb-mono" style={{ fontSize: 13, fontWeight: 700, color: left > 0 ? TC.stamp : TC.success }}>Rs {rbMoney(Math.max(0, left))}</div>
+                <div style={{ fontSize: 9.5, color: TC.concrete }}>{left > 0 ? "baqi advance" : "khatam"}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 4 }}>Liya: Rs {rbMoney(x.amount)}{Number(x.used) ? " · bill mein laga: Rs " + rbMoney(x.used) : ""}{Number(x.returnedAmt) ? " · wapas diya: Rs " + rbMoney(x.returnedAmt) : ""}</div>
+            {left > 0 ? <button onClick={function () { reset(); setMode(x.id); window.scrollTo(0, 0); }} style={{ marginTop: 8, width: "100%", padding: "8px", borderRadius: 7, border: "1.5px solid " + TC.stamp, background: "transparent", color: TC.stamp, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>− Wapas dein</button> : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }
