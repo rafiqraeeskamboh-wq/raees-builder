@@ -762,6 +762,11 @@ function AddStockModal(p) {
   );
 }
 
+/* "bacha" likhe hue slab: list mein sab se neeche aur alag rang */
+var RB_BACHA_COLOR = "#6EC6FF", RB_BACHA_BG = "rgba(110,198,255,0.12)";
+function rbIsBacha(cat, v) { return cat === "slab" && /bacha/i.test(variantCustomLabel(cat, v) || ""); }
+function rbBachaLast(cat, list) { if (cat !== "slab") return list; return list.filter(function (v) { return !rbIsBacha(cat, v); }).concat(list.filter(function (v) { return rbIsBacha(cat, v); })); }
+
 /* List se stock: saare size ek hi list mein, jitne bane hon un ki tadaad likhein aur ek dafa save */
 function BulkStockModal(p) {
   var t = p.t;
@@ -811,11 +816,11 @@ function BulkStockModal(p) {
         {bought ? <div style={{ width: 80, textAlign: "center" }}>{t("ratePerPiece")}</div> : null}
       </div>
       <div style={{ marginBottom: 12 }}>
-        {p.variantsFor(cat).map(function (v) {
-          var k = key(cat, v), filled = (Number(qtys[k]) || 0) > 0;
+        {rbBachaLast(cat, p.variantsFor(cat)).map(function (v) {
+          var k = key(cat, v), filled = (Number(qtys[k]) || 0) > 0, bacha = rbIsBacha(cat, v);
           return (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 2px", borderBottom: "1px dashed #3A362C" }}>
-              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: filled ? "#E6C875" : TC.cream }}>{variantLabel(t, cat, v)}</div>
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderBottom: "1px dashed #3A362C", background: bacha ? RB_BACHA_BG : "transparent", borderRadius: bacha ? 6 : 0 }}>
+              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: bacha ? RB_BACHA_COLOR : (filled ? "#E6C875" : TC.cream) }}>{variantLabel(t, cat, v)}</div>
               <input type="number" inputMode="numeric" value={qtys[k] || ""} onChange={function (ev) { setQ(k, ev.target.value); }} placeholder="0" style={Object.assign({}, small, { width: 80 })} />
               {bought ? <input type="number" inputMode="decimal" value={rates[k] || ""} onChange={function (ev) { setR(k, ev.target.value); }} placeholder="0" style={Object.assign({}, small, { width: 80 })} /> : null}
             </div>
