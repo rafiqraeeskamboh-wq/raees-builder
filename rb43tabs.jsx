@@ -2088,6 +2088,7 @@ function StockTab(p) {
   var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
   var osk = React.useState(false), openStockOpen = osk[0], setOpenStockOpen = osk[1];
   var mok = React.useState(false), matOpenOpen = mok[0], setMatOpenOpen = mok[1];
+  var svw = React.useState(function () { return rbUiGet("stockView", "list") || "list"; }), stockView = svw[0], setStockView = svw[1];
   var isSuperAdm = canEdit && rbIsSuper() && !!p.onAddOpeningStock;
   React.useEffect(function () { rbUiSet("open:bulkstock", bulkOpen ? 1 : null); if (!bulkOpen) rbDraftClear("bulkstock"); }, [bulkOpen]);
   var variants = variantsFor(cat);
@@ -2188,6 +2189,39 @@ function StockTab(p) {
       ) : null}
       {openStockOpen ? <RbOpeningStockModal t={t} variantsFor={variantsFor} startCat={cat} onClose={function () { setOpenStockOpen(false); }} onSave={function (rows, d) { p.onAddOpeningStock(rows, d); rbDraftClear("openingstock"); setOpenStockOpen(false); }} /> : null}
 
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        {[["list", "List"], ["card", "Card"]].map(function (o) { var on = stockView === o[0]; return <button key={o[0]} onClick={function () { setStockView(o[0]); rbUiSet("stockView", o[0]); }} style={{ flex: 1, padding: "7px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
+      </div>
+      {stockView === "list" ? (
+        <div style={{ background: TC.paper, borderRadius: 10, padding: "6px 8px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              {["Size", t("added"), t("sold"), t("remaining"), ""].map(function (h, hi) { return <th key={hi} style={{ fontSize: 10.5, color: TC.inkSoft, fontWeight: 700, textAlign: hi === 0 ? "left" : "right", padding: "6px 4px", borderBottom: "1.5px solid " + TC.paperLine }}>{h}</th>; })}
+            </tr></thead>
+            <tbody>
+              {rbBachaLast(cat, variants).map(function (v) {
+                var added = stockTotals.added[cat][v] || 0, sold = stockTotals.sold[cat][v] || 0, remaining = remainingFor(cat, v), bacha = rbIsBacha(cat, v);
+                var td = { fontSize: 13, color: TC.ink, textAlign: "right", padding: "7px 4px", borderBottom: "1px dashed " + TC.paperLine, whiteSpace: "nowrap" };
+                var ib = { width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", marginLeft: 3, verticalAlign: "middle" };
+                return (
+                  <tr key={v} style={{ background: bacha ? "rgba(110,198,255,0.13)" : "transparent" }}>
+                    <td className="rb-mono" style={Object.assign({}, td, { textAlign: "left", fontWeight: 700, color: bacha ? "#1C6FA8" : TC.ink })}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</td>
+                    <td style={td}>{added}</td>
+                    <td style={td}>{sold}</td>
+                    <td style={Object.assign({}, td, { fontWeight: 800, color: remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft) })}>{remaining}</td>
+                    <td style={Object.assign({}, td, { padding: "4px 0" })}>
+                      {canAdd ? <button onClick={function () { setAddingFor(v); }} style={Object.assign({}, ib, { background: TC.garden, color: TC.cream })}><Ico name="plus" size={14} /></button> : null}
+                      <button onClick={function () { setHistoryFor(v); }} style={Object.assign({}, ib, { background: TC.paperDark, color: TC.ink })}><Ico name="history" size={14} /></button>
+                      {canEdit ? <button onClick={function () { setEditingVariant(v); }} style={Object.assign({}, ib, { background: "transparent", color: TC.inkSoft })}><Ico name="pencil" size={13} /></button> : null}
+                    </td>
+                  </tr>
+                );
+              })}
+              {(function () { var a = 0, so = 0, re = 0; variants.forEach(function (v) { a += stockTotals.added[cat][v] || 0; so += stockTotals.sold[cat][v] || 0; re += remainingFor(cat, v); }); var tdb = { fontSize: 13, fontWeight: 800, color: TC.ink, textAlign: "right", padding: "7px 4px" }; return <tr><td style={Object.assign({}, tdb, { textAlign: "left" })}>Kul</td><td style={tdb}>{a}</td><td style={tdb}>{so}</td><td style={Object.assign({}, tdb, { color: TC.success })}>{re}</td><td></td></tr>; })()}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {variants.map(function (v) {
           var added = stockTotals.added[cat][v] || 0;
@@ -2227,6 +2261,7 @@ function StockTab(p) {
           );
         })}
       </div>
+      )}
 
       {canEdit ? (
       <button onClick={function () { setAddingVariant(true); }} style={{
