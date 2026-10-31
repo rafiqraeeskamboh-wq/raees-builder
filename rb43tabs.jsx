@@ -2764,6 +2764,19 @@ function DuesTab(p) {
           return <button key={o[0]} onClick={function () { setDView(o[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>;
         })}
       </div>
+      {(function () {
+        var tot = 0, n = 0, names = {};
+        sales.forEach(function (x) { var d = Number(x.dues) || 0; if (d > 0) { tot += d; n++; names[rbCustKey(x.customerName)] = 1; } });
+        return (
+          <div style={{ background: TC.stamp, borderRadius: 10, padding: "12px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#F3D9CF", fontWeight: 700 }}>Kul baqi (dues)</div>
+              <div style={{ fontSize: 10.5, color: "#F3D9CF", marginTop: 2 }}>{Object.keys(names).length} customer · {n} bill</div>
+            </div>
+            <div className="rb-mono" style={{ fontSize: 22, fontWeight: 800, color: TC.cream }}>Rs {rbMoney(tot)}</div>
+          </div>
+        );
+      })()}
       {dView === "advance" ? <RbAdvanceView t={t} advances={p.advances || []} sales={sales} onAdd={p.onAddAdvance} onReturn={p.onReturnAdvance} /> : dView === "customers" ? <CustomerListView t={t} sales={sales} /> : (<React.Fragment>
       <PaymentsSummaryCard t={t} sales={sales} />
       {p.onAddOpening ? (
