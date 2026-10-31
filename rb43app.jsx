@@ -982,8 +982,12 @@ function RaeesBuilderApp() {
 
   function saveReturn(sale, retItems, reason) {
     var amount = retItems.reduce(function (a, it) { return a + Number(it.amount || 0); }, 0);
+    /* maal wapsi par customer ko jo paise wapas diye (jama raqam naye bill se zyada ho gayi) - wo dene wale ki day book se kam */
+    var cur0 = sale; sales.forEach(function (x) { if (x.id === sale.id) cur0 = x; });
+    var nt0 = Math.max(0, Number(cur0.totalBill || 0) - amount);
+    var refund = Math.max(0, Number(cur0.advance || 0) - Math.min(nt0, Number(cur0.advance || 0)));
     var entry = { id: rbUid(), saleId: sale.id, serial: sale.serial, customerName: sale.customerName,
-      date: rbToday(), reason: reason || "", items: retItems, amount: amount, createdBy: role };
+      date: rbToday(), reason: reason || "", items: retItems, amount: amount, refund: refund, createdBy: role, byName: rbSessionName() };
     setReturnLog(function (a) { return [entry].concat(a); });
     setSales(function (list) {
       return list.map(function (x) {
@@ -2052,7 +2056,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "book") {
     body = can("reports") ? <ReportsTab t={t} advances={advances} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
-      labourers={labourers} labourWork={labourWork} labourPayments={labourPayments}
+      labourers={labourers} labourWork={labourWork} labourPayments={labourPayments} returnLog={returnLog}
       canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {

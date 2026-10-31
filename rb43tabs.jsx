@@ -3102,7 +3102,14 @@ function DayBookReport(p) {
   var out = [];
   function addIn(d, row) { if (before(d)) opening += row.amt; else if (inR(d)) rec.push(row); }
   function addOut(d, row) { if (before(d)) opening -= row.amt; else if (inR(d)) out.push(row); }
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
+  /* advance: jis ne liya us ki day book mein aaya; wapas kiya to jis ne diya us ki book se gaya.
+     bill mein advance lagne par naqad nahi aata, is liye wo yahan dobara shumar nahi hota */
+  (all.advances || []).forEach(function (x) {
+    if (mine(x.by)) addIn(x.date, { date: x.date, title: x.name || "-", part: "Advance mila (receipt #" + (x.no || "-") + ")" + (x.byName ? " - " + x.byName : ""), vno: "", amt: num(x.amount) });
+    (x.returns || []).forEach(function (rt) { if (mine(rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount) }); });
+  });
+  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund) }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
   (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
