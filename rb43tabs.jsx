@@ -2087,6 +2087,7 @@ function StockTab(p) {
   var c = React.useState(false), addingVariant = c[0], setAddingVariant = c[1];
   var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
   var osk = React.useState(false), openStockOpen = osk[0], setOpenStockOpen = osk[1];
+  var mok = React.useState(false), matOpenOpen = mok[0], setMatOpenOpen = mok[1];
   var isSuperAdm = canEdit && rbIsSuper() && !!p.onAddOpeningStock;
   React.useEffect(function () { rbUiSet("open:bulkstock", bulkOpen ? 1 : null); if (!bulkOpen) rbDraftClear("bulkstock"); }, [bulkOpen]);
   var variants = variantsFor(cat);
@@ -2122,6 +2123,8 @@ function StockTab(p) {
       {p.canSupplier ? (
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("materials")}</div>
+        {isSuperAdm && p.onSaveMaterialOpening ? <button onClick={function () { setMatOpenOpen(true); }} style={{ width: "100%", marginBottom: 8, padding: "8px", borderRadius: 7, border: "1.5px dashed " + TC.amber, background: "transparent", color: "#8A5A10", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Maal ka purana stock (opening) - Super Admin</button> : null}
+        {matOpenOpen ? <RbMaterialOpeningModal t={t} materials={p.materials || []} value={p.materialOpening || {}} onClose={function () { setMatOpenOpen(false); }} onSave={function (m, d) { p.onSaveMaterialOpening(m, d); setMatOpenOpen(false); }} /> : null}
         {(p.materials || []).map(function (m) {
           var mt = p.materialTotals ? p.materialTotals(m.id) : { added: 0, used: 0, remaining: 0 };
           return (
@@ -3456,7 +3459,7 @@ function ReportsTab(p) {
     </div>
   );
 }
-  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "trash"];
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "trash", "material-opening"];
 function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
@@ -4272,6 +4275,30 @@ function RbOpeningStockModal(p) {
       </Field>
       {rows.length ? <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>{rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}</div>; })}<div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>Kul: {totalPcs} {t("pieces")}</div></div> : null}
       <button disabled={!rows.length} onClick={function () { if (window.confirm("Purana stock darj karein? Kul " + totalPcs + " pieces")) p.onSave(rows, date); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: rows.length ? TC.amber : "#4A4638", color: rows.length ? TC.ink : TC.cream, fontSize: 13.5, fontWeight: 800, cursor: rows.length ? "pointer" : "not-allowed" }}>{rows.length ? "Purana stock save karein (" + rows.length + " size)" : "Purana stock save karein"}</button>
+    </ModalShell>
+  );
+}
+
+/* ---------- Super Admin: maal (cement waghera) ka purana stock ---------- */
+function RbMaterialOpeningModal(p) {
+  var init = {}; Object.keys(p.value || {}).forEach(function (k) { init[k] = String((p.value[k] || {}).qty || ""); });
+  var a = React.useState(init), vals = a[0], setVals = a[1];
+  var firstDate = null; Object.keys(p.value || {}).forEach(function (k) { if (!firstDate && p.value[k].date) firstDate = p.value[k].date; });
+  var b = React.useState(firstDate || rbToday()), date = b[0], setDate = b[1];
+  var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 100 });
+  return (
+    <ModalShell onClose={p.onClose} title="Maal ka purana stock">
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>App shuru karte waqt jo maal (cement ki bori waghera) pehle se maujood hai wo likhein. Ye kisi supplier ke khate mein nahi jata, sirf stock mein judta hai. Dobara khol kar badal bhi sakte hain.</div>
+      {(p.materials || []).map(function (m) {
+        return (
+          <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 2px", borderBottom: "1px dashed #3A362C" }}>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700, color: TC.cream }}>{m.name}</div><div style={{ fontSize: 10.5, color: "#A39C8A" }}>{m.unit}</div></div>
+            <input type="number" inputMode="decimal" value={vals[m.id] || ""} onChange={function (ev) { var n = Object.assign({}, vals); n[m.id] = ev.target.value; setVals(n); }} placeholder="0" style={small} />
+          </div>
+        );
+      })}
+      <div style={{ marginTop: 10 }}><Field label={p.t("date")}><input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={rbInput()} /></Field></div>
+      <button onClick={function () { if (window.confirm("Maal ka purana stock save karein?")) p.onSave(vals, date); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>Save karein</button>
     </ModalShell>
   );
 }

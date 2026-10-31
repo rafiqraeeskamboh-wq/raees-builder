@@ -854,6 +854,7 @@ function RaeesBuilderApp() {
   var cnS = React.useState(function () { return rbGet("cat-names", {}); }), catNames = cnS[0], setCatNames = cnS[1];
   var alS = React.useState(function () { return rbGet("activity-log", []); }), activityLog = alS[0], setActivityLog = alS[1];
   var rlS = React.useState(function () { return rbGet("returns", []); }), returnLog = rlS[0], setReturnLog = rlS[1];
+  var moS = React.useState(function () { return rbGet("material-opening", {}) || {}; }), materialOpening = moS[0], setMaterialOpening = moS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
@@ -893,6 +894,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("cat-names", catNames); }, [catNames]);
   React.useEffect(function () { rbSet("activity-log", activityLog); }, [activityLog]);
   React.useEffect(function () { rbSet("returns", returnLog); }, [returnLog]);
+  React.useEffect(function () { rbSet("material-opening", materialOpening); }, [materialOpening]);
   React.useEffect(function () { rbSet("trash", trash); }, [trash]);
 
   /* ---- Super Admin: har record ka edit / delete / wapas (reback) ---- */
@@ -1072,9 +1074,17 @@ function RaeesBuilderApp() {
   var slabVariants = uniqSorted("slab", SLAB_SIZES, customVariants.slab);
   /* ---------------- supplier / cement ---------------- */
   function materialTotals(materialId) {
-    var added = purchases.reduce(function (n, x) { return (rbMaterialOf(x) === materialId && (x.store || "himmat") === RB_STORE) ? n + rbQtyOf(x) : n; }, 0);
+    var opening = Number(((materialOpening || {})[materialId] || {}).qty) || 0; /* Super Admin ka darj kiya purana maal */
+    var added = opening + purchases.reduce(function (n, x) { return (rbMaterialOf(x) === materialId && (x.store || "himmat") === RB_STORE) ? n + rbQtyOf(x) : n; }, 0);
     var used = materialId === "cement" ? stockLog.reduce(function (n, e) { return n + (Number(e.cementBags) || 0); }, 0) : 0;
-    return { added: added, used: used, remaining: added - used };
+    return { opening: opening, added: added, used: used, remaining: added - used };
+  }
+  function saveMaterialOpening(map, date) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    var next = {}; Object.keys(map || {}).forEach(function (k) { var q = Number(map[k]) || 0; if (q > 0) next[k] = { qty: q, date: date || rbToday() }; });
+    setMaterialOpening(next);
+    showToast("Maal ka purana stock save ho gaya");
+    logActivity("material_opening", Object.keys(next).length + " maal");
   }
   var cementTotals = materialTotals("cement");
   var storePurchases = purchases.filter(function (x) { return (x.store || "himmat") === RB_STORE; });
@@ -2052,7 +2062,7 @@ function editStockEntry(id, qty, date) {
     setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
-    trackMute.current = true; setTrash([]);
+    trackMute.current = true; setTrash([]); setMaterialOpening({});
     setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
     showToast(t("clearData"));
   }
@@ -2065,7 +2075,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
