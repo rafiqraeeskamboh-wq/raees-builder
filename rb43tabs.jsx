@@ -413,6 +413,7 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
       </div>
       </div> ); } function CustomerLedgerModal(p) {
   var t = p.t, name = p.name, onOpen = p.onOpen;
+  var lgS = React.useState(false), ledgerOpen = lgS[0], setLedgerOpen = lgS[1];
   var list = (p.sales || []).slice().sort(function (x, y) { return String(x.date || "").localeCompare(String(y.date || "")); });
   var totalAll = 0, receivedAll = 0, duesAll = 0, openingAll = 0, billCount = 0;
   list.forEach(function (s) {
@@ -433,6 +434,8 @@ function BillsSummaryCard(p) { var t = p.t; var rg = React.useState({ preset: "a
     .sort(function (m, n) { return String(m.category).localeCompare(String(n.category)) || (Number(m.variant) - Number(n.variant)); });
   return (
     <ModalShell onClose={p.onClose} title={name}>
+      <RbLedgerButton onClick={function () { setLedgerOpen(true); }} label="Poora ledger (har len-den, baqi ke saath)" />
+      {ledgerOpen ? <RbCustomerLedger t={t} name={name} onClose={function () { setLedgerOpen(false); }} /> : null}
       <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
           <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(totalAll)} bold />
@@ -1112,6 +1115,7 @@ function SupplierModal(p) {
   var curMat = null; mats.forEach(function (x) { if (x.id === pMat) curMat = x; });
   var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
   var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
+  var lgSp = React.useState(false), supLedger = lgSp[0], setSupLedger = lgSp[1];
   var current = null;
   suppliers.forEach(function (x) { if (x.id === openId) current = x; });
 
@@ -1123,6 +1127,8 @@ function SupplierModal(p) {
     return (
       <Shell onClose={p.onClose} title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
+        <RbLedgerButton onClick={function () { setSupLedger(true); }} label="Supplier ka ledger" />
+        {supLedger ? <RbLedgerModal t={t} title={current.name} subtitle="Supplier" rows={rbSupplierLedgerRows(current, tot)} colA="Maal liya" colB="Payment di" balLabel="Baqi" onClose={function () { setSupLedger(false); }} note="Baqi = hum ne supplier ko dena hai. Minus (-) = hum ne zyada diya hua hai." /> : null}
         <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
             <StatBlock label={t("qty")} value={tot.bags} bold />
@@ -1497,6 +1503,7 @@ function LabourKhataModal(p) {
   var t = p.t, lb = p.labourer, tot = p.totals;
   var showToast = p.showToast || function () {};
   var shotRef = React.useRef(null);
+  var lgLb = React.useState(false), labLedger = lgLb[0], setLabLedger = lgLb[1];
   var note = function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); };
   var rows = tot.works.map(function (x) { return { k: "work", id: x.id, date: x.date, kind: x.kind, qty: x.qty, rate: x.rate, extra: x.extra, note: x.note, amount: x.amount }; })
     .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount, note: x.note }; }))
@@ -1514,6 +1521,8 @@ function LabourKhataModal(p) {
           </button>
         </div>
 
+        <RbLedgerButton onClick={function () { setLabLedger(true); }} label="Labour ka ledger" />
+        {labLedger ? <RbLedgerModal t={t} title={lb.name} subtitle="Labour" rows={rbLabourLedgerRows(t, lb, tot)} colA="Kaam (mazdoori)" colB="Payment di" balLabel="Baqi" onClose={function () { setLabLedger(false); }} note="Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance)." /> : null}
         <button onClick={function () { rbShareNode(shotRef.current, "khata.png", waText, lb.mobile || "", note); }} className="no-print" style={Object.assign({}, btn, { background: "#128C7E", color: "#FFFFFF" })}>
           <Ico name="chat" size={15} /> {t("khataShare")}
         </button>
@@ -2669,11 +2678,13 @@ function RbCustomerSuggest(p) {
 function CustomerListView(p) {
   var q = React.useState(""), query = q[0], setQuery = q[1];
   var o = React.useState(""), open = o[0], setOpen = o[1];
+  var lgN = React.useState(""), ledgerName = lgN[0], setLedgerName = lgN[1];
   var list = React.useMemo(function () { return rbAllCustomers(p.sales); }, [p.sales]);
   var qk = rbCustKey(query);
   var shown = list.filter(function (c) { return !qk || c.key.indexOf(qk) >= 0 || String(c.mobile || "").indexOf(query.trim()) >= 0; });
   return (
     <div>
+      {ledgerName ? <RbCustomerLedger t={p.t} name={ledgerName} onClose={function () { setLedgerName(""); }} /> : null}
       <input value={query} onChange={function (e) { setQuery(e.target.value); }} placeholder={p.t("searchCustomer")}
         style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", marginBottom: 8 })} />
       <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Kul customer: {shown.length}</div>
@@ -2707,6 +2718,7 @@ function CustomerListView(p) {
                     );
                   })}
                 </div>
+                <button onClick={function () { setLedgerName(c.name); }} style={{ width: "100%", marginTop: 8, padding: "8px", borderRadius: 7, border: "1.5px solid " + TC.amber, background: "transparent", color: TC.amber, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>&#128210; Ledger</button>
                 {isOpen ? (
                   <div style={{ marginTop: 8, borderTop: "1px dashed " + TC.paperLine, paddingTop: 6 }}>
                     {c.bills.map(function (b, i) {
@@ -3244,6 +3256,7 @@ function ReportsTab(p) {
   var t = p.t;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
   var v = React.useState("book"), view = v[0], setView = v[1];
+  var plS = React.useState(false), personLedger = plS[0], setPersonLedger = plS[1];
   var e1 = React.useState(""), expDetail = e1[0], setExpDetail = e1[1];
   var e2 = React.useState(""), expAmt = e2[0], setExpAmt = e2[1];
   var e3 = React.useState(rbToday()), expDate = e3[0], setExpDate = e3[1];
@@ -3297,10 +3310,12 @@ function ReportsTab(p) {
     <div style={{ padding: "14px 14px 4px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber }}>Day Book</div>
+        {personLedger ? <RbPersonLedgerModal t={t} all={p.role === "accountant" ? Object.assign({}, p, { onlyMe: true }) : p} onClose={function () { setPersonLedger(false); }} /> : null}
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: TC.cream, fontWeight: 700 }}>Tareekh
           <input type="date" value={range.preset === "custom" && range.from && range.from === range.to ? range.from : (range.preset === "today" ? rbToday() : "")} onChange={function (ev) { var d = ev.target.value; if (d) setRange({ preset: "custom", from: d, to: d }); }} style={{ padding: "7px 8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
         </label>
       </div>
+      <RbLedgerButton onClick={function () { setPersonLedger(true); }} label={isAdmin ? "Har bande ka ledger (User / Admin)" : "Mera ledger"} />
       {isAdmin ? (
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {[["accountant", "Parchoon Cash (User)"], ["admin", "Bara Cash (Admin)"]].map(function (o) {
@@ -3718,5 +3733,198 @@ function RbSuperTrash(p) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/* ================= LEDGER: har customer, supplier, labour aur har banda (User/Admin) =================
+   rows: { date, detail, a (baqi mein izafa), b (baqi mein kami) }  -> har line ke baad chalta hua baqi */
+function rbLsList(st, key) { try { var v = localStorage.getItem(rbKeyFor(st, key)); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function rbLedgerSort(rows) { return rows.map(function (r, i) { r._i = i; return r; }).sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || (m._i - n._i); }); }
+
+/* customer: dono store ke bill, wasooli, advance, purana baqi, maal wapsi */
+function rbCustomerLedgerRows(name) {
+  var key = rbCustKey(name), rows = [];
+  RB_STORES.forEach(function (st) {
+    var tag = st[1] + ": ";
+    var advs = rbLsList(st[0], "advances"), mineAdv = {};
+    advs.forEach(function (x) {
+      if (rbCustKey(x.name) !== key) return;
+      mineAdv[x.id] = 1;
+      rows.push({ date: x.date, detail: tag + "Advance mila (receipt #" + (x.no || "-") + ")", b: Number(x.amount) || 0 });
+      (x.returns || []).forEach(function (rt) { rows.push({ date: rt.date, detail: tag + "Advance wapas diya (receipt #" + (x.no || "-") + ")", a: Number(rt.amount) || 0 }); });
+    });
+    rbLsList(st[0], "sales").forEach(function (s) {
+      if (rbCustKey(s.customerName) !== key) return;
+      if (s.isOpening) {
+        var amt = Math.abs(Number(s.openingDir === "adv" ? s.advance : s.dues) || 0);
+        rows.push(s.openingDir === "adv" ? { date: s.date, detail: tag + "Purana advance (jama)", b: amt } : { date: s.date, detail: tag + "Purana baqi", a: amt });
+        (s.payments || []).forEach(function (pay) { if (Number(pay.amount) > 0) rows.push({ date: pay.date, detail: tag + "Wasooli (purana baqi)", b: Number(pay.amount) }); if (Number(pay.discount) > 0) rows.push({ date: pay.date, detail: tag + "Riayat (discount)", b: Number(pay.discount) }); });
+        return;
+      }
+      var payDisc = (s.payments || []).reduce(function (n, pay) { return n + (Number(pay.discount) || 0); }, 0);
+      var orig = (Number(s.totalBill) || 0) + (Number(s.returnedTotal) || 0) + payDisc;
+      rows.push({ date: s.date, detail: tag + "Bill #" + s.serial + " (" + (s.type === "cash" ? "Cash" : "Pemaishi") + ")", a: orig });
+      (s.payments || []).forEach(function (pay) {
+        var amt = Number(pay.amount) || 0;
+        if (pay.fromAdvance && mineAdv[pay.fromAdvance]) { /* advance pehle hi jama ho chuka */ }
+        else if (amt > 0) rows.push({ date: pay.date, detail: tag + (pay.fromAdvance ? "Advance se (bill #" + s.serial + ")" : "Wasooli (bill #" + s.serial + ")"), b: amt });
+        if (Number(pay.discount) > 0) rows.push({ date: pay.date, detail: tag + "Riayat (bill #" + s.serial + ")", b: Number(pay.discount) });
+      });
+    });
+    rbLsList(st[0], "returns").forEach(function (r) {
+      if (rbCustKey(r.customerName) !== key) return;
+      rows.push({ date: r.date, detail: tag + "Maal wapsi (bill #" + (r.serial || "-") + ")", b: Number(r.amount) || 0 });
+      if (Number(r.refund) > 0) rows.push({ date: r.date, detail: tag + "Maal wapsi ke paise wapas diye", a: Number(r.refund) });
+    });
+  });
+  return rbLedgerSort(rows);
+}
+function rbSupplierLedgerRows(sup, tot) {
+  var rows = [];
+  var oa = Math.max(0, Number(sup.opening) || 0);
+  if (oa) rows.push(sup.openingDir === "adv" ? { date: sup.openingDate || "", detail: "Purana advance (hum ne diya hua)", b: oa } : { date: sup.openingDate || "", detail: "Purana baqi", a: oa });
+  (tot.purchases || []).forEach(function (x) { rows.push({ date: x.date, detail: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || "Maal") + " " + rbQtyOf(x) + " " + (x.unit || ""), a: Number(x.amount) || 0 }); });
+  (tot.payments || []).forEach(function (x) { rows.push({ date: x.date, detail: "Payment di" + (x.note ? " - " + x.note : "") + (x.byName ? " (" + x.byName + ")" : ""), b: Number(x.amount) || 0 }); });
+  return rbLedgerSort(rows);
+}
+function rbLabourLedgerRows(t, lb, tot) {
+  var rows = [];
+  var oa = Math.max(0, Number(lb.opening) || 0);
+  if (oa) rows.push(lb.openingDir === "adv" ? { date: lb.openingDate || "", detail: "Purana advance (diya hua)", b: oa } : { date: lb.openingDate || "", detail: "Purana baqi", a: oa });
+  (tot.works || []).forEach(function (x) { rows.push({ date: x.date, detail: t(labourKind(x.kind).labelKey) + (x.note ? " - " + x.note : "") + (x.qty ? " (" + x.qty + (x.rate ? " x " + rbMoney(x.rate) : "") + ")" : ""), a: Number(x.amount) || 0 }); });
+  (tot.payments || []).forEach(function (x) { rows.push({ date: x.date, detail: "Payment di" + (x.note ? " - " + x.note : "") + (x.byName ? " (" + x.byName + ")" : ""), b: Number(x.amount) || 0 }); });
+  return rbLedgerSort(rows);
+}
+/* har banda (User/Admin): us ke haath mein kitne paise aaye aur kitne gaye */
+function rbPersonKey(nm, role) { var n = String(nm || "").trim(); return n ? rbCustKey(n) : "~" + (role === "admin" ? "admin" : "user"); }
+function rbPersonLabel(nm, role) { var n = String(nm || "").trim(); return n || ("(" + (role === "admin" ? "Admin" : "User") + " - naam ke baghair)"); }
+function rbPeopleLedgers(all) {
+  var map = {};
+  function P(nm, role) { var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
+  ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || ""), a: Number(pay.amount) }); }); });
+  (all.advances || []).forEach(function (x) {
+    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Advance liya #" + (x.no || "-") + " - " + (x.name || ""), a: Number(x.amount) || 0 });
+    (x.returns || []).forEach(function (rt) { P(rt.byName, rt.by || "admin").rows.push({ date: rt.date, detail: "Advance wapas diya #" + (x.no || "-") + " - " + (x.name || ""), b: Number(rt.amount) || 0 }); });
+  });
+  (all.returnLog || []).forEach(function (x) { if (Number(x.refund) > 0) P(x.byName, x.createdBy || "admin").rows.push({ date: x.date, detail: "Maal wapsi ke paise diye - " + (x.customerName || ""), b: Number(x.refund) }); });
+  (all.expenses || []).forEach(function (x) {
+    if (x.transfer) {
+      P(x.byName, x.from || x.by || "admin").rows.push({ date: x.date, detail: "Cash diya " + (x.to === "admin" ? "Admin" : "User") + (x.name ? " (" + x.name + ")" : ""), b: Number(x.amount) || 0 });
+      P(x.name, x.to || "admin").rows.push({ date: x.date, detail: "Cash mila " + (x.from === "admin" ? "Admin" : "User") + (x.byName ? " (" + x.byName + ")" : ""), a: Number(x.amount) || 0 });
+      return;
+    }
+    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0 });
+  });
+  var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
+  (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || ""), b: Number(x.amount) || 0 }); });
+  var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
+  (all.labourPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Labour ko payment - " + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
+  return Object.keys(map).map(function (k) { map[k].rows = rbLedgerSort(map[k].rows); return map[k]; })
+    .sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
+}
+
+/* ek jaisa ledger safha - tareekh, tafseel, do khane, aur har line ke baad baqi */
+function RbLedgerModal(p) {
+  rbUseBack(true, p.onClose);
+  var a = React.useState({ preset: "all" }), range = a[0], setRange = a[1];
+  var r = resolveRange(range);
+  var rows = p.rows || [];
+  var opening = 0, shown = [];
+  rows.forEach(function (x) { var d = String(x.date || ""); var v = (Number(x.a) || 0) - (Number(x.b) || 0); if (r.from && d < r.from) opening += v; else if (!r.to || !d || d <= r.to) shown.push(x); });
+  var bal = opening, totA = 0, totB = 0;
+  var lines = shown.map(function (x) { bal += (Number(x.a) || 0) - (Number(x.b) || 0); totA += Number(x.a) || 0; totB += Number(x.b) || 0; return { x: x, bal: bal }; });
+  var idRef = React.useRef("rbl" + rbUid());
+  function printIt() {
+    var el = document.getElementById(idRef.current); if (!el) return;
+    var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+  }
+  var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11, color: "#222", verticalAlign: "top" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  function balTxt(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: 14, background: TC.appBg }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
+          <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+        </div>
+        {p.top || null}
+        <RangeFilter t={p.t} range={range} onChange={setRange} />
+        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+          <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")}</div>
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Ledger - {p.title}</div>
+          {p.subtitle ? <div style={{ textAlign: "center", fontSize: 11.5, color: "#555", marginBottom: 4 }}>{p.subtitle}</div> : null}
+          <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>
+              <th style={Object.assign({}, head, { width: "17%" })}>Tareekh</th>
+              <th style={head}>Tafseel</th>
+              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>{p.colA}</th>
+              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>{p.colB}</th>
+              <th style={Object.assign({}, head, { width: "18%", textAlign: "right" })}>{p.balLabel || "Baqi"}</th>
+            </tr></thead>
+            <tbody>
+              {r.from ? (
+                <tr><td style={cell}>{rbDate(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
+              ) : null}
+              {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
+                return (
+                  <tr key={i}>
+                    <td style={cell}>{l.x.date ? rbDate(l.x.date) : "-"}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{l.x.detail}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.a ? rbMoney(l.x.a) : ""}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.b ? rbMoney(l.x.b) : ""}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{balTxt(l.bal)}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td colSpan={2} style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>Kul</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(totA)}</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(totB)}</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{balTxt(bal)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {p.note ? <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>{p.note}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+function RbLedgerButton(p) {
+  return <button onClick={p.onClick} className="no-print" style={Object.assign({ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 10 }, p.style || {})}>&#128210; {p.label || "Ledger dekhein"}</button>;
+}
+function RbCustomerLedger(p) {
+  var rows = React.useMemo(function () { return rbCustomerLedgerRows(p.name); }, [p.name]);
+  return <RbLedgerModal t={p.t} title={p.name} subtitle="Customer (Himmat + Rangpur dono store)" rows={rows} colA="Bill / Diya" colB="Wasool / Jama" balLabel="Baqi" onClose={p.onClose}
+    note="Baqi = customer ne dena hai. Minus (-) = customer ka advance/jama hamare paas hai." />;
+}
+function RbPersonLedgerModal(p) {
+  var list = React.useMemo(function () {
+    var l = rbPeopleLedgers(p.all);
+    if (p.all.onlyMe) { var me = rbPersonKey(rbSessionName(), "accountant"); l = l.filter(function (x) { return x.key === me; }); }
+    return l;
+  }, [p.all]);
+  var a = React.useState(""), sel = a[0], setSel = a[1];
+  var cur = null; list.forEach(function (x) { if (x.key === sel) cur = x; });
+  if (cur) return <RbLedgerModal t={p.t} title={cur.name} subtitle={(cur.role === "admin" ? "Admin" : "User") + " - " + rbStoreName() + " store"} rows={cur.rows} colA="Aaya" colB="Gaya" balLabel="Paas mein" onClose={function () { setSel(""); }}
+    note="Aaya = is bande ne paise liye (wasooli, advance, cash mila). Gaya = is ne paise diye (kharcha, payment, wapsi, cash diya)." />;
+  return (
+    <ModalShell onClose={p.onClose} title="Har bande ka ledger">
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>Kis ka ledger dekhna hai? (har bande ke haath mein aaye aur gaye paise)</div>
+      {list.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A" }}>Abhi koi entry nahi</div> : list.map(function (x) {
+        var bal = x.rows.reduce(function (n, r) { return n + (Number(r.a) || 0) - (Number(r.b) || 0); }, 0);
+        return (
+          <button key={x.key} onClick={function () { setSel(x.key); }} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 12px", marginBottom: 7, borderRadius: 8, border: "none", background: TC.paper, cursor: "pointer", textAlign: "start" }}>
+            <span><span style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{x.name}</span><span style={{ fontSize: 10.5, color: TC.inkSoft, marginLeft: 6 }}>{x.role === "admin" ? "Admin" : "User"} · {x.rows.length} entry</span></span>
+            <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: bal < 0 ? TC.stamp : TC.success }}>Rs {(bal < 0 ? "-" : "") + rbMoney(Math.abs(bal))}</span>
+          </button>
+        );
+      })}
+    </ModalShell>
   );
 }
