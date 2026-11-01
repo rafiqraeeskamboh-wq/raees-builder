@@ -1709,9 +1709,9 @@ function RbLabourWeekCard(p) {
         var wk2 = {}; list.forEach(function (d) { Object.keys(d.kinds).forEach(function (k) { wk2[k] = (wk2[k] || 0) + d.kinds[k]; }); });
         function kt(kinds) { return Object.keys(kinds).map(function (k) { return kinds[k] + " " + (rbLabourUnitWord(p.t || function (x) { return x; }, k) || k); }).join(", "); }
         var bal = r.carry;
-        var c = { fontSize: 11.5, color: TC.ink, padding: "5px 4px", borderBottom: "1px solid " + TC.paperLine, verticalAlign: "top" };
+        var c = { fontSize: 10.5, color: TC.ink, padding: "4px 3px", borderBottom: "1px solid " + TC.paperLine, verticalAlign: "top" };
         var cr = Object.assign({}, c, { textAlign: "right", whiteSpace: "nowrap" });
-        var hd = { fontSize: 10, color: TC.inkSoft, fontWeight: 700, padding: "4px 4px", borderBottom: "1.5px solid " + TC.paperLine };
+        var hd = { fontSize: 9.5, color: TC.inkSoft, fontWeight: 700, padding: "4px 3px", whiteSpace: "nowrap", borderBottom: "1.5px solid " + TC.paperLine };
         return (
           <div key={r.lb.id} style={{ border: "1.5px solid " + TC.paperLine, borderRadius: 8, padding: "8px 8px 6px", marginBottom: 10, background: "#FBF8EE" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1721,7 +1721,7 @@ function RbLabourWeekCard(p) {
               </div>
               {p.isAdmin ? <button onClick={function () { pay(r); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Adaigi</button> : null}
             </div>
-            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
               <thead><tr>
                 <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>Tareekh</th>
                 <th style={Object.assign({}, hd, { textAlign: "left" })}>Kaam</th>
@@ -3967,25 +3967,25 @@ function RbLedgerModal(p) {
     w.document.write("<html><head><title>Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
-  var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11, color: "#222", verticalAlign: "top" };
-  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  var cell = { border: "1px solid #bbb", padding: "3px 3px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, whiteSpace: "normal" });
   function balTxt(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: 14, background: TC.appBg }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
           <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
         </div>
         {p.top || null}
         <RangeFilter t={p.t} range={range} onChange={setRange} />
-        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")}</div>
           <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Ledger - {p.title}</div>
           {p.subtitle ? <div style={{ textAlign: "center", fontSize: 11.5, color: "#555", marginBottom: 4 }}>{p.subtitle}</div> : null}
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead><tr>
               <th style={Object.assign({}, head, { width: "17%" })}>Tareekh</th>
               <th style={head}>Tafseel</th>
@@ -3995,13 +3995,13 @@ function RbLedgerModal(p) {
             </tr></thead>
             <tbody>
               {r.from ? (
-                <tr><td style={cell}>{rbDate(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
+                <tr><td style={cell}>{rbDate(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700, whiteSpace: "normal" })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
               ) : null}
               {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 return (
                   <tr key={i}>
                     <td style={cell}>{l.x.date ? rbDate(l.x.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{l.x.detail}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{l.x.detail}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.a ? rbMoney(l.x.a) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.b ? rbMoney(l.x.b) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{balTxt(l.bal)}</td>
@@ -4201,25 +4201,25 @@ function RbLabourDayLedger(p) {
     w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
-  var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11, color: "#222", verticalAlign: "top" };
-  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  var cell = { border: "1px solid #bbb", padding: "3px 3px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, whiteSpace: "normal" });
   var wkC = Object.assign({}, cell, { background: "#FFF3D6", fontWeight: 700 });
   function m(v) { return v ? rbMoney(v) : ""; }
   function bt(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: 14, background: TC.appBg }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
           <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
         </div>
         <RangeFilter t={t} range={range} onChange={setRange} />
-        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{t("appName")}</div>
           <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Labour Ledger - {lb.name}</div>
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead><tr>
               <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
               <th style={head}>Kaam</th>
@@ -4232,7 +4232,7 @@ function RbLabourDayLedger(p) {
               {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 if (l.week) return (
                   <tr key={i}>
-                    <td colSpan={2} style={wkC}>Hafta {rbDate(l.from)} - {rbDate(l.to)}{Object.keys(l.kinds).length ? ": " + kindsText(l.kinds) : ""}</td>
+                    <td colSpan={2} style={Object.assign({}, wkC, { whiteSpace: "normal" })}>Hafta {rbDate(l.from)} - {rbDate(l.to)}{Object.keys(l.kinds).length ? ": " + kindsText(l.kinds) : ""}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.work)}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.paid)}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right", color: "#B0262B" })}>{bt(l.bal)}</td>
@@ -4242,7 +4242,7 @@ function RbLabourDayLedger(p) {
                 return (
                   <tr key={i}>
                     <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{kt || (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{kt || (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
@@ -4264,7 +4264,7 @@ function RbLabourDayLedger(p) {
             return (
               <div style={{ marginTop: 14 }}>
                 <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Bara advance (alag hisaab)</div>
-                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                   <thead><tr>
                     <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
                     <th style={head}>Tafseel</th>
@@ -4279,7 +4279,7 @@ function RbLabourDayLedger(p) {
                       return (
                         <tr key={i}>
                           <td style={cell}>{rbDate(x.date)}</td>
-                          <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{(x.type === "advance" ? "Advance diya" : "Mazdoori se kata") + (x.note ? " - " + x.note : "")}</td>
+                          <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : "Mazdoori se kata") + (x.note ? " - " + x.note : "")}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{given ? rbMoney(given) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{cut ? rbMoney(cut) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{rbMoney(ab)}</td>
