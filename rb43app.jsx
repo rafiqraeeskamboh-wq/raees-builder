@@ -1527,6 +1527,32 @@ function RaeesBuilderApp() {
     closeLabourPromptIfDone();
   }
 
+  /* total wali line: us din ka sara kaam ek saath mitana */
+  function deleteLabourGroup(ids) {
+    if (role !== "admin" || !ids || !ids.length) return;
+    setLabourWork(function (a) { return a.filter(function (x) { return ids.indexOf(x.id) < 0; }); });
+    showToast(t("openingDelete"));
+    logActivity("labour_deleted", "work x" + ids.length);
+  }
+  /* total wali line: kul nagg badalna - sab sizes mil kar ek hi entry ban jati hai */
+  function mergeLabourGroup(ids, qty) {
+    var q = Number(qty) || 0;
+    if (role !== "admin" || !ids || !ids.length || !(q > 0)) return;
+    setLabourWork(function (a) {
+      var first = null, notes = [];
+      a.forEach(function (x) { if (ids.indexOf(x.id) >= 0) { if (!first) first = x; if (x.note) notes.push(x.note); } });
+      if (!first) return a;
+      var rt = Number(first.rate) || 0;
+      var merged = Object.assign({}, first, { id: rbUid(), qty: q, rate: rt, extra: 0, amount: labourEntryAmount(q, rt, 0, 0),
+        note: notes.join(", "), mergedFrom: ids.slice(), edited: true, verified: true, verifiedBy: role });
+      var out = [], put = false;
+      a.forEach(function (x) { if (ids.indexOf(x.id) >= 0) { if (!put) { out.push(merged); put = true; } } else out.push(x); });
+      return out;
+    });
+    showToast(t("billUpdated"));
+    logActivity("labour_edited", "Kul " + q);
+  }
+
   function editLabourWork(id, patch) {
     if (role !== "admin") return;
     setLabourWork(function (a) {
@@ -2172,7 +2198,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "labour") {
     body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
       onAddLabourer={addLabourer} onRenameLabourer={renameLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
-      onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry}
+      onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry} onDeleteGroup={deleteLabourGroup} onMergeGroup={mergeLabourGroup}
       labourConfig={labourConfig} onSaveConfig={saveLabourConfig} onSetKinds={setLabourerKinds}
       pendingItems={labourPendingItems} onPostPending={postPendingLabour} onSkipPending={skipPendingLabour}
       onEditWork={editLabourWork} onVerifyWork={verifyLabourWork} onVerifyAll={verifyAllLabour} onSettle={settleLabour} />

@@ -2027,6 +2027,21 @@ function LabourTab(p) {
                             <input type="checkbox" checked={allV} onChange={function (ev) { var on = ev.target.checked; g.items.forEach(function (x) { p.onVerifyWork(x.id, on); }); }} style={{ width: 16, height: 16, accentColor: TC.garden, cursor: "pointer" }} />
                           </label>
                         ) : null}
+                        {p.isAdmin && p.onMergeGroup ? (
+                          <button title="Kul nagg badlein" onClick={function () {
+                            var v = window.prompt(t(kk.labelKey) + " " + rbDate(f.date) + "\nKul " + t(kk.unitKey) + " likhein:", String(qty));
+                            if (v == null) return; var n = Number(String(v).trim());
+                            if (!(n > 0)) { window.alert("Sahi ginti likhein"); return; }
+                            if (n === qty) return;
+                            p.onMergeGroup(g.items.map(function (x) { return x.id; }), n);
+                          }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.inkSoft, padding: 0 }}><Ico name="pencil" size={14} /></button>
+                        ) : null}
+                        {p.isAdmin && p.onDeleteGroup ? (
+                          <button title="Sara kaam mitayein" onClick={function () {
+                            if (!window.confirm(rbDate(f.date) + " ka sara " + t(kk.labelKey) + " (Kul " + qty + " " + t(kk.unitKey) + " = Rs " + rbMoney(amt) + ") mita dein?")) return;
+                            p.onDeleteGroup(g.items.map(function (x) { return x.id; }));
+                          }} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}><Ico name="trash" size={14} /></button>
+                        ) : null}
                       </div>
                     </div>
                     {isOpen ? <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 14 }}>{g.items.map(oneRow)}</div> : null}
