@@ -1460,6 +1460,8 @@ function LabourWorkEditModal(p) {
   var t = p.t, w = p.entry, labourers = p.labourers || [];
   var a = React.useState(w.kind || "garder"), kind = a[0], setKind = a[1];
   var b = React.useState(w.labourerId), lid = b[0], setLid = b[1];
+  var editLb = null; labourers.forEach(function (x) { if (x.id === lid) editLb = x; });
+  var editKinds = editLb ? labourKindsOf(editLb) : [];
   var c = React.useState(w.qty ? String(w.qty) : ""), qty = c[0], setQty = c[1];
   var d = React.useState(w.rate ? String(w.rate) : ""), rate = d[0], setRate = d[1];
   var e2 = React.useState(w.extra ? String(w.extra) : ""), extra = e2[0], setExtra = e2[1];
@@ -1474,7 +1476,7 @@ function LabourWorkEditModal(p) {
       <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 10 }}>{t("labourEditEntry")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-          {LABOUR_KINDS.map(function (k) {
+          {LABOUR_KINDS.filter(function (k) { return !editKinds.length || editKinds.indexOf(k.id) >= 0 || k.id === kind; }).map(function (k) {
             var on = kind === k.id;
             return <button key={k.id} onClick={function () { setKind(k.id); }} style={{ padding: "8px 6px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{t(k.labelKey)}</button>;
           })}
@@ -1796,6 +1798,9 @@ function LabourTab(p) {
   var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
   var current = null;
   labourers.forEach(function (x) { if (x.id === openId) current = x; });
+  /* jis bande ke zimme jo kaam laga hai, kaam likhte waqt sirf wahi kaam nazar aaye */
+  var curKinds = current ? labourKindsOf(current) : [];
+  React.useEffect(function () { if (curKinds.length && curKinds.indexOf(wKind) < 0) setWKind(curKinds[0]); }, [openId, curKinds.join(",")]);
 
   if (current) {
     var tot = labourTotals(current.id);
@@ -1892,7 +1897,7 @@ function LabourTab(p) {
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("addLabourWork")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-            {LABOUR_KINDS.map(function (k) {
+            {LABOUR_KINDS.filter(function (k) { return !curKinds.length || curKinds.indexOf(k.id) >= 0; }).map(function (k) {
               var on = wKind === k.id;
               return (
                 <button key={k.id} onClick={function () { setWKind(k.id); }} style={{
