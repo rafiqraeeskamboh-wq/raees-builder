@@ -1654,7 +1654,7 @@ function RbLabourWeekCard(p) {
     var work = sum((tot.works || []).filter(inW)), paid = sum((tot.payments || []).filter(inW));
     var endBaqi = (Number(tot.dues) || 0) - sum((tot.works || []).filter(after)) + sum((tot.payments || []).filter(after));
     var carry = endBaqi - work + paid;
-    return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi, weekWorks: (tot.works || []).filter(inW) };
+    return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi, weekWorks: (tot.works || []).filter(inW), weekPays: (tot.payments || []).filter(inW), advBal: tot.advBal || 0 };
   }).filter(function (r) { return r.carry !== 0 || r.work > 0 || r.paid > 0 || r.dues !== 0; });
   var tC = rows.reduce(function (n, r) { return n + r.carry; }, 0), tW = rows.reduce(function (n, r) { return n + r.work; }, 0), tP = rows.reduce(function (n, r) { return n + r.paid; }, 0), tD = rows.reduce(function (n, r) { return n + r.dues; }, 0);
   function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); setPCut(""); }
@@ -1682,67 +1682,67 @@ function RbLabourWeekCard(p) {
         <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, textAlign: "center" }}>Jumma {rbDate(wk.from)} – Jumeraat {rbDate(wk.to)}{off === 0 ? " (is hafta)" : ""}</div>
         <button disabled={off >= 0} onClick={function () { setOff(off + 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine, opacity: off >= 0 ? 0.4 : 1 })}>Agla ›</button>
       </div>
-      {rows.length === 0 ? <div style={{ fontSize: 12, color: TC.inkSoft }}>Is hafte koi kaam ya baqi nahi</div> : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><th style={Object.assign({}, th, { textAlign: "left" })}>Mazdoor</th><th style={th}>Pichla baqi</th><th style={th}>Is hafte kaam</th><th style={th}>Diya</th><th style={th}>Agle hafte</th>{p.isAdmin ? <th style={th}></th> : null}</tr></thead>
-          <tbody>
-            {rows.map(function (r) {
-              return (
-                <tr key={r.lb.id}>
-                  <td onClick={function () { if (p.onOpen) p.onOpen(r.lb.id); }} style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700, cursor: "pointer", textDecoration: "underline", color: TC.slab || TC.ink })}>{r.lb.name}{(function () { var ab = p.labourTotals ? (p.labourTotals(r.lb.id).advBal || 0) : 0; return ab > 0 ? <div style={{ fontSize: 9.5, color: TC.stamp, textDecoration: "none", fontWeight: 600 }}>Advance baqi {rbMoney(ab)}</div> : null; })()}</td>
-                  <td className="rb-mono" style={td}>{rbMoney(r.carry)}</td>
-                  <td className="rb-mono" style={td}>{rbMoney(r.work)}</td>
-                  <td className="rb-mono" style={Object.assign({}, td, { color: TC.success })}>{rbMoney(r.paid)}</td>
-                  <td className="rb-mono" style={Object.assign({}, td, { color: r.dues > 0 ? TC.stamp : TC.success, fontWeight: 700 })}>{rbMoney(r.dues)}</td>
-                  {p.isAdmin ? <td style={td}><button onClick={function () { pay(r); }} style={{ padding: "5px 9px", borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Adaigi</button></td> : null}
-                </tr>
-              );
-            })}
-            <tr>
-              <td style={Object.assign({}, td, { textAlign: "left", fontWeight: 700 })}>Kul</td>
-              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700 })}>{rbMoney(tC)}</td>
-              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700 })}>{rbMoney(tW)}</td>
-              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700, color: TC.success })}>{rbMoney(tP)}</td>
-              <td className="rb-mono" style={Object.assign({}, td, { fontWeight: 700, color: TC.stamp })}>{rbMoney(tD)}</td>
-              {p.isAdmin ? <td style={td}></td> : null}
-            </tr>
-          </tbody>
-        </table>
-      )}
-      {(function () {
-        var byKind = {}, order = [];
-        rows.forEach(function (r) { (r.weekWorks || []).forEach(function (x) { var k = x.kind || "other"; if (!byKind[k]) { byKind[k] = []; order.push(k); } byKind[k].push({ lb: r.lb, x: x }); }); });
-        if (!order.length) return null;
-        var tt = p.t || function (k) { return k; };
+      {rows.length === 0 ? <div style={{ fontSize: 12, color: TC.inkSoft }}>Is hafte koi kaam ya baqi nahi</div> : rows.map(function (r) {
+        /* har mazdoor ka is hafte ka ledger: pichla baqi, din-wise kaam aur adaigi, hafta total */
+        var days = {};
+        function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, work: 0, cash: 0, cut: 0 }; return days[k]; }
+        (r.weekWorks || []).forEach(function (x) { var d = D(x.date); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + rbLabourQty(x); d.work += Number(x.amount) || 0; });
+        (r.weekPays || []).forEach(function (x) { var d = D(x.date); if (x.type === "advCut") d.cut += Number(x.amount) || 0; else d.cash += Number(x.amount) || 0; });
+        var list = Object.keys(days).sort().map(function (k) { return days[k]; });
+        var wk2 = {}; list.forEach(function (d) { Object.keys(d.kinds).forEach(function (k) { wk2[k] = (wk2[k] || 0) + d.kinds[k]; }); });
+        function kt(kinds) { return Object.keys(kinds).map(function (k) { return kinds[k] + " " + (rbLabourUnitWord(p.t || function (x) { return x; }, k) || k); }).join(", "); }
+        var bal = r.carry;
+        var c = { fontSize: 11.5, color: TC.ink, padding: "5px 4px", borderBottom: "1px solid " + TC.paperLine, verticalAlign: "top" };
+        var cr = Object.assign({}, c, { textAlign: "right", whiteSpace: "nowrap" });
+        var hd = { fontSize: 10, color: TC.inkSoft, fontWeight: 700, padding: "4px 4px", borderBottom: "1.5px solid " + TC.paperLine };
         return (
-          <div style={{ marginTop: 12, borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink, marginBottom: 4 }}>Is hafte ka kaam (qism wise)</div>
-            {order.map(function (k) {
-              var kk = labourKind(k) || {};
-              var unit = kk.unitKey ? tt(kk.unitKey) : "";
-              var list = byKind[k].slice().sort(function (m, n) { return String(m.x.date || "").localeCompare(String(n.x.date || "")); });
-              var tq = list.reduce(function (n, it) { return n + (Number(it.x.qty) || 0); }, 0);
-              var ta = list.reduce(function (n, it) { return n + (Number(it.x.amount) || 0); }, 0);
-              return (
-                <div key={k} style={{ marginTop: 8, background: "rgba(0,0,0,0.03)", borderRadius: 6, padding: "6px 8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, fontWeight: 700, color: TC.ink, marginBottom: 3 }}>
-                    <span>{kk.labelKey ? tt(kk.labelKey) : k}</span>
-                    <span className="rb-mono" style={{ whiteSpace: "nowrap" }}>{tq ? (Math.round(tq * 100) / 100) + " " + unit + " · " : ""}Rs {rbMoney(ta)}</span>
-                  </div>
-                  {list.map(function (it, i) {
-                    return (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, color: TC.inkSoft, padding: "3px 0", borderTop: i ? "1px solid " + TC.paperLine : "none" }}>
-                        <span>{rbDate(it.x.date)} · {it.lb.name}{it.x.qty ? " · " + it.x.qty + " " + unit : ""}</span>
-                        <span className="rb-mono" style={{ whiteSpace: "nowrap", color: TC.ink }}>Rs {rbMoney(it.x.amount)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+          <div key={r.lb.id} style={{ border: "1.5px solid " + TC.paperLine, borderRadius: 8, padding: "8px 8px 6px", marginBottom: 10, background: "#FBF8EE" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div onClick={function () { if (p.onOpen) p.onOpen(r.lb.id); }} style={{ cursor: "pointer" }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: TC.slab || TC.ink, textDecoration: "underline" }}>{r.lb.name}</div>
+                {r.advBal > 0 ? <div style={{ fontSize: 10, color: TC.stamp, fontWeight: 700 }}>Bara advance baqi: Rs {rbMoney(r.advBal)}</div> : null}
+              </div>
+              {p.isAdmin ? <button onClick={function () { pay(r); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Adaigi</button> : null}
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead><tr>
+                <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>Tareekh</th>
+                <th style={Object.assign({}, hd, { textAlign: "left" })}>Kaam</th>
+                <th style={Object.assign({}, hd, { textAlign: "right", width: "19%" })}>Mazdoori</th>
+                <th style={Object.assign({}, hd, { textAlign: "right", width: "19%" })}>Mila</th>
+                <th style={Object.assign({}, hd, { textAlign: "right", width: "19%" })}>Baqi</th>
+              </tr></thead>
+              <tbody>
+                <tr><td style={c}>{rbDate(wk.from)}</td><td style={Object.assign({}, c, { fontWeight: 700 })}>Pichla baqi</td><td style={cr}></td><td style={cr}></td><td style={Object.assign({}, cr, { fontWeight: 700 })}>{rbMoney(r.carry)}</td></tr>
+                {list.map(function (d) {
+                  bal += d.work - d.cash - d.cut;
+                  return (
+                    <tr key={d.date}>
+                      <td style={c}>{rbDate(d.date)}</td>
+                      <td style={Object.assign({}, c, { wordBreak: "break-word" })}>{kt(d.kinds) || ""}{(d.cash || d.cut) ? <div style={{ fontSize: 10, color: TC.inkSoft }}>{"Adaigi" + (d.cash ? ": naqad " + rbMoney(d.cash) : "") + (d.cut ? (d.cash ? ", " : ": ") + "advance se " + rbMoney(d.cut) : "")}</div> : null}</td>
+                      <td style={cr}>{d.work ? rbMoney(d.work) : ""}</td>
+                      <td style={Object.assign({}, cr, { color: TC.success })}>{(d.cash + d.cut) ? rbMoney(d.cash + d.cut) : ""}</td>
+                      <td style={Object.assign({}, cr, { fontWeight: 700, color: bal > 0 ? TC.stamp : TC.success })}>{rbMoney(bal)}</td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ background: "#FFF1CF" }}>
+                  <td colSpan={2} style={Object.assign({}, c, { fontWeight: 800, borderBottom: "none" })}>Hafta total{Object.keys(wk2).length ? ": " + kt(wk2) : ""}</td>
+                  <td style={Object.assign({}, cr, { fontWeight: 800, borderBottom: "none" })}>{rbMoney(r.work)}</td>
+                  <td style={Object.assign({}, cr, { fontWeight: 800, borderBottom: "none", color: TC.success })}>{rbMoney(r.paid)}</td>
+                  <td style={Object.assign({}, cr, { fontWeight: 800, borderBottom: "none", color: r.dues > 0 ? TC.stamp : TC.success })}>{rbMoney(r.dues)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         );
-      })()}
+      })}
+      {rows.length > 1 ? (
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, fontSize: 12, fontWeight: 800, color: TC.ink, padding: "6px 4px", borderTop: "2px solid " + TC.paperLine }}>
+          <span>Sab mazdoor:</span>
+          <span>Mazdoori {rbMoney(tW)} · Mila <span style={{ color: TC.success }}>{rbMoney(tP)}</span> · Baqi <span style={{ color: TC.stamp }}>{rbMoney(tD)}</span></span>
+        </div>
+      ) : null}
       {payFor ? (
         <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
