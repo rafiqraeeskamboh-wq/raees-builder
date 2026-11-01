@@ -1814,6 +1814,7 @@ function LabourTab(p) {
   var s1 = React.useState(false), settleAsk = s1[0], setSettleAsk = s1[1];
   var s2 = React.useState(false), showOld = s2[0], setShowOld = s2[1];
   var s3 = React.useState(false), khataOpen = s3[0], setKhataOpen = s3[1];
+  var s4 = React.useState(false), dayLedgerOpen = s4[0], setDayLedgerOpen = s4[1];
   var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
   var current = null;
   labourers.forEach(function (x) { if (x.id === openId) current = x; });
@@ -1833,6 +1834,9 @@ function LabourTab(p) {
       <InlineShell title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("labourers")}</button>
         {p.isAdmin && p.onRenameLabourer ? <RbLabourerRename lb={current} onSave={p.onRenameLabourer} /> : null}
+        {/* is bande ka poora ledger - seedha isi khate se */}
+        <RbLedgerButton onClick={function () { setDayLedgerOpen(true); }} label={current.name + " ka ledger"} />
+        {dayLedgerOpen ? <RbLabourDayLedger t={t} lb={current} tot={tot} onClose={function () { setDayLedgerOpen(false); }} /> : null}
         <button onClick={function () { setKhataOpen(true); }} style={{ width: "100%", marginBottom: 10, padding: "10px", borderRadius: 8, border: "none", background: "#128C7E", color: "#FFFFFF", fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
           <Ico name="chat" size={14} /> {t("khataOpen")}
         </button>
