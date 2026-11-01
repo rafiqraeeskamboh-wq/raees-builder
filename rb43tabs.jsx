@@ -1677,13 +1677,23 @@ function RbLabourWeekCard(p) {
   var td = { fontSize: 12, color: TC.ink, textAlign: "right", padding: "6px 4px", borderTop: "1px solid " + TC.paperLine, whiteSpace: "nowrap" };
   return (
     <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: TC.ink, marginBottom: 2 }}>Hafta wise adaigi</div>
-      <div style={{ fontSize: 10.5, color: TC.inkSoft, marginBottom: 8 }}>Jo raqam is hafte baqi reh jaye wo khud agle hafte ke Pichla baqi mein chali jati hai.</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 2 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: TC.ink }}>Labour Ledger (hafta wise)</div>
+        <button onClick={function () {
+          var el = document.getElementById("rb-lab-week-ledger"); if (!el) return;
+          var c = el.cloneNode(true); Array.prototype.forEach.call(c.querySelectorAll("button"), function (b) { b.remove(); });
+          var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+          w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'><h2 style='text-align:center;margin:0 0 4px'>" + (p.t ? p.t("appName") : "Raees Builder") + " - Labour Ledger</h2><div style='text-align:center;margin-bottom:10px'>Jumma " + rbDate(wk.from) + " - Jumeraat " + rbDate(wk.to) + "</div>" + c.outerHTML + "</body></html>");
+          w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+        }} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+      </div>
+      <div style={{ fontSize: 10.5, color: TC.inkSoft, marginBottom: 8 }}>Har mazdoor ka hafte ka ledger. Jo raqam is hafte baqi reh jaye wo khud agle hafte ke Pichla baqi mein chali jati hai.</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <button onClick={function () { setOff(off - 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine })}>‹ Pichla</button>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, textAlign: "center" }}>Jumma {rbDate(wk.from)} – Jumeraat {rbDate(wk.to)}{off === 0 ? " (is hafta)" : ""}</div>
         <button disabled={off >= 0} onClick={function () { setOff(off + 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine, opacity: off >= 0 ? 0.4 : 1 })}>Agla ›</button>
       </div>
+      <div id="rb-lab-week-ledger">
       {rows.length === 0 ? <div style={{ fontSize: 12, color: TC.inkSoft }}>Is hafte koi kaam ya baqi nahi</div> : rows.map(function (r) {
         /* har mazdoor ka is hafte ka ledger: pichla baqi, din-wise kaam aur adaigi, hafta total */
         var days = {};
@@ -1745,6 +1755,7 @@ function RbLabourWeekCard(p) {
           <span>Mazdoori {rbMoney(tW)} · Mila <span style={{ color: TC.success }}>{rbMoney(tP)}</span> · Baqi <span style={{ color: TC.stamp }}>{rbMoney(tD)}</span></span>
         </div>
       ) : null}
+      </div>
       {payFor ? (
         <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
