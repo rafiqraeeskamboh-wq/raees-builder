@@ -1,10 +1,10 @@
-/* Raees Builder App - language strings (English + Urdu) */
+/* Raees Builders App - language strings (English + Urdu) */
 window.RB = window.RB || {};
 
 RB.T = {
   en: {
     dir: "ltr",
-    appName: "Raees Builder",
+    appName: "Raees Builders",
     sub: "Chatai Sale & Stock",
     tabSale: "New Sale", tabStock: "Stock", tabWaste: "Wastage",
     tabPass: "Gate Pass", tabDues: "Dues", tabSet: "Settings",
@@ -39,7 +39,7 @@ RB.T = {
   },
   ur: {
     dir: "rtl",
-    appName: "\u0631\u0626\u06cc\u0633 \u0628\u0644\u0688\u0631",
+    appName: "\u0631\u0626\u06cc\u0633 \u0628\u0644\u0688\u0631\u0632",
     sub: "\u0686\u0679\u0627\u0626\u06cc \u0633\u06cc\u0644 \u0627\u06cc\u0646\u0688 \u0627\u0633\u0679\u0627\u06a9",
     tabSale: "\u0646\u0626\u06cc \u0633\u06cc\u0644",
     tabStock: "\u0627\u0633\u0679\u0627\u06a9",
