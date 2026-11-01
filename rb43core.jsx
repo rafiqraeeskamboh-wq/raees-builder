@@ -47,6 +47,8 @@ function rbDate(d) {
   return m[3] + "/" + m[2] + "/" + m[1].slice(2);
 }
 function roleName(t, r) { return r === "accountant" ? t("accountant") : (r === "admin" ? t("admin") : "-"); }
+/* bill par: "Admin Rafiq" / "User Sajid" - jis ne banaya us ka naam */
+function rbMadeBy(t, r, name) { var n = String(name || "").trim(); var rn = roleName(t, r); return n ? (rn === "-" ? n : rn + " " + n) : rn; }
 function rbMoney(n) {
   var v = Number(n) || 0;
   return v.toLocaleString("en-US", { maximumFractionDigits: 0 });

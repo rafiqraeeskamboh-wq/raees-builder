@@ -141,7 +141,7 @@ function BillModal(p) {
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 34 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {roleName(t, sale.createdBy)}</div>
+              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {rbMadeBy(t, sale.createdBy, sale.createdByName)}</div>
               <div style={{ width: 130, borderTop: "1.5px solid " + TC.ink, marginBottom: 4 }} />
               <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{t("signature")}</div>
             </div>
@@ -225,7 +225,7 @@ function BillModal(p) {
             </table>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 40 }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {roleName(t, gatePassEntry.createdBy || sale.createdBy)}</div>
+                <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {gatePassEntry.createdBy ? rbMadeBy(t, gatePassEntry.createdBy, gatePassEntry.createdByName) : rbMadeBy(t, sale.createdBy, sale.createdByName)}</div>
                 <div style={{ width: 130, borderTop: "1.5px solid " + TC.ink, marginBottom: 4 }} />
                 <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{t("signature")}</div>
               </div>
@@ -449,7 +449,7 @@ function GatePassModal(p) {
           </table>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 40 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {roleName(t, (p.entry && p.entry.createdBy) || sale.createdBy)}</div>
+              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {(p.entry && p.entry.createdBy) ? rbMadeBy(t, p.entry.createdBy, p.entry.createdByName || p.entry.byName) : rbMadeBy(t, sale.createdBy, sale.createdByName)}</div>
               <div style={{ width: 130, borderTop: "1.5px solid " + TC.ink, marginBottom: 4 }} />
               <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{t("signature")}</div>
             </div>
@@ -522,7 +522,7 @@ function PaymentReceiptModal(p) {
           ) : null}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 34 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {roleName(t, p.by)}</div>
+              <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {rbMadeBy(t, p.by, p.byName)}</div>
               <div style={{ width: 130, borderTop: "1.5px solid " + TC.ink, marginBottom: 4 }} />
               <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{t("signature")}</div>
             </div>
@@ -2294,7 +2294,7 @@ function editStockEntry(id, qty, date) {
       ) : null}
 
       {viewingReceipt ? (
-        <PaymentReceiptModal showToast={showToast} t={t} lang={lang} data={viewingReceipt} by={role} onClose={function () { setViewingReceipt(null); }} />
+        <PaymentReceiptModal showToast={showToast} t={t} lang={lang} data={viewingReceipt} by={role} byName={rbSessionName()} onClose={function () { setViewingReceipt(null); }} />
       ) : null}
 
       {toast ? (
