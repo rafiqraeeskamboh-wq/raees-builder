@@ -1815,6 +1815,7 @@ function LabourTab(p) {
   var s2 = React.useState(false), showOld = s2[0], setShowOld = s2[1];
   var s3 = React.useState(false), khataOpen = s3[0], setKhataOpen = s3[1];
   var s4 = React.useState(false), dayLedgerOpen = s4[0], setDayLedgerOpen = s4[1];
+  var s5 = React.useState({}), openGroups = s5[0], setOpenGroups = s5[1];
   var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
   var current = null;
   labourers.forEach(function (x) { if (x.id === openId) current = x; });
@@ -1962,7 +1963,9 @@ function LabourTab(p) {
           <div style={{ fontSize: 11.5, color: "#A39C8A", textAlign: "center", padding: "10px 0" }}>{t("noLabourEntries")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {rows.map(function (r) {
+            {(function () {
+              /* ek din ka ek kism ka kaam (sab size) ek hi line mein: kul nagg x rate = raqam */
+              function oneRow(r) {
               var kk = r.k === "work" ? labourKind(r.kind) : null;
               return (
                 <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -1990,7 +1993,47 @@ function LabourTab(p) {
                   </div>
                 </div>
               );
-            })}
+              }
+              var groups = [], gIdx = {};
+              rows.forEach(function (r) {
+                if (r.k !== "work") { groups.push({ single: r }); return; }
+                var gk = r.date + "|" + r.kind + "|" + (Number(r.rate) || 0);
+                if (gIdx[gk] == null) { gIdx[gk] = groups.length; groups.push({ key: gk, items: [] }); }
+                groups[gIdx[gk]].items.push(r);
+              });
+              return groups.map(function (g) {
+                if (g.single) return oneRow(g.single);
+                if (g.items.length === 1) return oneRow(g.items[0]);
+                var f = g.items[0], kk = labourKind(f.kind);
+                var qty = 0, amt = 0, allV = true, anyAuto = false;
+                g.items.forEach(function (x) { qty += Number(x.qty) || 0; amt += Number(x.amount) || 0; if (!x.verified) allV = false; if (x.auto) anyAuto = true; });
+                qty = Math.round(qty * 100) / 100;
+                var isOpen = !!openGroups[g.key];
+                return (
+                  <div key={"g" + g.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div onClick={function () { var o = Object.assign({}, openGroups); o[g.key] = !isOpen; setOpenGroups(o); }} style={{ minWidth: 0, cursor: "pointer", flex: 1 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                          <span>{isOpen ? "\u25be" : "\u25b8"} {t(kk.labelKey)}</span>
+                          {anyAuto ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.garden, borderRadius: 20, padding: "1px 6px" }}>{f.src === "sale" ? t("labourFromSale") : t("labourFromStock")}</span> : null}
+                          {!allV ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.stamp, borderRadius: 20, padding: "1px 6px" }}>{t("labourUnverified")}</span> : null}
+                        </div>
+                        <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 1 }}>{rbDate(f.date)} · Kul {qty} {t(kk.unitKey)}{f.rate ? " × " + (Math.round(Number(f.rate) * 100) / 100).toLocaleString("en-US") : ""} = Rs {rbMoney(amt)}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink, whiteSpace: "nowrap" }}>Rs {rbMoney(amt)}</span>
+                        {p.isAdmin ? (
+                          <label title={t("labourVerify")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                            <input type="checkbox" checked={allV} onChange={function (ev) { var on = ev.target.checked; g.items.forEach(function (x) { p.onVerifyWork(x.id, on); }); }} style={{ width: 16, height: 16, accentColor: TC.garden, cursor: "pointer" }} />
+                          </label>
+                        ) : null}
+                      </div>
+                    </div>
+                    {isOpen ? <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 14 }}>{g.items.map(oneRow)}</div> : null}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
         {(tot.oldWorks.length + tot.oldPayments.length) > 0 ? (
