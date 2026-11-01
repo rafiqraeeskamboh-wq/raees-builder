@@ -1642,6 +1642,8 @@ function RbLabourerRename(p) {
 function rbWeekOf(iso) { var d = new Date(String(iso).slice(0, 10) + "T00:00:00"); var add = (4 - d.getDay() + 7) % 7; var e = new Date(d); e.setDate(d.getDate() + add); var st = new Date(e); st.setDate(e.getDate() - 6); return { from: isoOf(st), to: isoOf(e) }; }
 function RbLabourWeekCard(p) {
   var o = React.useState(0), off = o[0], setOff = o[1];
+  var opS = React.useState(function () { return !!rbUiGet("labLedgerOpen", false); }), lOpen = opS[0], setLOpen = opS[1];
+  function toggleL() { var v = !lOpen; setLOpen(v); rbUiSet("labLedgerOpen", v ? 1 : null); }
   var pf = React.useState(null), payFor = pf[0], setPayFor = pf[1];
   var pa = React.useState(""), pAmt = pa[0], setPAmt = pa[1];
   var pd = React.useState(""), pDesc = pd[0], setPDesc = pd[1];
@@ -1678,7 +1680,8 @@ function RbLabourWeekCard(p) {
   return (
     <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 2 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: TC.ink }}>Labour Ledger (hafta wise)</div>
+        <div onClick={toggleL} style={{ fontSize: 14, fontWeight: 800, color: TC.ink, cursor: "pointer", flex: 1 }}>{lOpen ? "▾" : "▸"} Labour Ledger (hafta wise) <span style={{ fontSize: 11, fontWeight: 700, color: TC.slab }}>{lOpen ? "(band karein)" : "(kholein)"}</span></div>
+        {lOpen ? (
         <button onClick={function () {
           var el = document.getElementById("rb-lab-week-ledger"); if (!el) return;
           var c = el.cloneNode(true); Array.prototype.forEach.call(c.querySelectorAll("button"), function (b) { b.remove(); });
@@ -1686,7 +1689,9 @@ function RbLabourWeekCard(p) {
           w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'><h2 style='text-align:center;margin:0 0 4px'>" + (p.t ? p.t("appName") : "Raees Builder") + " - Labour Ledger</h2><div style='text-align:center;margin-bottom:10px'>Jumma " + rbDate(wk.from) + " - Jumeraat " + rbDate(wk.to) + "</div>" + c.outerHTML + "</body></html>");
           w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
         }} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+        ) : null}
       </div>
+      {lOpen ? (<React.Fragment>
       <div style={{ fontSize: 10.5, color: TC.inkSoft, marginBottom: 8 }}>Har mazdoor ka hafte ka ledger. Jo raqam is hafte baqi reh jaye wo khud agle hafte ke Pichla baqi mein chali jati hai.</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 8 }}>
         <button onClick={function () { setOff(off - 1); }} style={Object.assign({}, nav, { color: TC.ink, borderColor: TC.paperLine })}>‹ Pichla</button>
@@ -1774,6 +1779,9 @@ function RbLabourWeekCard(p) {
           </div>
         </div>
       ) : null}
+      </React.Fragment>) : (
+        <div onClick={toggleL} style={{ fontSize: 11.5, color: TC.inkSoft, cursor: "pointer", paddingTop: 4 }}>Is hafte: mazdoori <b style={{ color: TC.ink }}>{rbMoney(tW)}</b> · mila <b style={{ color: TC.success }}>{rbMoney(tP)}</b> · baqi <b style={{ color: TC.stamp }}>{rbMoney(tD)}</b> ({rows.length} mazdoor)</div>
+      )}
     </div>
   );
 }
