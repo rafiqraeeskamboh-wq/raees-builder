@@ -1234,7 +1234,12 @@ function RaeesBuilderApp() {
     var opening = (lb && lb.openingDir === "adv") ? -openAmt : openAmt;
     /* hisab saaf hone ke baad purani entries khate se bahar, magar record mein mehfooz */
     var allWorks = labourWork.filter(function (x) { return x.labourerId === labourerId; });
-    var allPays = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
+    var allAll = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
+    /* bara advance (type "advance") mazdoori ke hisaab se alag; "advCut" = mazdoori mein se advance kata (naqad nahi) */
+    var advEntries = allAll.filter(function (x) { return x.type === "advance" || x.type === "advCut"; });
+    var advGiven = allAll.filter(function (x) { return x.type === "advance"; }).reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    var advCutTot = allAll.filter(function (x) { return x.type === "advCut"; }).reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
+    var allPays = allAll.filter(function (x) { return x.type !== "advance"; });
     var works = allWorks.filter(function (x) { return !x.settledAt; });
     var pays = allPays.filter(function (x) { return !x.settledAt; });
     var oldWorks = allWorks.filter(function (x) { return !!x.settledAt; });
@@ -1249,6 +1254,7 @@ function RaeesBuilderApp() {
     });
     return { opening: opening, openingDate: lb ? lb.openingDate : null, work: work, paid: paid, dues: opening + work - paid,
       works: works, payments: pays, byKind: byKind,
+      advGiven: advGiven, advCut: advCutTot, advBal: advGiven - advCutTot, advEntries: advEntries,
       oldWorks: oldWorks, oldPayments: oldPays, lastSettled: (lb && lb.lastSettled) || null };
   }
 
@@ -1289,10 +1295,10 @@ function RaeesBuilderApp() {
     logActivity("labour_work", t(labourKind(entry.kind).labelKey) + " — Rs " + rbMoney(amt));
   }
 
-  function addLabourPayment(labourerId, amount, date, note) {
+  function addLabourPayment(labourerId, amount, date, note, type) {
     var amt = Number(amount) || 0;
     if (!labourerId || amt <= 0) return;
-    var entry = { id: rbUid(), labourerId: labourerId, amount: amt, note: String(note || "").trim(),
+    var entry = { id: rbUid(), labourerId: labourerId, amount: amt, note: String(note || "").trim(), type: (type === "advance" || type === "advCut") ? type : "wage",
       date: date || rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
     setLabourPayments(function (a) { return [entry].concat(a); });
     showToast(t("labourAdvance"));

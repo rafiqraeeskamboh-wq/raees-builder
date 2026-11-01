@@ -1643,6 +1643,7 @@ function RbLabourWeekCard(p) {
   var pf = React.useState(null), payFor = pf[0], setPayFor = pf[1];
   var pa = React.useState(""), pAmt = pa[0], setPAmt = pa[1];
   var pd = React.useState(""), pDesc = pd[0], setPDesc = pd[1];
+  var pc = React.useState(""), pCut = pc[0], setPCut = pc[1];
   var base = new Date(); base.setDate(base.getDate() + off * 7);
   var wk = rbWeekOf(isoOf(base));
   function sum(list) { return list.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0); }
@@ -1656,14 +1657,18 @@ function RbLabourWeekCard(p) {
     return { lb: lb, carry: carry, work: work, paid: paid, dues: endBaqi, weekWorks: (tot.works || []).filter(inW) };
   }).filter(function (r) { return r.carry !== 0 || r.work > 0 || r.paid > 0 || r.dues !== 0; });
   var tC = rows.reduce(function (n, r) { return n + r.carry; }, 0), tW = rows.reduce(function (n, r) { return n + r.work; }, 0), tP = rows.reduce(function (n, r) { return n + r.paid; }, 0), tD = rows.reduce(function (n, r) { return n + r.dues; }, 0);
-  function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); }
+  function pay(r) { setPayFor(r.lb); setPAmt(r.dues > 0 ? String(Math.round(r.dues)) : ""); setPDesc(""); setPCut(""); }
+  var payAdvBal = payFor && p.labourTotals ? (p.labourTotals(payFor.id).advBal || 0) : 0;
   function savePay() {
     var amt = Number(String(pAmt).replace(/[^0-9.]/g, "")) || 0;
-    if (amt <= 0 || !payFor || !pDesc.trim()) return;
+    var cut = Number(String(pCut).replace(/[^0-9.]/g, "")) || 0;
+    if ((amt <= 0 && cut <= 0) || !payFor || !pDesc.trim() || cut > payAdvBal) return;
     var date = off === 0 ? rbToday() : wk.to;
     var tag = "Hafta " + rbDate(wk.from) + " - " + rbDate(wk.to);
-    p.onPay(payFor.id, amt, date, pDesc.trim() ? pDesc.trim() + " (" + tag + ")" : tag);
-    setPayFor(null); setPAmt(""); setPDesc("");
+    var note = pDesc.trim() + " (" + tag + ")";
+    if (amt > 0) p.onPay(payFor.id, amt, date, note, "wage");
+    if (cut > 0) p.onPay(payFor.id, cut, date, note, "advCut");
+    setPayFor(null); setPAmt(""); setPDesc(""); setPCut("");
   }
   var nav = { padding: "6px 10px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" };
   var th = { fontSize: 10, color: TC.inkSoft, fontWeight: 700, textAlign: "right", padding: "4px 4px" };
@@ -1684,7 +1689,7 @@ function RbLabourWeekCard(p) {
             {rows.map(function (r) {
               return (
                 <tr key={r.lb.id}>
-                  <td onClick={function () { if (p.onOpen) p.onOpen(r.lb.id); }} style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700, cursor: "pointer", textDecoration: "underline", color: TC.slab || TC.ink })}>{r.lb.name}</td>
+                  <td onClick={function () { if (p.onOpen) p.onOpen(r.lb.id); }} style={Object.assign({}, td, { textAlign: "left", whiteSpace: "normal", fontWeight: 700, cursor: "pointer", textDecoration: "underline", color: TC.slab || TC.ink })}>{r.lb.name}{(function () { var ab = p.labourTotals ? (p.labourTotals(r.lb.id).advBal || 0) : 0; return ab > 0 ? <div style={{ fontSize: 9.5, color: TC.stamp, textDecoration: "none", fontWeight: 600 }}>Advance baqi {rbMoney(ab)}</div> : null; })()}</td>
                   <td className="rb-mono" style={td}>{rbMoney(r.carry)}</td>
                   <td className="rb-mono" style={td}>{rbMoney(r.work)}</td>
                   <td className="rb-mono" style={Object.assign({}, td, { color: TC.success })}>{rbMoney(r.paid)}</td>
@@ -1742,10 +1747,17 @@ function RbLabourWeekCard(p) {
         <div style={{ marginTop: 10, background: TC.appBg2, borderRadius: 8, padding: 10 }}>
           <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>{payFor.name} ko adaigi</div>
           <input type="number" inputMode="numeric" value={pAmt} onChange={function (e) { setPAmt(e.target.value); }} placeholder="Raqam (Rs)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 }} />
+          {payAdvBal > 0 ? (
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 3 }}>Bara advance baqi: Rs {rbMoney(payAdvBal)} - is mein se kitna kaatna hai? (naqad nahi diya jata)</div>
+              <input type="number" inputMode="numeric" value={pCut} onChange={function (e) { setPCut(e.target.value); }} placeholder="Advance se kata (Rs)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid " + ((Number(pCut) || 0) > payAdvBal ? TC.stamp : "#3A362C"), background: "transparent", color: TC.cream, fontSize: 14 }} />
+              {(Number(pAmt) || 0) + (Number(pCut) || 0) > 0 ? <div style={{ fontSize: 11, color: "#E6C875", marginTop: 3 }}>Kul mazdoori adaigi: Rs {rbMoney((Number(pAmt) || 0) + (Number(pCut) || 0))} = naqad {rbMoney(Number(pAmt) || 0)} + advance se {rbMoney(Number(pCut) || 0)}</div> : null}
+            </div>
+          ) : null}
           <input value={pDesc} onChange={function (e) { setPDesc(e.target.value); }} placeholder="Description - lazmi (jaise: advance, poori adaigi, kiraya)" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid " + (pDesc.trim() ? "#3A362C" : TC.stamp), background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 }} />
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={function () { setPayFor(null); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Cancel</button>
-            <button disabled={!(Number(pAmt) > 0 && pDesc.trim())} onClick={savePay} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: (Number(pAmt) > 0 && pDesc.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Adaigi save karein</button>
+            <button disabled={!(((Number(pAmt) || 0) > 0 || (Number(pCut) || 0) > 0) && pDesc.trim() && (Number(pCut) || 0) <= payAdvBal)} onClick={savePay} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: (((Number(pAmt) || 0) > 0 || (Number(pCut) || 0) > 0) && pDesc.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Adaigi save karein</button>
           </div>
         </div>
       ) : null}
@@ -1772,6 +1784,7 @@ function LabourTab(p) {
   var d1 = React.useState(""), payAmt = d1[0], setPayAmt = d1[1];
   var d2 = React.useState(rbToday()), payDate = d2[0], setPayDate = d2[1];
   var d3 = React.useState(""), payNote = d3[0], setPayNote = d3[1];
+  var d4 = React.useState("wage"), payType = d4[0], setPayType = d4[1];
   var o1 = React.useState(""), obAmt = o1[0], setObAmt = o1[1];
   var o2 = React.useState("due"), obDir = o2[0], setObDir = o2[1];
   var o3 = React.useState(rbToday()), obDate = o3[0], setObDate = o3[1];
@@ -1811,6 +1824,13 @@ function LabourTab(p) {
             <StatBlock label={t("labourPaidTotal")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
             <StatBlock label={t("labourBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
           </div>
+          {(tot.advGiven || 0) > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + TC.paperLine }}>
+              <StatBlock label="Bara advance diya" value={"Rs " + rbMoney(tot.advGiven)} bold />
+              <StatBlock label="Advance se kata" value={"Rs " + rbMoney(tot.advCut)} bold color={TC.success} />
+              <StatBlock label="Advance baqi" value={"Rs " + rbMoney(tot.advBal)} bold color={tot.advBal > 0 ? TC.stamp : TC.success} />
+            </div>
+          ) : null}
           {tot.opening ? (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
               <span style={{ color: TC.inkSoft }}>{t("openingBalance")}{current.openingDate ? " · " + rbDate(current.openingDate) : ""}</span>
@@ -1896,13 +1916,18 @@ function LabourTab(p) {
         </div>
 
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("labourAdvance")}</div>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Payment / Advance</div>
+          <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
+            {[["wage", "Mazdoori (naqad)"], ["advance", "Bara advance diya"], ["advCut", "Advance se kata"]].map(function (o) { var on = payType === o[0]; return <button key={o[0]} type="button" onClick={function () { setPayType(o[0]); }} style={{ flex: 1, padding: "7px 4px", borderRadius: 7, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
+          </div>
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{payType === "wage" ? "Mazdoori ke badle naqad paise diye." : (payType === "advance" ? "Bara advance (qarza) diya - mazdoori ke hisaab se alag rehta hai." : "Mazdoori mein se itne paise advance mein kaat liye (naqad nahi diye). Advance baqi: Rs " + rbMoney((tot && tot.advBal) || 0))}</div>
           <div style={{ display: "flex", gap: 6 }}>
             <input type="number" inputMode="decimal" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={Object.assign({}, inp, { flex: 1 })} />
             <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={Object.assign({}, inp, { flex: 1 })} />
           </div>
           <input value={payNote} onChange={function (e) { setPayNote(e.target.value); }} placeholder="Description - lazmi (jaise: advance, hafta, poori adaigi)" style={Object.assign({}, inp, { marginTop: 6, border: "2px solid " + (payNote.trim() ? "#3A362C" : TC.stamp) })} />
-          <button disabled={!(Number(payAmt) > 0 && payNote.trim())} onClick={function () { p.onAddPayment(current.id, payAmt, payDate, payNote.trim()); setPayAmt(""); setPayNote(""); }} style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && payNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("labourAdvance")}</button>
+          {payType === "advCut" && Number(payAmt) > ((tot && tot.advBal) || 0) ? <div style={{ fontSize: 11, color: "#F0A08A", marginTop: 4 }}>Advance baqi se zyada nahi kaat sakte</div> : null}
+          <button disabled={!(Number(payAmt) > 0 && payNote.trim() && !(payType === "advCut" && Number(payAmt) > ((tot && tot.advBal) || 0)))} onClick={function () { p.onAddPayment(current.id, payAmt, payDate, payNote.trim(), payType); setPayAmt(""); setPayNote(""); setPayType("wage"); }} style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && payNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("labourAdvance")}</button>
         </div>
 
         {rows.length === 0 ? (
@@ -3206,7 +3231,7 @@ function DayBookReport(p) {
     }
     if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) });
   });
-  (all.labourPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: "Labour Advance" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut") return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   rec.sort(byDate);
   out.sort(byDate);
   var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
@@ -3894,7 +3919,7 @@ function rbPeopleLedgers(all) {
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0 }); });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
-  (all.labourPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Labour ko payment - " + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut") return; P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: (x.type === "advance" ? "Labour ko bara advance - " : "Labour ko payment - ") + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
   return Object.keys(map).map(function (k) { map[k].rows = rbLedgerSort(map[k].rows); return map[k]; })
     .sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
 }
@@ -4124,7 +4149,7 @@ function RbLabourDayLedger(p) {
   var days = {};
   function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, work: 0, paid: 0, notes: [] }; return days[k]; }
   (tot.works || []).forEach(function (x) { var d = D(x.date); var q = rbLabourQty(x); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + q; d.work += Number(x.amount) || 0; });
-  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; if (x.note) d.notes.push(x.note); });
+  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
   var list = Object.keys(days).sort().map(function (k) { return days[k]; });
   /* range se pehle ka sab "pichla baqi" */
   var carry = opening, shown = [];
@@ -4205,6 +4230,39 @@ function RbLabourDayLedger(p) {
             </tbody>
           </table>
           <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>Hafta Jumma se Jumeraat tak. Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance).</div>
+          {(tot.advEntries || []).length ? (function () {
+            var ab = 0;
+            var list = (tot.advEntries || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+            return (
+              <div style={{ marginTop: 14 }}>
+                <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Bara advance (alag hisaab)</div>
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                  <thead><tr>
+                    <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
+                    <th style={head}>Tafseel</th>
+                    <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Diya</th>
+                    <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Kata</th>
+                    <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Baqi</th>
+                  </tr></thead>
+                  <tbody>
+                    {list.map(function (x, i) {
+                      var given = x.type === "advance" ? Number(x.amount) || 0 : 0, cut = x.type === "advCut" ? Number(x.amount) || 0 : 0;
+                      ab += given - cut;
+                      return (
+                        <tr key={i}>
+                          <td style={cell}>{rbDate(x.date)}</td>
+                          <td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{(x.type === "advance" ? "Advance diya" : "Mazdoori se kata") + (x.note ? " - " + x.note : "")}</td>
+                          <td style={Object.assign({}, cell, { textAlign: "right" })}>{given ? rbMoney(given) : ""}</td>
+                          <td style={Object.assign({}, cell, { textAlign: "right" })}>{cut ? rbMoney(cut) : ""}</td>
+                          <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{rbMoney(ab)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })() : null}
         </div>
       </div>
     </div>
