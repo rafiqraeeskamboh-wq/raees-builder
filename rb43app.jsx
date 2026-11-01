@@ -1353,7 +1353,27 @@ function RaeesBuilderApp() {
   }
 
   /* ---- har kism ka muqarrar banda aur rate (ek dafa settings mein) ---- */
-  function labourCfg(kind) { return labourCfgOf(labourConfig, kind); }
+  /* jis kaam ka banda (labour settings mein) ab list mein na ho, to wo banda lo jis ke zimme ye kaam laga hai */
+  function labourerForKind(kind) { var f = null; labourers.forEach(function (l) { if (!f && labourKindsOf(l).indexOf(kind) >= 0) f = l; }); return f; }
+  function labourCfg(kind) {
+    var c = labourCfgOf(labourConfig, kind);
+    if (c.labourerId && labourers.some(function (l) { return l.id === c.labourerId; })) return c;
+    var f = labourerForKind(kind);
+    return f ? { labourerId: f.id, rate: c.rate } : c;
+  }
+  /* purane (hataye gaye) bande ke naam par gaya hua kaam us bande ke khate mein jis ke zimme wo kaam hai; settings bhi theek */
+  React.useEffect(function () {
+    if (!labourers.length) return;
+    var ids = {}; labourers.forEach(function (l) { ids[l.id] = 1; });
+    var cfgFix = null;
+    Object.keys(labourConfig || {}).forEach(function (k) {
+      var c = labourConfig[k] || {};
+      if (c.labourerId && !ids[c.labourerId]) { var f = labourerForKind(k); if (f) { cfgFix = cfgFix || Object.assign({}, labourConfig); cfgFix[k] = Object.assign({}, c, { labourerId: f.id }); } }
+    });
+    if (cfgFix) setLabourConfig(cfgFix);
+    var need = labourWork.some(function (w) { return w.labourerId && !ids[w.labourerId] && labourerForKind(w.kind); });
+    if (need) setLabourWork(function (a) { return a.map(function (w) { if (w.labourerId && !ids[w.labourerId]) { var f = labourerForKind(w.kind); if (f) return Object.assign({}, w, { labourerId: f.id, movedFrom: w.labourerId }); } return w; }); });
+  }, [labourers, labourConfig, labourWork]);
 
   function saveLabourConfig(kind, labourerId, rate) {
     if (role !== "admin") return;
