@@ -4276,7 +4276,7 @@ function RbLabourDayLedger(p) {
           <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>Hafta Jumma se Jumeraat tak. Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance).</div>
           {(tot.advEntries || []).length ? (function () {
             var ab = 0;
-            var list = (tot.advEntries || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+            var list = (tot.advEntries || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || String(m.createdAt || "").localeCompare(String(n.createdAt || "")); });
             return (
               <div style={{ marginTop: 14 }}>
                 <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Bara advance (alag hisaab)</div>
