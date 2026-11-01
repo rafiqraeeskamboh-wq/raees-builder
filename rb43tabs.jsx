@@ -858,7 +858,7 @@ function BulkStockModal(p) {
       </Field>
       {rows.length ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>
-          {rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}{bought && r.rate ? " × " + rbMoney(Number(r.rate)) : ""}</div>; })}
+          {rows.map(function (r) { return <div key={key(r.category, r.variant)}>{variantLabel(t, r.category, r.variant)} — {r.qty}</div>; })}
           <div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>Kul: {totalPcs} {t("pieces")}{bought ? " · Rs " + rbMoney(totalAmt) : ""}</div>
         </div>
       ) : null}
@@ -871,7 +871,7 @@ function BulkStockModal(p) {
           <div style={{ fontSize: 11.5, color: "#A39C8A", margin: "8px 0 4px", fontWeight: 700 }}>Labour ke paise (khud bante hain)</div>
           {lp ? Object.keys(lp.byKind).map(function (k) { var x = lp.byKind[k]; return (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#D8CDA9", padding: "2px 0" }}>
-              <span>{t(labourKind(k).labelKey)}{k === "garder" ? (x.already ? " (aaj ki bharai pehle se lagi hai)" : " (1 din bharai)") : " (" + x.qty + " × " + rbMoney(x.rate) + ")"}</span><b>Rs {rbMoney(x.amount)}</b>
+              <span>{t(labourKind(k).labelKey)}{k === "garder" ? (x.already ? " (aaj ki bharai pehle se lagi hai)" : " (1 din bharai)") : " (" + x.qty + ")"}</span><b>Rs {rbMoney(x.amount)}</b>
             </div>); }) : null}
           {lp && lp.missing.length ? <div style={{ fontSize: 11, color: "#F0A08A", padding: "2px 0" }}>{lp.missing.map(function (k) { return t(labourKind(k).labelKey); }).join(", ")}: labour ka banda/rate set nahi - Labour settings mein set karein</div> : null}
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: TC.cream, padding: "4px 0 8px", borderBottom: "1px dashed #3A362C", fontWeight: 700 }}><span>Kul labour</span><span>Rs {rbMoney(lp ? lp.total : 0)}</span></div>
@@ -1199,7 +1199,7 @@ function SupplierModal(p) {
                 <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? (r.matName || t("buyMaterial")) : t("payToSupplier")}</div>
-                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") + " \u00d7 " + rbMoney(r.rate) : ""}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") : ""}</div>
                   </div>
                   <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
                 </div>
@@ -1575,7 +1575,7 @@ function LabourKhataModal(p) {
               ) : rows.map(function (r) {
                 var kk = r.k === "work" ? labourKind(r.kind) : null;
                 var detail = r.k === "work"
-                  ? t(kk.labelKey) + (r.qty ? " " + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + rbMoney(r.rate) : "") : "") + (Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : "")
+                  ? t(kk.labelKey) + (r.qty ? " " + r.qty + " " + t(kk.unitKey) : "")
                   : t("khataAdvance");
                 return (
                   <tr key={r.k + r.id} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
@@ -1972,7 +1972,7 @@ function LabourTab(p) {
                       {r.k === "work" && r.auto ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.garden, borderRadius: 20, padding: "1px 6px" }}>{r.src === "sale" ? t("labourFromSale") : t("labourFromStock")}</span> : null}
                       {r.k === "work" && !r.verified ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.stamp, borderRadius: 20, padding: "1px 6px" }}>{t("labourUnverified")}</span> : null}
                     </div>
-                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "work" && r.qty ? " · " + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + rbMoney(r.rate) : "") : ""}{r.k === "work" && Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : ""}{r.note ? " · " + r.note : ""}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "work" && r.qty ? " · " + r.qty + " " + t(kk.unitKey) : ""}{r.note ? " · " + r.note : ""}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "work" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
@@ -4252,9 +4252,7 @@ function RbLabourDayLedger(p) {
                 return (
                   <tr key={i}>
                     <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{Object.keys(d.parts).length ? Object.keys(d.parts).map(function (pk) { var pt = d.parts[pk]; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey);
-                      var txt = pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US") + ")" : pt.qty + " " + unit + " \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US");
-                      return <div key={pk}>{txt} = <b>{rbMoney(pt.amt)}</b></div>; }) : (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{kt || (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
