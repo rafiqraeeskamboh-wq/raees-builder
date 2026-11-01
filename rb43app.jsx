@@ -816,6 +816,7 @@ function RaeesBuilderApp() {
   /* agar mojooda tab ki ijazat na ho to pehle jaiz tab par le jayein */
   var TAB_PERMS = { sale: "tabSale", bills: "tabBills", gatepass: "tabGatePass", dues: "tabDues", stock: "stock", wastage: "wastage", supplier: "supplier", labour: "labour", book: "reports" };
   React.useEffect(function () {
+    if (tab === "ledger" && role !== "admin") { setTab("sale"); return; }
     var need = TAB_PERMS[tab];
     if (need && !hasPerm(role, permissions, need)) {
       var order = ["sale", "bills", "stock", "gatepass", "dues", "supplier", "labour", "book", "wastage", "settings"];
@@ -855,6 +856,7 @@ function RaeesBuilderApp() {
   var alS = React.useState(function () { return rbGet("activity-log", []); }), activityLog = alS[0], setActivityLog = alS[1];
   var rlS = React.useState(function () { return rbGet("returns", []); }), returnLog = rlS[0], setReturnLog = rlS[1];
   var moS = React.useState(function () { return rbGet("material-opening", {}) || {}; }), materialOpening = moS[0], setMaterialOpening = moS[1];
+  var dvS = React.useState(function () { return rbGet("day-verify", {}) || {}; }), dayVerify = dvS[0], setDayVerify = dvS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
@@ -895,6 +897,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("activity-log", activityLog); }, [activityLog]);
   React.useEffect(function () { rbSet("returns", returnLog); }, [returnLog]);
   React.useEffect(function () { rbSet("material-opening", materialOpening); }, [materialOpening]);
+  React.useEffect(function () { rbSet("day-verify", dayVerify); }, [dayVerify]);
   React.useEffect(function () { rbSet("trash", trash); }, [trash]);
 
   /* ---- Super Admin: har record ka edit / delete / wapas (reback) ---- */
@@ -1039,6 +1042,40 @@ function RaeesBuilderApp() {
     });
     return { added: added, sold: sold, wasted: wasted, convertedOut: convertedOut, convertedIn: convertedIn };
   }, [stockLog, gatePasses, wastageLog, conversionLog, returnLog]);
+
+  /* User (accountant) ka ek din ka sara kaam - Admin roz verify karta hai */
+  function userDayItems(date) {
+    var U = "accountant", d = String(date || "");
+    var out = [];
+    function add(kind, text, amt, extra) { out.push(Object.assign({ kind: kind, text: text, amt: amt }, extra || {})); }
+    sales.forEach(function (x) {
+      if (!x.isOpening && x.createdBy === U && x.date === d) add("Bill", "#" + x.serial + " " + (x.customerName || "") + (x.verified ? " (verified)" : ""), Number(x.totalBill) || 0);
+      (x.payments || []).forEach(function (pay) { if (pay.by === U && pay.date === d && !pay.fromAdvance && Number(pay.amount) > 0) add("Wasooli", (x.customerName || "") + (x.isOpening ? " (purana baqi)" : " #" + x.serial) + (pay.note ? " - " + pay.note : ""), Number(pay.amount) || 0); });
+    });
+    expenses.forEach(function (x) { if (x.by === U && x.date === d) add(x.transfer ? "Cash diya" : "Kharcha", (x.detail || ""), Number(x.amount) || 0); });
+    advances.forEach(function (x) {
+      if (x.by === U && x.date === d) add("Advance liya", "#" + x.no + " " + (x.name || ""), Number(x.amount) || 0);
+      (x.returns || []).forEach(function (rt) { if (rt.by === U && rt.date === d) add("Advance wapas", "#" + x.no + " " + (x.name || ""), Number(rt.amount) || 0); });
+    });
+    stockLog.forEach(function (e) { if (e.by === U && e.date === d) add("Stock", variantLabel(t, e.category, e.variant) + " +" + e.qty, null); });
+    gatePasses.forEach(function (g) { if (g.createdBy === U && g.date === d) add("Gate pass", "#" + (g.serial || "-") + " " + (g.customerName || ""), null); });
+    labourWork.forEach(function (w) { if (w.by === U && w.date === d) add("Labour kaam", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
+    labourPayments.forEach(function (w) { if (w.by === U && w.date === d && w.type !== "advCut") add("Labour payment", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
+    returnLog.forEach(function (r) { if (r.createdBy === U && r.date === d) add("Maal wapsi", "#" + (r.serial || "-") + " " + (r.customerName || ""), Number(r.amount) || 0); });
+    return out;
+  }
+  function verifyUserDay(date) {
+    if (role !== "admin") return;
+    var U = "accountant", d = String(date || ""), stamp = new Date().toISOString(), who = rbSessionName() || (rbIsSuper() ? "Super Admin" : "Admin");
+    function mark(x) { return Object.assign({}, x, { verified: true, verifiedBy: role, verifiedAt: stamp }); }
+    setSales(function (a) { return a.map(function (x) { return (!x.isOpening && x.createdBy === U && x.date === d && !x.verified) ? mark(x) : x; }); });
+    setGatePasses(function (a) { return a.map(function (g) { return (g.createdBy === U && g.date === d && !g.verified) ? mark(g) : g; }); });
+    setStockLog(function (a) { return a.map(function (e) { return (e.by === U && e.date === d && !e.verified) ? mark(e) : e; }); });
+    setLabourWork(function (a) { return a.map(function (w) { return (w.by === U && w.date === d && !w.verified) ? mark(w) : w; }); });
+    setDayVerify(function (m) { var n = Object.assign({}, m); n[d] = { by: who, at: stamp, count: userDayItems(d).length }; return n; });
+    showToast("User ka " + rbDate(d) + " ka kaam verify ho gaya");
+    logActivity("day_verified", rbDate(d));
+  }
 
   /* stock ka ledger: har aamad / nikasi line-wise (variant null = us category ke sab size) */
   function stockLedgerRows(cat, variant) {
@@ -2085,7 +2122,7 @@ function editStockEntry(id, qty, date) {
     setLabourers([]); setLabourWork([]); setLabourPayments([]);
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
-    trackMute.current = true; setTrash([]); setMaterialOpening({});
+    trackMute.current = true; setTrash([]); setMaterialOpening({}); setDayVerify({});
     setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
     showToast(t("clearData"));
   }
@@ -2126,7 +2163,13 @@ function editStockEntry(id, qty, date) {
     body = can("reports") ? <ReportsTab t={t} advances={advances} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
       suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments} returnLog={returnLog}
-      canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer} />
+      canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer}
+      dayVerify={dayVerify} userDayItems={userDayItems} onVerifyUserDay={verifyUserDay} />
+      : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
+  } else if (tab === "ledger") {
+    body = role === "admin" ? <RbLedgerTab t={t} sales={sales} suppliers={suppliers} supplierTotals={supplierTotals} labourers={labourers} labourTotals={labourTotals}
+      variantsFor={variantsFor} stockLedgerRows={stockLedgerRows}
+      personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments }} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;

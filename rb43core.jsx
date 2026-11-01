@@ -712,6 +712,7 @@ function TabBar(p) {
   if (hasPerm(role, permissions, "tabGatePass")) { tabs.push({ id: "gatepass", label: t("navGatePass"), icon: "truck" }); }
   if (hasPerm(role, permissions, "reports")) { tabs.push({ id: "book", label: t("navBook"), icon: "grid" }); }
   if (hasPerm(role, permissions, "tabDues")) { tabs.push({ id: "dues", label: t("navDues"), icon: "wallet", badge: duesCount }); }
+  if (role === "admin") { tabs.push({ id: "ledger", label: "Ledger", icon: "history" }); }
   tabs.push({ id: "settings", label: t("navSettings"), icon: "gear" });
   return (
     <div className="no-print rb-nav" style={{
