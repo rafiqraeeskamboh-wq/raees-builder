@@ -64,6 +64,32 @@ var RB_STORE = (function () { try { return localStorage.getItem("raees-store") =
 var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1, "expense-heads": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
+/* English likhte waqt har lafz ka pehla harf bara (Ali khan -> Ali Khan). number/date/PIN/mobile par nahi.
+   kisi khane mein na chahiye ho to us par data-nocap laga dein */
+(function () {
+  try {
+    var iset = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    var tset = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+    function ok(el) {
+      if (!el || !el.tagName || (el.closest && el.closest("[data-nocap]"))) return false;
+      if (el.tagName === "TEXTAREA") return true;
+      if (el.tagName !== "INPUT") return false;
+      var ty = String(el.getAttribute("type") || "text").toLowerCase();
+      return ty === "text" || ty === "search";
+    }
+    document.addEventListener("focusin", function (e) { if (ok(e.target)) e.target.setAttribute("autocapitalize", "words"); }, true);
+    document.addEventListener("input", function (e) {
+      var el = e.target; if (!ok(el)) return;
+      var v = el.value, nv = v.replace(/(^|\s)([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); });
+      if (nv === v) return;
+      var pos = el.selectionStart;
+      (el.tagName === "TEXTAREA" ? tset : iset).call(el, nv);
+      try { el.setSelectionRange(pos, pos); } catch (x) {}
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }, true);
+  } catch (e) {}
+})();
+
 /* Super Admin ka naam */
 var RB_SUPER_NAME = "Rafiq Raees";
 function rbSessionName() { try { var n = sessionStorage.getItem("rb2-session-name") || ""; if (!n && sessionStorage.getItem("rb2-session-super") === "1") n = RB_SUPER_NAME; return n; } catch (e) { return ""; } }

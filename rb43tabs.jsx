@@ -3773,7 +3773,7 @@ function RbRecordEditor(p) {
     p.onSave(out);
   }
   return (
-    <div style={{ background: "#3A2A22", borderRadius: 8, padding: 10, marginBottom: 8 }}>
+    <div data-nocap="1" style={{ background: "#3A2A22", borderRadius: 8, padding: 10, marginBottom: 8 }}>
       {keys.map(function (k) {
         var orig = item[k];
         var label = <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 2 }}>{k}</div>;
