@@ -64,7 +64,9 @@ var RB_STORE = (function () { try { return localStorage.getItem("raees-store") =
 var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1, "expense-heads": 1 };
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
-function rbSessionName() { try { return sessionStorage.getItem("rb2-session-name") || ""; } catch (e) { return ""; } }
+/* Super Admin ka naam */
+var RB_SUPER_NAME = "Rafiq Raees";
+function rbSessionName() { try { var n = sessionStorage.getItem("rb2-session-name") || ""; if (!n && sessionStorage.getItem("rb2-session-super") === "1") n = RB_SUPER_NAME; return n; } catch (e) { return ""; } }
 function rbIsSuper() { try { return sessionStorage.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
 function rbCanSwitchStore(role) { return role === "admin" && (rbIsSuper() || !rbGet("security", {}).superPin); }
 /* fingerprint / face login - sirf isi phone par (cloud par nahi jata) */
@@ -76,7 +78,7 @@ function rbB64(buf) { var s = ""; var b = new Uint8Array(buf); for (var i = 0; i
 function rbUnB64(str) { var s = atob(str); var b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
 function rbRand(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
 function rbBioRegister(role, isSuper) {
-  var nm = role === "admin" ? (isSuper ? "Super Admin" : "Admin") : "User";
+  var nm = role === "admin" ? (isSuper ? RB_SUPER_NAME : "Admin") : "User";
   return navigator.credentials.create({ publicKey: { challenge: rbRand(32), rp: { name: "Raees Builders" }, user: { id: rbRand(16), name: "raees-" + nm.toLowerCase().replace(" ", "-"), displayName: "Raees Builders " + nm },
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
     authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
