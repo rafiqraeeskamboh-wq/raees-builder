@@ -4269,6 +4269,10 @@ function RbLabourDayLedger(p) {
               </tr>
             </tbody>
           </table>
+          <div style={{ marginTop: 10, padding: "10px 12px", border: "2px solid #B0262B", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FFF6F6" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#222" }}>Total Balance</span>
+            <span style={{ fontSize: 17, fontWeight: 800, color: bal < 0 ? "#1E7A3C" : "#B0262B" }}>Rs {bt(bal)}</span>
+          </div>
           <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>Hafta Jumma se Jumeraat tak. Baqi = hum ne labour ko dena hai. Minus (-) = labour ko zyada diya hua (advance).</div>
           {(tot.advEntries || []).length ? (function () {
             var ab = 0;
