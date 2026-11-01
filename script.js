@@ -1,4 +1,4 @@
-/* Raees Builder - site scripts */
+/* Raees Builders - site scripts */
 (function () {
   'use strict';
 
@@ -56,7 +56,7 @@
         var el = document.getElementById(id);
         return el ? el.value.trim() : '';
       };
-      var msg = 'Assalam-o-Alaikum Raees Builder,' + '\n\n' +
+      var msg = 'Assalam-o-Alaikum Raees Builders,' + '\n\n' +
         'Name: ' + v('cName') + '\n' +
         'Phone: ' + v('cPhone') + '\n' +
         'City / Area: ' + v('cCity') + '\n' +

@@ -1,4 +1,4 @@
-/* Raees Builder App v2 - core: theme, translations, helpers, icons, shared UI */
+/* Raees Builders App v2 - core: theme, translations, helpers, icons, shared UI */
 /* classic script (Babel react preset) - all top level names are global */
 
 var NL = String.fromCharCode(10);
@@ -77,7 +77,7 @@ function rbUnB64(str) { var s = atob(str); var b = new Uint8Array(s.length); for
 function rbRand(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
 function rbBioRegister(role, isSuper) {
   var nm = role === "admin" ? (isSuper ? "Super Admin" : "Admin") : "User";
-  return navigator.credentials.create({ publicKey: { challenge: rbRand(32), rp: { name: "Raees Builder" }, user: { id: rbRand(16), name: "raees-" + nm.toLowerCase().replace(" ", "-"), displayName: "Raees Builder " + nm },
+  return navigator.credentials.create({ publicKey: { challenge: rbRand(32), rp: { name: "Raees Builders" }, user: { id: rbRand(16), name: "raees-" + nm.toLowerCase().replace(" ", "-"), displayName: "Raees Builders " + nm },
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
     authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
     .then(function (cred) { var b = { id: rbB64(cred.rawId), role: role, super: !!isSuper, name: rbSessionName() }; localStorage.setItem(RB_BIO_KEY, JSON.stringify(b)); return b; });
@@ -122,7 +122,7 @@ var TRANSLATIONS = {
   en: {
     purchasedFrom: "Kis se liya? (factory)", ownFactory: "Apni factory (khud banaya)", ratePerPiece: "Rate (fi piece)", purchaseTotal: "Kul raqam (Rs)", purchaseNote: "Ye maal is supplier ke ledger mein jama ho jayega — cement nahi poochi jayegi.", newSupplierName: "Nayi factory ka naam", stockBought: "Kharida",
     cementPromptTitle: "Cement darj karein", cementPendingBanner: "In stock entries par cement darj nahi hui", cementAskLine: "Ab tak jo stock add hua, us par kitni cement (bag) lagi?", laterBtn: "Baad mein", cementReminderToast: "Yaad dahani: stock ki cement darj karein", cementBlocked: "Reminder ignore ho chuka — cement darj kiye baghair aage kaam nahi ho sakta.", saveCementBtn: "Cement save karein", cementSaved: "Cement darj ho gayi", cementForCat: "Cement (bag)", cementSkipZero: "Agar cement nahi lagi to 0 likhein",
-    appName: "Raees Builder", tagline: "جو نام ہے اعتماد کا",
+    appName: "Raees Builders", tagline: "جو نام ہے اعتماد کا",
     navSale: "New Sale", navStock: "Stock", navDues: "Dues", navSettings: "Settings", navSupplier: "Supplier",
     navBills: "Bills", billsSummary: "Bills record", billsCount: "Bills",
     billsTotal: "Total amount", billsReceived: "Received", billsDue: "Balance (Baqi)", noBills: "No bills yet.",
@@ -187,7 +187,7 @@ var TRANSLATIONS = {
   ur: {
     purchasedFrom: "کس سے لیا؟ (فیکٹری)", ownFactory: "اپنی فیکٹری (خود بنایا)", ratePerPiece: "ریٹ (فی پیس)", purchaseTotal: "کل رقم (روپے)", purchaseNote: "یہ مال اس سپلائر کے کھاتے میں جمع ہو جائے گا — سیمنٹ نہیں پوچھی جائے گی۔", newSupplierName: "نئی فیکٹری کا نام", stockBought: "خریدا",
     cementPromptTitle: "سیمنٹ درج کریں", cementPendingBanner: "ان اسٹاک انٹریوں پر سیمنٹ درج نہیں ہوئی", cementAskLine: "اب تک جو اسٹاک شامل ہوا، اس پر کتنی سیمنٹ (بوری) لگی؟", laterBtn: "بعد میں", cementReminderToast: "یاد دہانی: اسٹاک کی سیمنٹ درج کریں", cementBlocked: "یاد دہانی نظرانداز ہو چکی — سیمنٹ درج کیے بغیر آگے کام نہیں ہو سکتا۔", saveCementBtn: "سیمنٹ محفوظ کریں", cementSaved: "سیمنٹ درج ہو گئی", cementForCat: "سیمنٹ (بوری)", cementSkipZero: "اگر سیمنٹ نہیں لگی تو 0 لکھیں",
-    appName: "رئیس بلڈر", tagline: "جو نام ہے اعتماد کا",
+    appName: "رئیس بلڈرز", tagline: "جو نام ہے اعتماد کا",
     navSale: "نئی سیل", navStock: "اسٹاک", navDues: "بقایا", navSettings: "ترتیبات", navSupplier: "سپلائر",
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
     billsTotal: "کل رقم", billsReceived: "وصول شدہ", billsDue: "باقی رقم", noBills: "ابھی تک کوئی بل نہیں۔",
@@ -664,14 +664,29 @@ function RangeFilter(p) {
   );
 }
 
+/* "جو نام ہے اعتماد کا" - naam ke neeche khoobsurat tagline (dono taraf sunehri lakeer aur sitare) */
+function RbTagline(p) {
+  var c = p.color || "#D9A441", sz = p.size || 15;
+  var line = function (dir) { return <span style={{ display: "inline-block", height: 1.5, width: p.lineW || 26, background: "linear-gradient(" + (dir ? "90deg" : "270deg") + ", transparent, " + c + ")", borderRadius: 2 }} />; };
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: p.mt == null ? 0 : p.mt }}>
+      {line(true)}<span style={{ color: c, fontSize: sz * 0.6 }}>&#10022;</span>
+      <span className="rb-urdu" dir="rtl" style={{ color: c, fontSize: sz, fontWeight: 700, lineHeight: 2.1, whiteSpace: "nowrap", fontFamily: "'Noto Nastaliq Urdu', serif", letterSpacing: 0.3 }}>{"جو نام ہے اعتماد کا"}</span>
+      <span style={{ color: c, fontSize: sz * 0.6 }}>&#10022;</span>{line(false)}
+    </div>
+  );
+}
+
 function AppHeader(p) {
   var t = p.t, role = p.role;
   return (
     <div style={{ background: TC.appBg2, borderBottom: "3px solid " + TC.stamp, padding: "16px 18px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div className="rb-display" style={{ color: TC.cream, fontSize: 21, fontWeight: 700 }}>{t("appName")}</div>
-          <div className="rb-urdu" dir="rtl" style={{ color: "#D9A441", fontSize: 15, fontWeight: 500, lineHeight: 2, marginTop: 2, textAlign: "center" }}>{t("tagline")}</div>
+          <div style={{ display: "inline-block", textAlign: "center" }}>
+            <div className="rb-display" style={{ color: TC.cream, fontSize: 23, fontWeight: 700, letterSpacing: 1.5 }}>{t("appName")}</div>
+            <RbTagline color="#D9A441" size={15} mt={-2} />
+          </div>
           <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
             {RB_STORES.map(function (st) {
               var on = RB_STORE === st[0];

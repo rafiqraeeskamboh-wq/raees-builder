@@ -1,4 +1,4 @@
-/* sync.js - Raees Builder
+/* sync.js - Raees Builders
    Aik hi login (Firebase). Dono phone hamesha aik hi data dekhte hain.
    Purana PIN wala lock.js ab load nahi hota. */
 (function () {
@@ -60,7 +60,7 @@
     var w = document.createElement("div");
     w.id = "rbSyncCard";
     w.style.cssText = CARD;
-    w.innerHTML = '<div style="font-size:20px;font-weight:800;letter-spacing:1px;margin-bottom:14px">RAEES BUILDER</div>'
+    w.innerHTML = '<div style="font-size:20px;font-weight:800;letter-spacing:1px;margin-bottom:14px">RAEES BUILDERS</div>'
       + html
       + '<div id="rbErr" style="margin-top:8px;color:#ff8a80;font-size:13px;min-height:18px"></div>';
     root.parentNode.insertBefore(w, root);

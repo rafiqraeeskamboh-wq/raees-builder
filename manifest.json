@@ -1,8 +1,8 @@
 {
   "id": "/raees-builder/",
-  "name": "Raees Builder - Precast Roofing & Installation",
-  "short_name": "Raees Builder",
-  "description": "Precast RCC roof slabs, free site estimation and professional installation services by Raees Builder.",
+  "name": "Raees Builders - Precast Roofing & Installation",
+  "short_name": "Raees Builders",
+  "description": "Precast RCC roof slabs, free site estimation and professional installation services by Raees Builders.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

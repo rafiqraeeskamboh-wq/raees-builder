@@ -1,4 +1,4 @@
-/* Raees Builder App v2 - bill / gate pass / receipt modals + app shell */
+/* Raees Builders App v2 - bill / gate pass / receipt modals + app shell */
 
 function BillModal(p) {
   rbUseBack(true, p.onClose);
@@ -82,8 +82,8 @@ function BillModal(p) {
           backgroundImage: "repeating-linear-gradient(45deg, " + TC.paperDark + " 0, " + TC.paperDark + " 1px, transparent 1px, transparent 14px)"
         }}>
           <div style={{ textAlign: "center", marginTop: 8, marginBottom: 14, borderBottom: "2px solid " + TC.ink, paddingBottom: 10 }}>
-            <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.ink }}>{t("appName")}</div>
-            <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{t("tagline")}</div>
+            <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.ink, letterSpacing: 1 }}>{t("appName")}</div>
+            <RbTagline color="#9A6A12" size={13} />
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 12 }}>
@@ -411,7 +411,8 @@ function GatePassModal(p) {
 
         <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 20, position: "relative" }}>
           <div style={{ textAlign: "center", marginBottom: 14, borderBottom: "2px solid " + TC.ink, paddingBottom: 10 }}>
-            <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.ink }}>{t("appName")}</div>
+            <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.ink, letterSpacing: 1 }}>{t("appName")}</div>
+            <RbTagline color="#9A6A12" size={13} />
             <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{t("gatePassTitle")}</div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 12 }}>
@@ -504,7 +505,8 @@ function PaymentReceiptModal(p) {
 
         <div className="print-area" ref={shotRef} style={{ background: TC.paper, borderRadius: 10, padding: 22, position: "relative" }}>
           <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "2px solid " + TC.ink, paddingBottom: 10 }}>
-            <div className="rb-display" style={{ fontSize: 20, fontWeight: 700, color: TC.ink }}>{t("appName")}</div>
+            <div className="rb-display" style={{ fontSize: 20, fontWeight: 700, color: TC.ink, letterSpacing: 1 }}>{t("appName")}</div>
+            <RbTagline color="#9A6A12" size={12} />
             <div style={{ fontSize: 11, color: TC.inkSoft, marginTop: 3 }}>{t("paymentReceiptTitle")}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -708,7 +710,7 @@ function StartupPinGate(p) {
   return (
     <div style={{ position: "fixed", inset: 0, background: TC.appBg, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}>
       <div style={{ background: TC.appBg2, borderRadius: 14, padding: 24, width: "100%", maxWidth: 340, textAlign: "center" }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: TC.cream, marginBottom: 4 }}>Raees Builder</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: TC.cream, marginBottom: 4 }}>Raees Builders</div>
         <div style={{ fontSize: 13, color: "#A39C8A", marginBottom: 14 }}>{sel ? (sel.name + " - apna PIN darj karein") : (people.length ? "Apna naam chunein, phir PIN darj karein" : (p.deviceLocked ? "User PIN darj karein" : "Login karne ke liye apna PIN darj karein"))}</div>
         {people.length ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>

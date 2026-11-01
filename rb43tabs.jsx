@@ -1,4 +1,4 @@
-/* Raees Builder App v2 - tabs: sale, stock, wastage, dues, gate pass, settings */
+/* Raees Builders App v2 - tabs: sale, stock, wastage, dues, gate pass, settings */
 
 function blankRow(mode) {
   var base = { id: rbUid(), category: "custom", variant: "", desc: "", qty: 1, rate: "" };
@@ -1541,7 +1541,7 @@ function LabourKhataModal(p) {
         }}>
           <div style={{ textAlign: "center", marginBottom: 6 }}>
             <div className="rb-display" style={{ fontSize: 21, fontWeight: 700, color: TC.ink, letterSpacing: .5 }}>{t("appName")}</div>
-            <div className="rb-urdu" style={{ fontSize: 12, color: TC.inkSoft, marginTop: 2 }}>{TRANSLATIONS.en.tagline}</div>
+            <RbTagline color="#9A6A12" size={13} />
           </div>
           <div style={{ borderTop: "2px solid " + TC.ink, margin: "10px 0" }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
@@ -1686,7 +1686,7 @@ function RbLabourWeekCard(p) {
           var el = document.getElementById("rb-lab-week-ledger"); if (!el) return;
           var c = el.cloneNode(true); Array.prototype.forEach.call(c.querySelectorAll("button"), function (b) { b.remove(); });
           var w = window.open("", "_blank"); if (!w) { window.print(); return; }
-          w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'><h2 style='text-align:center;margin:0 0 4px'>" + (p.t ? p.t("appName") : "Raees Builder") + " - Labour Ledger</h2><div style='text-align:center;margin-bottom:10px'>Jumma " + rbDate(wk.from) + " - Jumeraat " + rbDate(wk.to) + "</div>" + c.outerHTML + "</body></html>");
+          w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'><h2 style='text-align:center;margin:0 0 4px'>" + (p.t ? p.t("appName") : "Raees Builders") + " - Labour Ledger</h2><div style='text-align:center;margin-bottom:10px'>Jumma " + rbDate(wk.from) + " - Jumeraat " + rbDate(wk.to) + "</div>" + c.outerHTML + "</body></html>");
           w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
         }} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
         ) : null}
@@ -3290,6 +3290,7 @@ function DayBookReport(p) {
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
       <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")} - {rbStoreName()}</div>
+        <RbTagline color="#9A6A12" size={13} />
         <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book</div>
         <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book === "admin" ? "Bara Cash (Admin)" : "Parchoon Cash (User)"}</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
@@ -3980,6 +3981,7 @@ function RbLedgerModal(p) {
         <RangeFilter t={p.t} range={range} onChange={setRange} />
         <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")}</div>
+          <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Ledger - {p.title}</div>
           {p.subtitle ? <div style={{ textAlign: "center", fontSize: 11.5, color: "#555", marginBottom: 4 }}>{p.subtitle}</div> : null}
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
@@ -4214,6 +4216,7 @@ function RbLabourDayLedger(p) {
         <RangeFilter t={t} range={range} onChange={setRange} />
         <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "12px 8px", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{t("appName")}</div>
+          <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Labour Ledger - {lb.name}</div>
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>

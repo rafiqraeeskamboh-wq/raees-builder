@@ -1,4 +1,4 @@
-/* lock.js - Raees Builder: alag alag login (Admin / Accountant) */
+/* lock.js - Raees Builders: alag alag login (Admin / Accountant) */
 (function () {
   "use strict";
   var K = { admin: "rb2:pin:admin", accountant: "rb2:pin:accountant" };
@@ -38,7 +38,7 @@
     var w = document.createElement("div");
     w.id = "rb-lock";
     w.style.cssText = CARD;
-    w.innerHTML = '<div style="font-size:20px;font-weight:800;letter-spacing:1px;margin-bottom:4px">RAEES BUILDER</div>'
+    w.innerHTML = '<div style="font-size:20px;font-weight:800;letter-spacing:1px;margin-bottom:4px">RAEES BUILDERS</div>'
       + html
       + '<div id="lkErr" style="margin-top:8px;color:#ff8a80;font-size:13px;min-height:18px"></div>';
     root.parentNode.insertBefore(w, root);
