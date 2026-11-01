@@ -1062,7 +1062,7 @@ function RaeesBuilderApp() {
     stockLog.forEach(function (e) { if (e.by === U && e.date === d) add("Stock", variantLabel(t, e.category, e.variant) + " +" + e.qty, null); });
     gatePasses.forEach(function (g) { if (g.createdBy === U && g.date === d) add("Gate pass", "#" + (g.serial || "-") + " " + (g.customerName || ""), null); });
     labourWork.forEach(function (w) { if (w.by === U && w.date === d) add("Labour kaam", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
-    labourPayments.forEach(function (w) { if (w.by === U && w.date === d && w.type !== "advCut") add("Labour payment", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
+    labourPayments.forEach(function (w) { if (w.by === U && w.date === d && w.type !== "advCut" && !w.noCash) add("Labour payment", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
     returnLog.forEach(function (r) { if (r.createdBy === U && r.date === d) add("Maal wapsi", "#" + (r.serial || "-") + " " + (r.customerName || ""), Number(r.amount) || 0); });
     return out;
   }

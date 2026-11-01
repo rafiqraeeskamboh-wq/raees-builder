@@ -3259,7 +3259,7 @@ function DayBookReport(p) {
     }
     if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) });
   });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut") return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
   rec.sort(byDate);
   out.sort(byDate);
   var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
@@ -3413,7 +3413,7 @@ function ReportsTab(p) {
   var labName = {};
   (p.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
   var labWork = (p.labourWork || []).filter(function (x) { return inR(x.date); });
-  var labPays = (p.labourPayments || []).filter(function (x) { return inR(x.date); });
+  var labPays = (p.labourPayments || []).filter(function (x) { return !x.noCash && inR(x.date); });
   var labourCost = labWork.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
 
   var salesTotal = sales.reduce(function (n, x) { return n + (Number(x.totalBill) || 0); }, 0);
@@ -3949,7 +3949,7 @@ function rbPeopleLedgers(all) {
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0 }); });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut") return; P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: (x.type === "advance" ? "Labour ko bara advance - " : "Labour ko payment - ") + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: (x.type === "advance" ? "Labour ko bara advance - " : "Labour ko payment - ") + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
   return Object.keys(map).map(function (k) { map[k].rows = rbLedgerSort(map[k].rows); return map[k]; })
     .sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
 }
