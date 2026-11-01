@@ -89,6 +89,7 @@
   }
 
   function logoutBtn(auth) {
+    return; /* side wala Logout button hata diya (app ke andar upar Logout mojood hai) */
     if (document.getElementById("rbBar")) return;
     var d = document.createElement("div");
     d.id = "rbBar";
