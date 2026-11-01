@@ -4178,8 +4178,14 @@ function RbLabourDayLedger(p) {
   var r = resolveRange(range);
   var oa = Math.max(0, Number(lb.opening) || 0), opening = lb.openingDir === "adv" ? -oa : oa;
   var days = {};
-  function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, work: 0, paid: 0, notes: [] }; return days[k]; }
-  (tot.works || []).forEach(function (x) { var d = D(x.date); var q = rbLabourQty(x); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + q; d.work += Number(x.amount) || 0; });
+  function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, parts: {}, work: 0, paid: 0, notes: [] }; return days[k]; }
+  (tot.works || []).forEach(function (x) {
+    var d = D(x.date); var q = rbLabourQty(x); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + q; d.work += Number(x.amount) || 0;
+    /* hisab dikhane ke liye: kaam x rate = raqam (har kism aur rate alag) */
+    var rt = Number(x.rate) || 0, pk = x.kind + "|" + rt;
+    var pt = d.parts[pk] || (d.parts[pk] = { kind: x.kind, rate: rt, qty: 0, mult: 0, amt: 0 });
+    pt.qty += q; pt.mult += Number(x.qty) || 0; pt.amt += Number(x.amount) || 0;
+  });
   (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
   var list = Object.keys(days).sort().map(function (k) { return days[k]; });
   /* range se pehle ka sab "pichla baqi" */
@@ -4246,7 +4252,9 @@ function RbLabourDayLedger(p) {
                 return (
                   <tr key={i}>
                     <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{kt || (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{Object.keys(d.parts).length ? Object.keys(d.parts).map(function (pk) { var pt = d.parts[pk]; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey);
+                      var txt = pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US") + ")" : pt.qty + " " + unit + " \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US");
+                      return <div key={pk}>{txt} = <b>{rbMoney(pt.amt)}</b></div>; }) : (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
