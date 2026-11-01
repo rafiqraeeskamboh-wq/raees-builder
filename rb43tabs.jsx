@@ -1510,7 +1510,16 @@ function LabourKhataModal(p) {
   var shotRef = React.useRef(null);
   var lgLb = React.useState(false), labLedger = lgLb[0], setLabLedger = lgLb[1];
   var note = function (k) { showToast(k === "busy" ? t("shareBusy") : (k === "saved" ? t("imageSaved") : t("shareFail2"))); };
-  var rows = tot.works.map(function (x) { return { k: "work", id: x.id, date: x.date, kind: x.kind, qty: x.qty, rate: x.rate, extra: x.extra, note: x.note, amount: x.amount }; })
+  /* ek din ka ek kism ka kaam (sab size) ek hi line: kul nagg x rate = raqam */
+  var wRows = [], wIdx = {};
+  tot.works.forEach(function (x) {
+    var gk = x.date + "|" + x.kind + "|" + (Number(x.rate) || 0);
+    if (wIdx[gk] == null) { wIdx[gk] = wRows.length; wRows.push({ k: "work", id: x.id, date: x.date, kind: x.kind, qty: 0, rate: x.rate, extra: 0, note: x.note, amount: 0, n: 0 }); }
+    var g = wRows[wIdx[gk]];
+    g.qty = Math.round((g.qty + (Number(x.qty) || 0)) * 100) / 100; g.extra += Number(x.extra) || 0; g.amount += Number(x.amount) || 0; g.n++;
+    if (g.n > 1) g.note = "";
+  });
+  var rows = wRows
     .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount, note: x.note }; }))
     .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
   var waText = t("khataTitle") + " - " + lb.name + "\n" + t("labourWorkTotal") + ": Rs " + rbMoney(tot.work)
@@ -1575,7 +1584,7 @@ function LabourKhataModal(p) {
               ) : rows.map(function (r) {
                 var kk = r.k === "work" ? labourKind(r.kind) : null;
                 var detail = r.k === "work"
-                  ? t(kk.labelKey) + (r.qty ? " " + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + rbMoney(r.rate) : "") : "") + (Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : "")
+                  ? t(kk.labelKey) + (r.qty ? " " + (r.n > 1 ? "Kul " : "") + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + (Math.round(Number(r.rate) * 100) / 100).toLocaleString("en-US") : "") : "") + (Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : "")
                   : t("khataAdvance");
                 return (
                   <tr key={r.k + r.id} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
