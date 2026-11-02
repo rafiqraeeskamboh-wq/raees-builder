@@ -977,6 +977,11 @@ function RaeesBuilderApp() {
     RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
     showToast("Delete ho gaya - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", RB_COLLS[coll].label);
   }
+  /* Super Admin sirf nigrani / settings ke liye - koi lain-dain nahi */
+  function rbSuperNoTx() {
+    if (role === "admin" && rbIsSuper()) { showToast("Super Admin lain-dain nahi kar sakta - Admin ya User se login karein"); return true; }
+    return false;
+  }
   /* Super Admin: bill seedha delete (gate pass, return aur laga hua advance bhi wapas) - Recycle Bin mein jata hai */
   function superDeleteBill(sale) {
     if (role !== "admin" || !rbIsSuper() || !sale) return;
@@ -1036,6 +1041,7 @@ function RaeesBuilderApp() {
   }
 
   function saveReturn(sale, retItems, reason) {
+    if (rbSuperNoTx()) return;
     var amount = retItems.reduce(function (a, it) { return a + Number(it.amount || 0); }, 0);
     /* maal wapsi par customer ko jo paise wapas diye (jama raqam naye bill se zyada ho gayi) - wo dene wale ki day book se kam */
     var cur0 = sale; sales.forEach(function (x) { if (x.id === sale.id) cur0 = x; });
@@ -1242,6 +1248,7 @@ function RaeesBuilderApp() {
   }
 
   function addPurchase(supplierId, qty, rate, date, materialId, storeId) {
+    if (rbSuperNoTx()) return;
     var b = Number(qty) || 0, r = Number(rate) || 0;
     var mid = materialId || "cement";
     if (!supplierId || b <= 0) return;
@@ -1253,6 +1260,7 @@ function RaeesBuilderApp() {
   }
 
   function addExpense(detail, amount, date) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     var d = String(detail || "").trim();
     if (amt <= 0 || !d) return;
@@ -1263,6 +1271,7 @@ function RaeesBuilderApp() {
   }
 
   function addCashTransfer(amount, date, toWho, name) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     if (amt <= 0) return;
     var to = toWho || (role === "admin" ? "accountant" : "admin");
@@ -1277,6 +1286,7 @@ function RaeesBuilderApp() {
   /* advance receipts: bill se pehle liya gaya advance */
   function advLeft(x) { return (Number(x.amount) || 0) - (Number(x.used) || 0) - (Number(x.returnedAmt) || 0); }
   function addAdvance(name, mobile, amount, date, note) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0, nm = String(name || "").trim();
     if (!nm || amt <= 0) return null;
     var no = advances.reduce(function (m, x) { return Math.max(m, Number(x.no) || 0); }, 0) + 1;
@@ -1287,6 +1297,7 @@ function RaeesBuilderApp() {
     return entry;
   }
   function returnAdvance(id, amount, date) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     if (amt <= 0) return;
     setAdvances(function (a) {
@@ -1304,6 +1315,7 @@ function RaeesBuilderApp() {
   }
 
   function addSupplierPayment(supplierId, amount, date, note) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     if (!supplierId || amt <= 0) return;
     var entry = { id: rbUid(), supplierId: supplierId, amount: amt, note: String(note || "").trim(), date: date || rbToday(), store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
@@ -1383,6 +1395,7 @@ function RaeesBuilderApp() {
   }
 
   function addLabourPayment(labourerId, amount, date, note, type) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     if (!labourerId || amt <= 0) return;
     var entry = { id: rbUid(), labourerId: labourerId, amount: amt, note: String(note || "").trim(), type: (type === "advance" || type === "advCut") ? type : "wage",
@@ -2062,6 +2075,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function saveSale(sale) {
+    if (!sale.editId && rbSuperNoTx()) return;
     var wantSerial = Number(sale.serial) || 0;
     if (wantSerial > 0) {
       var clash = sales.some(function (x) { return x.id !== sale.editId && Number(x.serial) === wantSerial; });
@@ -2161,6 +2175,7 @@ function editStockEntry(id, qty, date) {
      customer ka khata aur wasooli sab khud-ba-khud kaam karein.
      Sale summary aur nafa/nuqsan mein ye shumar nahi hota. */
   function addCustomerOpening(name, amount, dirn, date, mobile) {
+    if (rbSuperNoTx()) return;
     var nm = String(name || "").trim();
     var amt = Math.max(0, Number(amount) || 0);
     if (!nm || amt <= 0) return null;
@@ -2190,6 +2205,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function collectPayment(saleId, amount, date, discount, note) {
+    if (rbSuperNoTx()) return;
     var amt = Number(amount) || 0;
     var disc = Math.max(0, Number(discount) || 0);
     if (amt <= 0 && disc <= 0) return null;
@@ -2226,7 +2242,9 @@ function editStockEntry(id, qty, date) {
   var duesCount = sales.filter(function (s) { return (s.dues || 0) > 0; }).length;
 
   var body = null;
-  if (tab === "sale") {
+  if (tab === "sale" && role === "admin" && rbIsSuper() && !editingSale) {
+    body = <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text="Super Admin naya bill nahi bana sakta. Lain-dain ke liye Admin ya User se login karein." />;
+  } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
