@@ -980,7 +980,7 @@ function RaeesBuilderApp() {
   /* Super Admin: bill seedha delete (gate pass, return aur laga hua advance bhi wapas) - Recycle Bin mein jata hai */
   function superDeleteBill(sale) {
     if (role !== "admin" || !rbIsSuper() || !sale) return;
-    if (!window.confirm("Bill #" + sale.serial + " (" + (sale.customerName || "") + ") delete karna hai?\nRecycle Bin se wapas la sakte hain.")) return;
+    if (!window.confirm("Bill #" + sale.serial + " (" + (sale.customerName || "") + ") delete karna hai?\nIs ka gate pass cancel ho jaye ga aur maal wapas stock mein jama ho jaye ga.\nRecycle Bin se wapas la sakte hain.")) return;
     setSales(function (l) { return l.filter(function (x) { return !(x && x.id === sale.id); }); });
     setGatePasses(function (l) { return l.filter(function (g) { return !(g && g.saleId === sale.id); }); });
     setReturnLog(function (l) { return l.filter(function (r) { return !(r && r.saleId === sale.id); }); });
@@ -995,7 +995,7 @@ function RaeesBuilderApp() {
       });
     });
     setViewingBill(null);
-    showToast("Bill #" + sale.serial + " delete ho gaya - Recycle Bin se wapas la sakte hain");
+    showToast("Bill #" + sale.serial + " delete - gate pass cancel, maal stock mein wapas");
     logActivity("super_delete", "Bill #" + sale.serial + " — " + (sale.customerName || ""));
   }
   function superRestore(entry) {
