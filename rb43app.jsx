@@ -48,6 +48,11 @@ function BillModal(p) {
                 {t("returnLabel")}
               </button>
             ) : null}
+            {p.onDelete ? (
+              <button onClick={function () { p.onDelete(sale); }} style={{ background: "transparent", border: "1.5px solid " + TC.stamp, color: TC.stamp, padding: "6px 12px", borderRadius: 7, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
+                <Ico name="trash" size={13} /> Delete
+              </button>
+            ) : null}
             {canEdit ? (
               <button onClick={function () { onEdit(sale); }} style={{ background: "transparent", border: "1.5px solid " + TC.amber, color: TC.amber, padding: "6px 12px", borderRadius: 7, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
                 <Ico name="pencil" size={13} /> {t("edit")}
@@ -971,6 +976,27 @@ function RaeesBuilderApp() {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
     RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
     showToast("Delete ho gaya - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", RB_COLLS[coll].label);
+  }
+  /* Super Admin: bill seedha delete (gate pass, return aur laga hua advance bhi wapas) - Recycle Bin mein jata hai */
+  function superDeleteBill(sale) {
+    if (role !== "admin" || !rbIsSuper() || !sale) return;
+    if (!window.confirm("Bill #" + sale.serial + " (" + (sale.customerName || "") + ") delete karna hai?\nRecycle Bin se wapas la sakte hain.")) return;
+    setSales(function (l) { return l.filter(function (x) { return !(x && x.id === sale.id); }); });
+    setGatePasses(function (l) { return l.filter(function (g) { return !(g && g.saleId === sale.id); }); });
+    setReturnLog(function (l) { return l.filter(function (r) { return !(r && r.saleId === sale.id); }); });
+    setAdvances(function (l) {
+      return l.map(function (x) {
+        var uses = x.uses || [], back = 0;
+        var keep = uses.filter(function (u) { if (u.saleId === sale.id) { back += Number(u.amount) || 0; return false; } return true; });
+        if (!back) return x;
+        var nx = Object.assign({}, x, { uses: keep, used: Math.max(0, (Number(x.used) || 0) - back) });
+        if (advLeft(nx) > 0) nx.status = "open";
+        return nx;
+      });
+    });
+    setViewingBill(null);
+    showToast("Bill #" + sale.serial + " delete ho gaya - Recycle Bin se wapas la sakte hain");
+    logActivity("super_delete", "Bill #" + sale.serial + " — " + (sale.customerName || ""));
   }
   function superRestore(entry) {
     if (role !== "admin" || !rbIsSuper() || !entry || !RB_COLLS[entry.coll]) return;
@@ -2284,6 +2310,7 @@ function editStockEntry(id, qty, date) {
       {viewingBill ? (
         <BillModal showToast={showToast} t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} onClose={function () { setViewingBill(null); }}
           onEdit={startEditSale}
+          onDelete={(role === "admin" && rbIsSuper()) ? superDeleteBill : null}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
           gatePassEntry={(function () { var found = null; gatePasses.forEach(function (g) { if (g.saleId === viewingBill.id) found = g; }); return found; })()}
           onViewGatePass={function (sale) {
