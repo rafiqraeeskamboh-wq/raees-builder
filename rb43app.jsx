@@ -11,11 +11,30 @@ function BillModal(p) {
   var headers = isCash
     ? [t("sr"), t("description"), t("qty"), t("rate"), t("amount")]
     : [t("sr"), t("description"), t("qty"), t("length"), t("width"), t("sqft"), t("rate"), t("amount")];
+  /* advance receipt se laga paisa: bill par poora advance (jo bill se pehle jama tha) dikhayein */
+  var advInfo = (function () {
+    var used = Number(sale.advanceUsed) || 0; if (used <= 0) return null;
+    var all = []; try { all = rbGet("advances", []) || []; } catch (e) { all = []; }
+    var before = 0, nos = [];
+    (sale.payments || []).forEach(function (pay) {
+      if (!pay.fromAdvance) return;
+      var x = null; all.forEach(function (a) { if (a.id === pay.fromAdvance) x = a; });
+      if (!x) { before += Number(pay.amount) || 0; return; }
+      var prev = 0, uses = x.uses || [];
+      for (var i = 0; i < uses.length; i++) { if (uses[i].saleId === sale.id) break; prev += Number(uses[i].amount) || 0; }
+      before += Math.max(0, (Number(x.amount) || 0) - prev);
+      if (x.no) nos.push("#" + x.no);
+    });
+    var cashPaid = Math.max(0, (Number(sale.advance) || 0) - used);
+    var shown = cashPaid + before;
+    return { shown: shown, used: used, left: Math.max(0, shown - (Number(sale.totalBill) || 0)), nos: nos.join(", ") };
+  })();
+  var shownAdvance = advInfo ? advInfo.shown : sale.advance;
   var waText = t("appName") + NL + (isCash ? t("billNo") : t("gatePassNo")) + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName
     + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
-    + NL + t("advance") + ": Rs " + rbMoney(sale.advance)
-    + NL + t("dues") + ": Rs " + rbMoney(sale.dues);
+    + NL + t("advance") + ": Rs " + rbMoney(shownAdvance)
+    + (advInfo && advInfo.left > 0 ? NL + "Advance baqi (jama): Rs " + rbMoney(advInfo.left) : NL + t("dues") + ": Rs " + rbMoney(sale.dues));
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9080, overflowY: "auto" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
@@ -135,8 +154,11 @@ function BillModal(p) {
           <div style={{ marginTop: 14, borderTop: "2px solid " + TC.ink, paddingTop: 10 }}>
             {sale.discount > 0 ? (<TotalRow label={t("discount")} value={rbMoney(sale.discount)} />) : null}
             <TotalRow label={t("totalBill")} value={rbMoney(sale.totalBill)} bold />
-            <TotalRow label={t("advance")} value={rbMoney(sale.advance)} />
-            <TotalRow label={t("dues")} value={rbMoney(sale.dues)} accent={sale.dues > 0 ? TC.stamp : TC.success} />
+            <TotalRow label={t("advance")} value={rbMoney(shownAdvance)} />
+            {(advInfo && advInfo.left > 0)
+              ? <TotalRow label="Advance baqi (jama)" value={rbMoney(advInfo.left)} accent={TC.success} />
+              : <TotalRow label={t("dues")} value={rbMoney(sale.dues)} accent={sale.dues > 0 ? TC.stamp : TC.success} />}
+            {advInfo ? <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{"Advance" + (advInfo.nos ? " receipt " + advInfo.nos : "") + " se Rs " + rbMoney(advInfo.used) + " is bill mein laga"}</div> : null}
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 34 }}>
