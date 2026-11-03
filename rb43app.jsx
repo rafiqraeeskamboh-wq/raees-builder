@@ -540,9 +540,10 @@ function PaymentReceiptModal(p) {
             <ReceiptLine label={t("customerName")} value={sale.customerName} />
             <ReceiptLine label={sale.isOpening ? t("openingBalance") : (sale.type === "cash" ? t("billNo") : t("gatePassNo"))} value={sale.isOpening ? t("openingTag") : ("#" + sale.serial)} />
             <ReceiptLine label={t("date")} value={rbDate(date)} />
-            <ReceiptLine label={t("amountReceived")} value={"Rs " + rbMoney(amount)} big color={TC.success} />
-            <ReceiptLine label={t("totalBill")} value={"Rs " + rbMoney(sale.totalBill)} />
-            <ReceiptLine label={t("balanceRemaining")} value={"Rs " + rbMoney(sale.dues)} big color={sale.dues > 0 ? TC.stamp : TC.success} />
+            <ReceiptLine label={t("rcTotalBaqaya")} value={"Rs " + rbMoney((Number(sale.dues) || 0) + (Number(amount) || 0) + (Number(data.discount) || 0))} />
+            <ReceiptLine label={t("rcWasooli")} value={"Rs " + rbMoney(amount)} big color={TC.success} />
+            <ReceiptLine label={t("rcDiscount")} value={"Rs " + rbMoney(Number(data.discount) || 0)} />
+            <ReceiptLine label={t("rcBaqaya")} value={"Rs " + rbMoney(sale.dues)} big color={sale.dues > 0 ? TC.stamp : TC.success} />
           </div>
           {isFullyPaid ? (
             <div style={{ marginTop: 16, textAlign: "center", fontSize: 12, color: TC.success, fontWeight: 700 }}>{t("noDuesOnThis")}</div>
