@@ -185,14 +185,15 @@ function rbFotCheck(sale, gpList, returnLog, siteWaste) {
 }
 /* labour chhat fitting: chhat par lagi slab ki fotwari (bill wali nahi) + extra garder Rs 100 fi garder */
 var RB_EXTRA_GARDER_LABOUR = 100;
-function rbLabourFit(sale, gpList, returnLog, siteWaste) {
+function rbLabourFit(sale, gpList, returnLog, siteWaste, garderRate) {
+  var gRate = (garderRate === undefined || garderRate === null || garderRate === "") ? RB_EXTRA_GARDER_LABOUR : (Number(garderRate) || 0);
   var extras = 0, sent = 0, ret = 0, sw = 0, garders = 0;
   (sale.items || []).forEach(function (it) { if (it.category === "slab") extras += rbSlabFt(it.category, it.variant, it.qty); if (it.category === "garden") garders += Number(it.qty) || 0; });
   (gpList || []).forEach(function (g) { (g.items || []).forEach(function (it) { sent += rbSlabFt(it.category, it.variant, it.qty); }); });
   (returnLog || []).forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { ret += rbSlabFt(it.category, it.variant, it.qty); }); });
   (siteWaste || []).forEach(function (w) { if (w.saleId === sale.id) sw += rbSlabFt(w.category, w.variant, w.qty); });
   var ft = Math.max(0, Math.round((sent - extras - ret - sw) * 100) / 100);
-  return { ft: ft, garders: garders, extraAmt: garders * RB_EXTRA_GARDER_LABOUR };
+  return { ft: ft, garders: garders, gRate: gRate, extraAmt: garders * gRate };
 }
 function rbExtraDesc(it) { var d = String((it && it.desc) || ""); if (it && (it.category === "garden" || it.category === "slab") && !/^extra/i.test(d)) return "Extra " + d; return d; }
 function rbGet(key, def) {
