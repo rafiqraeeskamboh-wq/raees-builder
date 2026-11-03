@@ -2326,7 +2326,7 @@ function StockTab(p) {
                     <td className="rb-mono" style={Object.assign({}, td, { textAlign: "left", fontWeight: 700, color: bacha ? "#1C6FA8" : TC.ink })}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</td>
                     <td style={Object.assign({}, td, { fontWeight: 800, fontSize: 15, color: remaining > 0 ? TC.success : (remaining < 0 ? TC.stamp : TC.inkSoft) })}>{remaining}</td>
                     <td style={Object.assign({}, td, { padding: "4px 0" })}>
-                      {canAdd ? <button onClick={function () { setAddingFor(v); }} style={Object.assign({}, ib, { background: TC.garden, color: TC.cream })}><Ico name="plus" size={14} /></button> : null}
+                      {/* ek ek size ka + button band - stock sirf list se add hota hai */}
                       <button onClick={function () { setHistoryFor(v); }} style={Object.assign({}, ib, { background: TC.paperDark, color: TC.ink })}><Ico name="history" size={14} /></button>
                       {canEdit ? <button onClick={function () { setEditingVariant(v); }} style={Object.assign({}, ib, { background: "transparent", color: TC.inkSoft })}><Ico name="pencil" size={13} /></button> : null}
                     </td>
@@ -2357,14 +2357,6 @@ function StockTab(p) {
                 color: TC.inkSoft, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
               }}>
                 <Ico name="pencil" size={15} />
-              </button>
-              ) : null}
-              {canAdd ? (
-              <button onClick={function () { setAddingFor(v); }} style={{
-                width: 32, height: 32, borderRadius: 8, border: "none", background: TC.garden,
-                color: TC.cream, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-              }}>
-                <Ico name="plus" size={17} />
               </button>
               ) : null}
               <button onClick={function () { setHistoryFor(v); }} style={{
