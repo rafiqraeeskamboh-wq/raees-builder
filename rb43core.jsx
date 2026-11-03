@@ -110,6 +110,8 @@ var rbSS = (function () {
     touch: function () { var d = load(); if (!Object.keys(d.vals).length) return; d.last = Date.now(); save(d); },
     expired: function () { var d = null; try { d = JSON.parse(localStorage.getItem(RB_SESS_LS) || "null"); } catch (e) {} return !!(d && d.last && Date.now() - d.last > RB_SESS_MS); }
   };
+  /* pehle se login (purana tareeqa) ho to usay yaad rakh lo */
+  try { var d0 = load(); if (!Object.keys(d0.vals).length) { ["rb2-session-role", "rb2-session-super", "rb2-session-name"].forEach(function (k) { var v = sessionStorage.getItem(k); if (v !== null) d0.vals[k] = v; }); if (Object.keys(d0.vals).length) { d0.last = Date.now(); save(d0); } } } catch (e) {}
   try {
     var lastT = 0;
     var act = function () { var n = Date.now(); if (n - lastT > 30000) { lastT = n; api.touch(); } };
