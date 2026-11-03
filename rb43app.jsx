@@ -818,7 +818,9 @@ function SiteWasteModal(p) {
   );
 }
 
-function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) {
+/* pemaish bill ke room / kitchen (pemaish wali lines) gate pass mein nahi jatin - sirf asal maal */
+function rbIsAreaRoom(sale, it) { return !!sale && sale.type !== "cash" && it.category === "custom"; }
+function saleItemsToGateItems(sale) { return (sale.items || []).filter(function (it) { return !rbIsAreaRoom(sale, it); }).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) {
   /* List-wise gate pass: har size ke aage tadaad, bill wali tadaad pehle se bhari hoti hai */
   var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor, urdu = lang === "ur";
   var init = (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
@@ -1065,6 +1067,19 @@ function RaeesBuilderApp() {
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var grS = React.useState(null), gpReturnFor = grS[0], setGpReturnFor = grS[1];
   var gxS = React.useState(null), gpExtraFor = gxS[0], setGpExtraFor = gxS[1];
+  /* purane pemaish gate passes se room / kitchen wali lines hatao (bill ki pemaish thi, maal nahi) */
+  React.useEffect(function () {
+    var byId = {}; sales.forEach(function (x) { byId[x.id] = x; });
+    var changed = false;
+    var next = gatePasses.map(function (g) {
+      var sl = byId[g.saleId]; if (!sl || sl.type === "cash") return g;
+      var rooms = {}; (sl.items || []).forEach(function (it) { if (rbIsAreaRoom(sl, it)) rooms[String(it.desc || "").trim().toLowerCase()] = 1; });
+      var keep = (g.items || []).filter(function (it) { return !(it.category === "custom" && rooms[String(it.desc || "").trim().toLowerCase()]); });
+      if (keep.length === (g.items || []).length) return g;
+      changed = true; return Object.assign({}, g, { items: keep });
+    });
+    if (changed) setGatePasses(next);
+  }, []);
   var swS = React.useState(function () { return rbGet("site-wastage", []); }), siteWaste = swS[0], setSiteWaste = swS[1];
   var swF = React.useState(null), siteWasteFor = swF[0], setSiteWasteFor = swF[1];
   React.useEffect(function () { rbSet("site-wastage", siteWaste); }, [siteWaste]);
