@@ -37,7 +37,7 @@ function ItemRow(p) {
             <input value={row.desc} onChange={function (e) { onChange({ desc: e.target.value }); }}
               placeholder={t("description")} style={Object.assign({}, rbInput(), { padding: "5px 8px", fontSize: 12.5, width: 140 })} />
           ) : (
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: TC.ink }}>{row.desc}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: TC.ink }}>{(!isPiece && (row.category === "garden" || row.category === "slab")) ? rbExtraDesc(row) : row.desc}</span>
           )}
         </div>
         <button onClick={p.onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}>

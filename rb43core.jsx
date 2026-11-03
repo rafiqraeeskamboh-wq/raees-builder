@@ -183,6 +183,7 @@ function rbFotCheck(sale, gpList, returnLog, siteWaste) {
   var labour = r2(sent - extras - ret - sw); bill = r2(bill);
   return { bill: bill, labour: labour, diff: r2(bill - labour), ok: labour <= bill + 0.001 };
 }
+function rbExtraDesc(it) { var d = String((it && it.desc) || ""); if (it && (it.category === "garden" || it.category === "slab") && !/^extra/i.test(d)) return "Extra " + d; return d; }
 function rbGet(key, def) {
   try {
     var r = localStorage.getItem(rbKey(key));
