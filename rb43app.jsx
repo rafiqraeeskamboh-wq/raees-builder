@@ -656,10 +656,11 @@ function GpReturnModal(p) {
     });
     var back = {};
     returnLog.forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { var k = it.category + "|" + it.variant; back[k] = (back[k] || 0) + (Number(it.qty) || 0); }); });
+    var sw = {}; (p.siteWaste || []).forEach(function (w) { if (w.saleId !== sale.id) return; var k = w.category + "|" + w.variant; sw[k] = (sw[k] || 0) + (Number(w.qty) || 0); });
     return order.map(function (o) {
       var k = o.category + "|" + o.variant, unit = 0;
       (sale.items || []).forEach(function (it) { var q = Number(it.qty) || 0; if (!unit && it.category === o.category && String(it.variant) === String(o.variant) && q > 0) unit = Number(it.amount || 0) / q; });
-      return { key: k, category: o.category, variant: o.variant, desc: variantLabel(t, o.category, o.variant), unit: unit, sent: gone[k], back: back[k] || 0, max: Math.max(0, gone[k] - (back[k] || 0)), qty: "" };
+      return { key: k, category: o.category, variant: o.variant, desc: variantLabel(t, o.category, o.variant), unit: unit, sent: gone[k], back: back[k] || 0, max: Math.max(0, gone[k] - (back[k] || 0) - (sw[k] || 0)), qty: "" };
     });
   }), rows = a[0], setRows = a[1];
   var b = React.useState(""), reason = b[0], setReason = b[1];
@@ -718,6 +719,99 @@ function GpReturnModal(p) {
             style={{ width: "100%", marginTop: 12, background: picked > 0 ? TC.stamp : TC.concrete, color: "#FFF", border: "none", borderRadius: 8, padding: "11px 0", fontWeight: 700, fontSize: 14, cursor: picked > 0 ? "pointer" : "default" }}>
             {t("returnLabel")}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Gate pass ka maal jo site par zaya hua - sirf record (stock / bill par asar nahi) */
+function SiteWasteModal(p) {
+  rbUseBack(true, p.onClose);
+  var t = p.t, sale = p.sale, entry = p.entry || {}, onClose = p.onClose, returnLog = p.returnLog || [], siteWaste = p.siteWaste || [];
+  var mine = siteWaste.filter(function (w) { return w.saleId === sale.id; });
+  function build() {
+    var gone = {}, order = [];
+    (entry.items || []).forEach(function (it) {
+      if (it.category !== "garden" && it.category !== "slab") return;
+      var k = it.category + "|" + it.variant;
+      if (!(k in gone)) { gone[k] = 0; order.push({ category: it.category, variant: it.variant }); }
+      gone[k] += Number(it.qty) || 0;
+    });
+    var back = {}, wasted = {};
+    returnLog.forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { var k = it.category + "|" + it.variant; back[k] = (back[k] || 0) + (Number(it.qty) || 0); }); });
+    mine.forEach(function (w) { var k = w.category + "|" + w.variant; wasted[k] = (wasted[k] || 0) + (Number(w.qty) || 0); });
+    return order.map(function (o) {
+      var k = o.category + "|" + o.variant;
+      return { key: k, category: o.category, variant: o.variant, desc: variantLabel(t, o.category, o.variant), sent: gone[k], back: back[k] || 0, wasted: wasted[k] || 0, max: Math.max(0, gone[k] - (back[k] || 0) - (wasted[k] || 0)), qty: "" };
+    });
+  }
+  var a = React.useState(build), rows = a[0], setRows = a[1];
+  React.useEffect(function () { setRows(build()); }, [siteWaste.length]);
+  var b = React.useState(""), reason = b[0], setReason = b[1];
+  var c = React.useState(rbToday()), date = c[0], setDate = c[1];
+  var picked = rows.reduce(function (x, r) { return x + (Number(r.qty) || 0); }, 0);
+  function setQty(key, v) {
+    setRows(function (list) { return list.map(function (r) {
+      if (r.key !== key) return r;
+      if (v === "") return Object.assign({}, r, { qty: "" });
+      var n = Math.floor(Number(v) || 0); if (n < 0) n = 0; if (n > r.max) n = r.max;
+      return Object.assign({}, r, { qty: n });
+    }); });
+  }
+  function save() {
+    var list = [];
+    rows.forEach(function (r) { var q = Number(r.qty) || 0; if (q > 0) list.push({ category: r.category, variant: r.variant, qty: q }); });
+    if (!list.length) return;
+    p.onSave(sale, entry, list, date, reason);
+  }
+  var anyLeft = rows.some(function (r) { return r.max > 0; });
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9090, overflowY: "auto" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: TC.cream, display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13 }}>
+            <Ico name="arrowleft" size={16} /> {t("back")}
+          </button>
+          <span style={{ color: TC.cream, fontWeight: 700, fontSize: 14 }}>{t("siteWasteTitle")}</span>
+        </div>
+        <div style={{ background: TC.paper, borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 12.5, color: TC.ink, fontWeight: 700 }}>{sale.customerName} - #{sale.serial}</div>
+          <div style={{ fontSize: 11, color: TC.inkSoft, margin: "4px 0 10px" }}>{t("siteWasteHint")}</div>
+          {!anyLeft ? (<div style={{ fontSize: 12.5, color: TC.stamp, fontWeight: 600, padding: "10px 0" }}>{t("siteWasteNone")}</div>) : null}
+          {rows.map(function (r) {
+            return (
+              <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: "1px dashed " + TC.paperLine, padding: "8px 0" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: TC.ink, fontWeight: 600 }}>{r.desc || "-"}</div>
+                  <div style={{ fontSize: 11, color: TC.inkSoft }}>{t("gatePassTitle")}: {r.sent}{r.back > 0 ? (" · " + t("gpReturnDone") + ": " + r.back) : ""}{r.wasted > 0 ? (" · " + t("siteWasteDone") + ": " + r.wasted) : ""}</div>
+                </div>
+                <input type="number" inputMode="numeric" value={r.qty} disabled={r.max <= 0}
+                  onChange={function (e) { setQty(r.key, e.target.value); }}
+                  placeholder={"0-" + r.max} style={Object.assign({}, rbInput(), { width: 92 })} />
+              </div>
+            );
+          })}
+          <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={Object.assign({}, rbInput(), { marginTop: 12 })} />
+          <input value={reason} onChange={function (e) { setReason(e.target.value); }} placeholder={t("reason")}
+            style={Object.assign({}, rbInput(), { marginTop: 8 })} />
+          <button onClick={save} disabled={picked <= 0}
+            style={{ width: "100%", marginTop: 12, background: picked > 0 ? TC.stamp : TC.concrete, color: "#FFF", border: "none", borderRadius: 8, padding: "11px 0", fontWeight: 700, fontSize: 14, cursor: picked > 0 ? "pointer" : "default" }}>
+            {t("siteWasteSave")}
+          </button>
+          {mine.length > 0 ? (
+            <div style={{ marginTop: 14, borderTop: "1px solid " + TC.paperLine, paddingTop: 8 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, marginBottom: 4 }}>{t("siteWasteOld")}</div>
+              {mine.map(function (w) {
+                return (
+                  <div key={w.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11.5, color: TC.inkSoft, padding: "4px 0" }}>
+                    <span>{rbDate(w.date)} · {variantLabel(t, w.category, w.variant)} · <b style={{ color: TC.stamp }}>{w.qty}</b>{w.reason ? " · " + w.reason : ""}{w.byName ? " · " + w.byName : ""}</span>
+                    {p.onDelete ? (<button onClick={function () { if (window.confirm(t("confirmDelSiteWaste"))) p.onDelete(w.id); }} style={{ background: "none", border: "none", color: TC.stamp, cursor: "pointer", padding: 2 }}><Ico name="trash" size={13} /></button>) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -970,6 +1064,18 @@ function RaeesBuilderApp() {
   var dvS = React.useState(function () { return rbGet("day-verify", {}) || {}; }), dayVerify = dvS[0], setDayVerify = dvS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var grS = React.useState(null), gpReturnFor = grS[0], setGpReturnFor = grS[1];
+  var swS = React.useState(function () { return rbGet("site-wastage", []); }), siteWaste = swS[0], setSiteWaste = swS[1];
+  var swF = React.useState(null), siteWasteFor = swF[0], setSiteWasteFor = swF[1];
+  React.useEffect(function () { rbSet("site-wastage", siteWaste); }, [siteWaste]);
+  function addSiteWaste(sale, entry, list, date, reason) {
+    if (rbSuperNoTx()) return;
+    var d = date || rbToday(), rs = String(reason || "").trim(), now = new Date().toISOString();
+    var rows = list.map(function (it) { return { id: rbUid(), saleId: sale.id, gatePassId: entry.id || null, serial: sale.serial, customerName: sale.customerName, category: it.category, variant: it.variant, qty: Number(it.qty) || 0, date: d, reason: rs, by: role, byName: rbSessionName(), createdAt: now }; });
+    setSiteWaste(function (a) { return rows.concat(a); });
+    showToast(t("siteWasteSaved"));
+    logActivity("wastage_logged", "Site: " + sale.customerName + " #" + sale.serial + " - " + rows.map(function (r) { return variantLabel(t, r.category, r.variant) + " " + r.qty; }).join(", "));
+  }
+  function deleteSiteWaste(id) { setSiteWaste(function (a) { return a.filter(function (x) { return x.id !== id; }); }); }
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
   var vr = React.useState(null), viewingReceipt = vr[0], setViewingReceipt = vr[1];
@@ -2318,7 +2424,7 @@ function editStockEntry(id, qty, date) {
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
     trackMute.current = true; setTrash([]); setMaterialOpening({}); setDayVerify({});
-    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]);
+    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]); setSiteWaste([]);
     showToast(t("clearData"));
   }
 
@@ -2330,14 +2436,14 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} siteWaste={siteWaste} onSiteWaste={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setSiteWasteFor({ sale: sale, entry: entry }); }} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
     body = can("wastage") ? <WastageTab t={t} stockTotals={stockTotals} remainingFor={remainingFor} variantsFor={variantsFor}
-          wastageLog={wastageLog} onLogWastage={addWastageEntry} onConvertStock={addConversionEntry} />
+          wastageLog={wastageLog} siteWaste={siteWaste} onLogWastage={addWastageEntry} onConvertStock={addConversionEntry} />
       : <EmptyState icon={<Ico name="trash" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "supplier") {
     body = can("supplier") ? <SupplierTab t={t} suppliers={suppliers} supplierTotals={supplierTotals} materials={materials}
@@ -2404,8 +2510,10 @@ function editStockEntry(id, qty, date) {
           onSave={saveCementForPending} onLater={laterCement} />
       ) : null}
 
-      {pinModalOpen ? (<PinPromptModal title="User PIN darj karein" onSubmit={confirmUserPin} onCancel={function () { setPinModalOpen(false); }} />) : null}{adminPinModalOpen ? (<PinPromptModal title="Admin PIN darj karein" onSubmit={confirmAdminPin} onCancel={function () { setAdminPinModalOpen(false); }} />) : null}{gpReturnFor ? (
-        <GpReturnModal t={t} sale={(function () { var c = gpReturnFor.sale; sales.forEach(function (x) { if (x.id === gpReturnFor.sale.id) c = x; }); return c; })()} entry={gpReturnFor.entry} returnLog={returnLog} onClose={function () { setGpReturnFor(null); }} onSave={saveReturn} />
+      {pinModalOpen ? (<PinPromptModal title="User PIN darj karein" onSubmit={confirmUserPin} onCancel={function () { setPinModalOpen(false); }} />) : null}{adminPinModalOpen ? (<PinPromptModal title="Admin PIN darj karein" onSubmit={confirmAdminPin} onCancel={function () { setAdminPinModalOpen(false); }} />) : null}{siteWasteFor ? (
+        <SiteWasteModal t={t} sale={siteWasteFor.sale} entry={siteWasteFor.entry} returnLog={returnLog} siteWaste={siteWaste} onClose={function () { setSiteWasteFor(null); }} onSave={addSiteWaste} onDelete={role === "admin" ? deleteSiteWaste : null} />
+      ) : null}{gpReturnFor ? (
+        <GpReturnModal t={t} sale={(function () { var c = gpReturnFor.sale; sales.forEach(function (x) { if (x.id === gpReturnFor.sale.id) c = x; }); return c; })()} entry={gpReturnFor.entry} returnLog={returnLog} siteWaste={siteWaste} onClose={function () { setGpReturnFor(null); }} onSave={saveReturn} />
       ) : null}{returnFor ? (
         <ReturnModal t={t} sale={returnFor} onClose={function () { setReturnFor(null); }} onSave={saveReturn} />
       ) : null}
