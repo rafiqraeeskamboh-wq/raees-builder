@@ -642,6 +642,88 @@ function ReturnModal(p) {
   );
 }
 
+/* Bills list se gate pass ki wapsi: sirf garder / slab, jitna gate pass mein gaya (pehle ki wapsi minus) */
+function GpReturnModal(p) {
+  rbUseBack(true, p.onClose);
+  var t = p.t, sale = p.sale, entry = p.entry || {}, onClose = p.onClose, onSave = p.onSave, returnLog = p.returnLog || [];
+  var a = React.useState(function () {
+    var gone = {}, order = [];
+    (entry.items || []).forEach(function (it) {
+      if (it.category !== "garden" && it.category !== "slab") return;
+      var k = it.category + "|" + it.variant;
+      if (!(k in gone)) { gone[k] = 0; order.push({ category: it.category, variant: it.variant }); }
+      gone[k] += Number(it.qty) || 0;
+    });
+    var back = {};
+    returnLog.forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { var k = it.category + "|" + it.variant; back[k] = (back[k] || 0) + (Number(it.qty) || 0); }); });
+    return order.map(function (o) {
+      var k = o.category + "|" + o.variant, unit = 0;
+      (sale.items || []).forEach(function (it) { var q = Number(it.qty) || 0; if (!unit && it.category === o.category && String(it.variant) === String(o.variant) && q > 0) unit = Number(it.amount || 0) / q; });
+      return { key: k, category: o.category, variant: o.variant, desc: variantLabel(t, o.category, o.variant), unit: unit, sent: gone[k], back: back[k] || 0, max: Math.max(0, gone[k] - (back[k] || 0)), qty: "" };
+    });
+  }), rows = a[0], setRows = a[1];
+  var b = React.useState(""), reason = b[0], setReason = b[1];
+  var picked = rows.reduce(function (x, r) { return x + (Number(r.qty) || 0); }, 0);
+  var total = rows.reduce(function (x, r) { return x + (Number(r.qty) || 0) * r.unit; }, 0);
+  function setQty(key, v) {
+    setRows(function (list) { return list.map(function (r) {
+      if (r.key !== key) return r;
+      if (v === "") return Object.assign({}, r, { qty: "" });
+      var n = Math.floor(Number(v) || 0); if (n < 0) n = 0; if (n > r.max) n = r.max;
+      return Object.assign({}, r, { qty: n });
+    }); });
+  }
+  function save() {
+    var list = [];
+    rows.forEach(function (r) { var q = Number(r.qty) || 0; if (q > 0) list.push({ category: r.category, variant: r.variant, desc: r.desc, qty: q, amount: Math.round(q * r.unit) }); });
+    if (!list.length) return;
+    onSave(sale, list, (reason ? reason + " - " : "") + "Gate pass #" + (entry.serial || sale.serial) + " wapsi");
+  }
+  var anyLeft = rows.some(function (r) { return r.max > 0; });
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9090, overflowY: "auto" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: TC.cream, display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13 }}>
+            <Ico name="arrowleft" size={16} /> {t("back")}
+          </button>
+          <span style={{ color: TC.cream, fontWeight: 700, fontSize: 14 }}>{t("gpReturnTitle")}</span>
+        </div>
+        <div style={{ background: TC.paper, borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 12.5, color: TC.ink, fontWeight: 700 }}>{sale.customerName} - #{sale.serial}</div>
+          <div style={{ fontSize: 11, color: TC.inkSoft, margin: "4px 0 10px" }}>{t("gpReturnHint")}</div>
+          {!anyLeft ? (<div style={{ fontSize: 12.5, color: TC.stamp, fontWeight: 600, padding: "10px 0" }}>{t("gpReturnNone")}</div>) : null}
+          {rows.map(function (r) {
+            return (
+              <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: "1px dashed " + TC.paperLine, padding: "8px 0" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: TC.ink, fontWeight: 600 }}>{r.desc || "-"}</div>
+                  <div style={{ fontSize: 11, color: TC.inkSoft }}>{t("gatePassTitle")}: {r.sent}{r.back > 0 ? (" · " + t("gpReturnDone") + ": " + r.back) : ""}</div>
+                </div>
+                <input type="number" inputMode="numeric" value={r.qty} disabled={r.max <= 0}
+                  onChange={function (e) { setQty(r.key, e.target.value); }}
+                  placeholder={"0-" + r.max} style={Object.assign({}, rbInput(), { width: 92 })} />
+              </div>
+            );
+          })}
+          <input value={reason} onChange={function (e) { setReason(e.target.value); }} placeholder={t("returnReason")}
+            style={Object.assign({}, rbInput(), { marginTop: 12 })} />
+          {total > 0 ? (
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontWeight: 700, color: TC.ink }}>
+              <span>{t("returnTotal")}</span>
+              <span className="rb-mono">Rs {rbMoney(Math.round(total))}</span>
+            </div>
+          ) : null}
+          <button onClick={save} disabled={picked <= 0}
+            style={{ width: "100%", marginTop: 12, background: picked > 0 ? TC.stamp : TC.concrete, color: "#FFF", border: "none", borderRadius: 8, padding: "11px 0", fontWeight: 700, fontSize: 14, cursor: picked > 0 ? "pointer" : "default" }}>
+            {t("returnLabel")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) {
   /* List-wise gate pass: har size ke aage tadaad, bill wali tadaad pehle se bhari hoti hai */
   var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor, urdu = lang === "ur";
@@ -887,6 +969,7 @@ function RaeesBuilderApp() {
   var moS = React.useState(function () { return rbGet("material-opening", {}) || {}; }), materialOpening = moS[0], setMaterialOpening = moS[1];
   var dvS = React.useState(function () { return rbGet("day-verify", {}) || {}; }), dayVerify = dvS[0], setDayVerify = dvS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
+  var grS = React.useState(null), gpReturnFor = grS[0], setGpReturnFor = grS[1];
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
   var vr = React.useState(null), viewingReceipt = vr[0], setViewingReceipt = vr[1];
@@ -1060,7 +1143,7 @@ function RaeesBuilderApp() {
           dues: Math.max(0, newTotal - newAdvance), returnedTotal: Number(x.returnedTotal || 0) + amount });
       });
     });
-    setReturnFor(null);
+    setReturnFor(null); setGpReturnFor(null);
     showToast(t("returnSaved"));
     logActivity("return_created", sale.customerName + " - Rs " + rbMoney(amount));
   }
@@ -2247,7 +2330,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
@@ -2321,7 +2404,9 @@ function editStockEntry(id, qty, date) {
           onSave={saveCementForPending} onLater={laterCement} />
       ) : null}
 
-      {pinModalOpen ? (<PinPromptModal title="User PIN darj karein" onSubmit={confirmUserPin} onCancel={function () { setPinModalOpen(false); }} />) : null}{adminPinModalOpen ? (<PinPromptModal title="Admin PIN darj karein" onSubmit={confirmAdminPin} onCancel={function () { setAdminPinModalOpen(false); }} />) : null}{returnFor ? (
+      {pinModalOpen ? (<PinPromptModal title="User PIN darj karein" onSubmit={confirmUserPin} onCancel={function () { setPinModalOpen(false); }} />) : null}{adminPinModalOpen ? (<PinPromptModal title="Admin PIN darj karein" onSubmit={confirmAdminPin} onCancel={function () { setAdminPinModalOpen(false); }} />) : null}{gpReturnFor ? (
+        <GpReturnModal t={t} sale={(function () { var c = gpReturnFor.sale; sales.forEach(function (x) { if (x.id === gpReturnFor.sale.id) c = x; }); return c; })()} entry={gpReturnFor.entry} returnLog={returnLog} onClose={function () { setGpReturnFor(null); }} onSave={saveReturn} />
+      ) : null}{returnFor ? (
         <ReturnModal t={t} sale={returnFor} onClose={function () { setReturnFor(null); }} onSave={saveReturn} />
       ) : null}
 
