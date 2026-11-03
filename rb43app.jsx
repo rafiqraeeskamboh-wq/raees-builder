@@ -1094,6 +1094,12 @@ function RaeesBuilderApp() {
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var grS = React.useState(null), gpReturnFor = grS[0], setGpReturnFor = grS[1];
   var gxS = React.useState(null), gpExtraFor = gxS[0], setGpExtraFor = gxS[1];
+  /* purane bills jin mein sirf point (1 rupay se kam) baqi reh gaya - nil karo */
+  React.useEffect(function () {
+    var bad = sales.some(function (x) { var d = Number(x.dues) || 0; return d > 0 && d < 1; });
+    if (!bad) return;
+    setSales(function (prev) { return prev.map(function (x) { var d = Number(x.dues) || 0; if (!(d > 0 && d < 1)) return x; var nt = Math.max(0, (Number(x.totalBill) || 0) - d); return Object.assign({}, x, { totalBill: nt, discount: (Number(x.discount) || 0) + d, advance: Math.min(nt, Number(x.advance) || 0), dues: 0 }); }); });
+  }, [sales]);
   /* purane pemaish gate passes se room / kitchen wali lines hatao (bill ki pemaish thi, maal nahi) */
   React.useEffect(function () {
     var byId = {}; sales.forEach(function (x) { byId[x.id] = x; });
@@ -2494,6 +2500,8 @@ function editStockEntry(id, qty, date) {
       var newTotal = Math.max(0, Number(s.totalBill || 0) - disc);
       var newAdvance = Math.min(newTotal, (s.advance || 0) + amt);
       var newDues = Math.max(0, newTotal - newAdvance);
+      /* 1 rupay se kam bacha (point) ho to wo bhi khatam - bill nil */
+      if (newDues > 0 && newDues < 1) { disc += newDues; newTotal = Math.max(0, newTotal - newDues); newAdvance = Math.min(newTotal, newAdvance); newDues = 0; }
       var payments = (s.payments || []).concat([{ id: rbUid(), amount: amt, discount: disc, date: date || rbToday(), by: role, byName: rbSessionName(), note: String(note || "").trim() }]);
       updated = Object.assign({}, s, { totalBill: newTotal, discount: Number(s.discount || 0) + disc, advance: newAdvance, dues: newDues, payments: payments });
       return updated;
