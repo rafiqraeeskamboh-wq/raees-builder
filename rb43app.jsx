@@ -138,9 +138,9 @@ function BillModal(p) {
                     <td style={{ padding: "5px 3px" }}>{i + 1}</td>
                     <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{it.desc}</td>
                     <td style={{ padding: "5px 3px" }}>{it.qty}</td>
-                    {!isCash ? <td style={{ padding: "5px 3px" }}>{it.length}</td> : null}
-                    {!isCash ? <td style={{ padding: "5px 3px" }}>{it.width}</td> : null}
-                    {!isCash ? <td style={{ padding: "5px 3px" }}>{(Number(it.sqft) || 0).toFixed(1)}</td> : null}
+                    {!isCash ? <td style={{ padding: "5px 3px" }}>{it.category === "slab" ? "-" : it.length}</td> : null}
+                    {!isCash ? <td style={{ padding: "5px 3px" }}>{(it.category === "slab" || it.category === "garden") ? "-" : it.width}</td> : null}
+                    {!isCash ? <td style={{ padding: "5px 3px" }}>{(function () { var cc = rbRowCalc(it, "area"); return cc.kind === "ft" ? (Math.round(cc.units * 100) / 100) + " ft" : (cc.kind === "nagg" ? cc.units + " " + t("unitNagg") : (Number(it.sqft) || 0).toFixed(1)); })()}</td> : null}
                     <td style={{ padding: "5px 3px" }}>{rbMoney(it.rate)}</td>
                     <td style={{ padding: "5px 3px", fontWeight: 700 }}>{rbMoney(it.amount)}</td>
                   </tr>
