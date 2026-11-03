@@ -3649,6 +3649,22 @@ function ReportsTab(p) {
 function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+/* Mehfooz backup: dono store ka data, Super Admin PIN se taala-band (AES-256). File sirf phone / computer par - GitHub ya kisi aur jagah nahi jati. */
+function rbMakeFullBackup() { var st = {}; RB_STORES.forEach(function (x) { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKeyFor(x[0], k)); if (v !== null) d[k] = v; }); st[x[0]] = d; }); return { app: "raees-builder", v: 2, at: new Date().toISOString(), stores: st }; }
+function rbB64(buf) { var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192)); return btoa(s); }
+function rbUnB64(str) { var s = atob(str), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+function rbBackupKey(pin, salt) { var enc = new TextEncoder(); return crypto.subtle.importKey("raw", enc.encode("rb-backup:" + pin), "PBKDF2", false, ["deriveKey"]).then(function (base) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 600000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); }); }
+function rbEncryptBackup(obj, pin) { var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)); return rbBackupKey(pin, salt).then(function (key) { return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj))); }).then(function (ct) { return { app: "raees-builder", enc: 1, at: obj.at, salt: rbB64(salt), iv: rbB64(iv), data: rbB64(ct) }; }); }
+function rbDecryptBackup(file, pin) { return rbBackupKey(pin, rbUnB64(file.salt)).then(function (key) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: rbUnB64(file.iv) }, key, rbUnB64(file.data)); }).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); }); }
+function rbDownloadSafeBackup(pin, done) {
+  if (!(window.crypto && crypto.subtle)) { done("Is phone par mehfooz backup nahi ban sakta"); return; }
+  var full = rbMakeFullBackup();
+  rbEncryptBackup(full, pin).then(function (f) {
+    var blob = new Blob([JSON.stringify(f)], { type: "application/json" }); var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "raees-backup-" + String(full.at).slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove();
+    done("Backup file download ho gayi (dono store). Ye file Super Admin PIN ke baghair nahi khulti. Ise apne phone / computer / USB par rakhein - GitHub ya WhatsApp group par na dalein.");
+  }).catch(function () { done("Backup nahi ban saka"); });
+}
 function rbDownloadBackup(b) { try { var blob = new Blob([JSON.stringify(b)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "raees-backup-" + b.store + "-" + String(b.at).slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { window.alert("Download nahi ho saka"); } }
 function RbSuperDataTools(p) {
   var a = React.useState(0), step = a[0], setStep = a[1];
@@ -3669,6 +3685,7 @@ function RbSuperDataTools(p) {
     setMsg(ok ? "Data saaf ho gaya. Is ka backup isi phone par mehfooz hai - neeche se wapas laa sakte hain." : "Data saaf ho gaya. (Backup save nahi ho saka)");
   }
   function restore(backup) {
+    if (backup && backup.stores) { var sd = backup.stores[RB_STORE]; if (!sd) { setMsg("Is backup mein is store ka data nahi"); return; } backup = { at: backup.at, store: RB_STORE, data: sd }; }
     if (!backup || !backup.data) { setMsg("Backup sahi nahi"); return; }
     if (backup.store && backup.store !== RB_STORE) { setMsg("Ye backup " + (backup.store === "rangpur" ? "Rangpur" : "Himmat") + " store ka hai - pehle wo store kholein"); return; }
     if (!window.confirm("Backup (" + rbDate(String(backup.at).slice(0, 10)) + ") ka data wapas layein? Abhi wala data us se badal jaye ga.")) return;
@@ -3681,7 +3698,10 @@ function RbSuperDataTools(p) {
     var file = ev.target.files && ev.target.files[0]; if (!file) return;
     if (rpin !== superPin()) { setMsg("Pehle Super Admin PIN darj karein"); ev.target.value = ""; return; }
     var rd = new FileReader();
-    rd.onload = function () { try { var obj = JSON.parse(rd.result); setRpin(""); restore(obj); } catch (x) { setMsg("File sahi nahi"); } };
+    var pinNow = rpin;
+    rd.onload = function () { var obj = null; try { obj = JSON.parse(rd.result); } catch (x) { setMsg("File sahi nahi"); return; } setRpin("");
+      if (obj && obj.enc) { setMsg("Backup khul raha hai..."); rbDecryptBackup(obj, pinNow).then(function (plain) { restore(plain); }).catch(function () { setMsg("Ye backup is PIN se nahi khula (shayad purane PIN se bana tha)"); }); return; }
+      restore(obj); };
     rd.readAsText(file); ev.target.value = "";
   }
   var inp = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 16, letterSpacing: 4, textAlign: "center", marginBottom: 8 };
@@ -3713,7 +3733,7 @@ function RbSuperDataTools(p) {
         <input type="password" inputMode="numeric" maxLength={6} value={rpin} onChange={function (ev) { setRpin(ev.target.value.replace(/\D/g, "")); }} placeholder="Super Admin PIN" style={Object.assign({}, inp, { fontSize: 14, letterSpacing: 2 })} />
         {bk ? <button disabled={restoring} onClick={restoreLocal} style={red}>Pichla backup wapas layein</button> : null}
         <label style={Object.assign({}, ghost, { display: "block", textAlign: "center", boxSizing: "border-box" })}>Backup file se wapas layein<input type="file" accept=".json,application/json" onChange={restoreFile} style={{ display: "none" }} /></label>
-        <button onClick={function () { rbDownloadBackup(rbMakeBackup()); }} style={ghost}>Abhi ka backup file download karein</button>
+        <button onClick={function () { if (rpin !== superPin()) { setMsg("Backup ke liye pehle upar Super Admin PIN darj karein"); return; } var pn = rpin; setRpin(""); setMsg("Mehfooz backup ban raha hai..."); rbDownloadSafeBackup(pn, setMsg); }} style={Object.assign({}, red, { background: TC.success, marginTop: 6 })}>Backup download (mehfooz, taala-band)</button>
       </div>
       {msg ? <div style={{ fontSize: 12, color: "#E8C9B8", marginTop: 8 }}>{msg}</div> : null}
     </div>
