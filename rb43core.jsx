@@ -92,10 +92,40 @@ function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? R
   } catch (e) {}
 })();
 
+/* Login 5 ghante tak yaad: app band / dobara khulne par PIN dobara nahi maangta.
+   5 ghante tak koi kaam na ho to khud logout. (sirf isi phone par - cloud par nahi jata) */
+var RB_SESS_LS = "rbsess:v1", RB_SESS_MS = 5 * 60 * 60 * 1000;
+var rbSS = (function () {
+  function load() {
+    var d = null; try { d = JSON.parse(localStorage.getItem(RB_SESS_LS) || "null"); } catch (e) {}
+    if (!d || typeof d !== "object" || !d.vals) d = { vals: {}, last: 0 };
+    if (d.last && Date.now() - d.last > RB_SESS_MS) { d = { vals: {}, last: 0 }; try { localStorage.removeItem(RB_SESS_LS); } catch (e) {} }
+    return d;
+  }
+  function save(d) { try { if (Object.keys(d.vals).length) localStorage.setItem(RB_SESS_LS, JSON.stringify(d)); else localStorage.removeItem(RB_SESS_LS); } catch (e) {} }
+  var api = {
+    getItem: function (k) { var d = load(); return Object.prototype.hasOwnProperty.call(d.vals, k) ? d.vals[k] : null; },
+    setItem: function (k, v) { var d = load(); d.vals[k] = String(v); d.last = Date.now(); save(d); try { sessionStorage.setItem(k, String(v)); } catch (e) {} },
+    removeItem: function (k) { var d = load(); delete d.vals[k]; save(d); try { sessionStorage.removeItem(k); } catch (e) {} },
+    touch: function () { var d = load(); if (!Object.keys(d.vals).length) return; d.last = Date.now(); save(d); },
+    expired: function () { var d = null; try { d = JSON.parse(localStorage.getItem(RB_SESS_LS) || "null"); } catch (e) {} return !!(d && d.last && Date.now() - d.last > RB_SESS_MS); }
+  };
+  try {
+    var lastT = 0;
+    var act = function () { var n = Date.now(); if (n - lastT > 30000) { lastT = n; api.touch(); } };
+    window.addEventListener("pointerdown", act, true);
+    window.addEventListener("keydown", act, true);
+    var chk = function () { if (api.expired()) { try { localStorage.removeItem(RB_SESS_LS); } catch (e) {} location.reload(); } };
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") chk(); });
+    setInterval(chk, 60000);
+  } catch (e) {}
+  return api;
+})();
+
 /* Super Admin ka naam */
 var RB_SUPER_NAME = "Rafiq Raees";
-function rbSessionName() { try { var n = sessionStorage.getItem("rb2-session-name") || ""; if (!n && sessionStorage.getItem("rb2-session-super") === "1") n = RB_SUPER_NAME; return n; } catch (e) { return ""; } }
-function rbIsSuper() { try { return sessionStorage.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
+function rbSessionName() { try { var n = rbSS.getItem("rb2-session-name") || ""; if (!n && rbSS.getItem("rb2-session-super") === "1") n = RB_SUPER_NAME; return n; } catch (e) { return ""; } }
+function rbIsSuper() { try { return rbSS.getItem("rb2-session-super") === "1"; } catch (e) { return false; } }
 function rbCanSwitchStore(role) { return role === "admin" && (rbIsSuper() || !rbGet("security", {}).superPin); }
 /* fingerprint / face login - sirf isi phone par (cloud par nahi jata) */
 var RB_BIO_KEY = "raees-bio";
