@@ -661,7 +661,7 @@ function rbUseDraft(scope, name, init) {
 function ModalShell(p) {
   rbUseBack(true, p.onClose);
   return (
-    <div onClick={p.onClose} className="no-print" style={{
+    <div onClick={p.noBackdropClose ? undefined : p.onClose} className="no-print" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9070,
       display: "flex", alignItems: "flex-end", justifyContent: "center"
     }}>

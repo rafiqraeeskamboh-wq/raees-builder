@@ -850,7 +850,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 80 });
   var title = (p.isEdit ? t("edit") : t("makeGatePass")) + (p.extraTrip ? " #" + sale.serial + "-" + p.extraTrip : "") + " — " + sale.customerName;
   return (
-    <ModalShell onClose={function () { rbDraftClear(gScope); p.onClose(); }} title={title}>
+    <ModalShell noBackdropClose onClose={function () { if (totalPieces > 0 && !window.confirm("Gate pass abhi save nahi hua. Band karna hai?\n(Jo likha hai wo mehfooz rahega - dobara kholne par wapas aa jayega)")) return; p.onClose(); }} title={title}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[["garden", TC.garden, "sprout"], ["slab", TC.slab, "grid"]].map(function (o) {
           var on = cat === o[0], n = catCount(o[0]);
