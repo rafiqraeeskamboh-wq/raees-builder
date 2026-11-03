@@ -389,8 +389,8 @@ function GatePassModal(p) {
   var shotRef = React.useRef(null);
   var canEdit = hasPerm(role, permissions, "gatePass") && !!onEdit;
   var lines = items.map(function (it, i) { return (i + 1) + ". " + (it.desc || "—") + " — " + t("qty") + ": " + it.qty; }).join(NL);
-  var waText = t("appName") + NL + t("gatePassTitle") + NL + t("gatePassNo") + ": #" + sale.serial
-    + NL + t("customerName") + ": " + sale.customerName + NL + t("date") + ": " + rbDate(sale.date) + NL + NL + lines;
+  var waText = t("appName") + NL + t("gatePassTitle") + NL + t("gatePassNo") + ": #" + (p.entry ? rbGpNo(p.entry, sale.serial) : sale.serial)
+    + NL + t("customerName") + ": " + sale.customerName + NL + t("date") + ": " + rbDate((p.entry && p.entry.date) || sale.date) + NL + NL + lines;
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9085, overflowY: "auto" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
@@ -450,8 +450,8 @@ function GatePassModal(p) {
             </div>
             <div style={{ textAlign: "end" }}>
               <div style={{ color: TC.inkSoft, fontSize: 10 }}>{t("gatePassNo")}</div>
-              <div className="rb-mono" style={{ fontWeight: 700, color: TC.slab }}>#{sale.serial}</div>
-              <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate(sale.date)}</div>
+              <div className="rb-mono" style={{ fontWeight: 700, color: TC.slab }}>#{p.entry ? rbGpNo(p.entry, sale.serial) : sale.serial}</div>
+              <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate((p.entry && p.entry.date) || sale.date)}</div>
             </div>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -823,7 +823,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
   var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor, urdu = lang === "ur";
   var init = (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
   function key(c, v) { return c + "|" + v; }
-  var gScope = "gp:" + (p.isEdit ? "e:" : "") + (sale.id || sale.serial || "x");
+  var gScope = "gp:" + (p.isEdit ? "e:" : "") + (p.extraTrip ? "t" + p.extraTrip + ":" : "") + (sale.id || sale.serial || "x");
   var a = rbUseDraft(gScope, "cat", function () {
     var c0 = "garden"; init.forEach(function (it) { if (it.category === "garden") c0 = "garden"; }); if (!init.some(function (it) { return it.category === "garden"; }) && init.some(function (it) { return it.category === "slab"; })) c0 = "slab"; return c0;
   }), cat = a[0], setCat = a[1];
@@ -848,7 +848,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).map(function (it
     p.onCreate(items);
   }
   var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 80 });
-  var title = (p.isEdit ? t("edit") : t("makeGatePass")) + " — " + sale.customerName;
+  var title = (p.isEdit ? t("edit") : t("makeGatePass")) + (p.extraTrip ? " #" + sale.serial + "-" + p.extraTrip : "") + " — " + sale.customerName;
   return (
     <ModalShell onClose={function () { rbDraftClear(gScope); p.onClose(); }} title={title}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -1064,6 +1064,7 @@ function RaeesBuilderApp() {
   var dvS = React.useState(function () { return rbGet("day-verify", {}) || {}; }), dayVerify = dvS[0], setDayVerify = dvS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
   var grS = React.useState(null), gpReturnFor = grS[0], setGpReturnFor = grS[1];
+  var gxS = React.useState(null), gpExtraFor = gxS[0], setGpExtraFor = gxS[1];
   var swS = React.useState(function () { return rbGet("site-wastage", []); }), siteWaste = swS[0], setSiteWaste = swS[1];
   var swF = React.useState(null), siteWasteFor = swF[0], setSiteWasteFor = swF[1];
   React.useEffect(function () { rbSet("site-wastage", siteWaste); }, [siteWaste]);
@@ -1303,7 +1304,7 @@ function RaeesBuilderApp() {
       (x.returns || []).forEach(function (rt) { if (rt.by === U && rt.date === d) add("Advance wapas", "#" + x.no + " " + (x.name || ""), Number(rt.amount) || 0); });
     });
     stockLog.forEach(function (e) { if (e.by === U && e.date === d) add("Stock", variantLabel(t, e.category, e.variant) + " +" + e.qty, null); });
-    gatePasses.forEach(function (g) { if (g.createdBy === U && g.date === d) add("Gate pass", "#" + (g.serial || "-") + " " + (g.customerName || ""), null); });
+    gatePasses.forEach(function (g) { if (g.createdBy === U && g.date === d) add("Gate pass", "#" + (rbGpNo(g) || "-") + " " + (g.customerName || ""), null); });
     labourWork.forEach(function (w) { if (w.by === U && w.date === d) add("Labour kaam", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
     labourPayments.forEach(function (w) { if (w.by === U && w.date === d && w.type !== "advCut" && !w.noCash) add("Labour payment", (labourers.filter(function (l) { return l.id === w.labourerId; })[0] || {}).name || "-", Number(w.amount) || 0); });
     returnLog.forEach(function (r) { if (r.createdBy === U && r.date === d) add("Maal wapsi", "#" + (r.serial || "-") + " " + (r.customerName || ""), Number(r.amount) || 0); });
@@ -1328,7 +1329,7 @@ function RaeesBuilderApp() {
     function ok(c, v) { return c === cat && (variant === null || variant === undefined || String(v) === String(variant)); }
     function nm(c, v) { return variant === null || variant === undefined ? variantLabel(t, c, v) + " - " : ""; }
     stockLog.forEach(function (e) { if (!ok(e.category, e.variant)) return; rows.push({ date: e.date, detail: nm(e.category, e.variant) + (e.isOpening ? "Purana stock (opening)" : (e.supplierId ? "Khareeda (supplier)" : "Bana")) + (e.byName ? " - " + e.byName : ""), a: Number(e.qty) || 0 }); });
-    gatePasses.forEach(function (g) { (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (g.serial || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
+    gatePasses.forEach(function (g) { (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (rbGpNo(g) || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
     returnLog.forEach(function (x) { (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: x.date, detail: nm(it.category, it.variant) + "Maal wapas aaya (bill #" + (x.serial || "-") + ") - " + (x.customerName || ""), a: Number(it.qty) || 0 }); }); });
     wastageLog.forEach(function (x) { if (!ok(x.category, x.variant)) return; rows.push({ date: x.date, detail: nm(x.category, x.variant) + "Wastage" + (x.reason ? " - " + x.reason : (x.note ? " - " + x.note : "")), b: Number(x.qty) || 0 }); });
     conversionLog.forEach(function (c) {
@@ -1854,12 +1855,12 @@ function RaeesBuilderApp() {
   function upsertGatePass(sale, items, type, listOverride) {
     var list = listOverride || gatePasses;
     var existing = null;
-    list.forEach(function (g) { if (g.saleId === sale.id) existing = g; });
+    list.forEach(function (g) { if (g.saleId === sale.id && !(Number(g.trip) > 1)) existing = g; });
     var entry = existing
       ? Object.assign({}, existing, { items: items, customerName: sale.customerName, date: sale.date, serial: sale.serial, type: type || existing.type, mobile: sale.mobile, verified: false, verifiedBy: null, verifiedAt: null })
       : { id: rbUid(), saleId: sale.id, serial: sale.serial, customerName: sale.customerName, date: sale.date, items: items, type: type, mobile: sale.mobile, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() };
     var next = existing
-      ? list.map(function (g) { return g.saleId === sale.id ? entry : g; })
+      ? list.map(function (g) { return g.id === existing.id ? entry : g; })
       : [entry].concat(list);
     setGatePasses(next);
     if (existing) {
@@ -1890,6 +1891,20 @@ function RaeesBuilderApp() {
     logActivity("bill_verified", sale.customerName + " — #" + sale.serial);
   }
 
+  /* aik bill ka agla gate pass (dusri trolley / agle din ka chakkar) */
+  function addExtraGatePass(sale, items) {
+    if (rbSuperNoTx()) return;
+    var mine = rbGpsFor(gatePasses, sale.id);
+    var trip = mine.reduce(function (m, g) { return Math.max(m, Number(g.trip) || 1); }, 0) + 1;
+    var entry = { id: rbUid(), saleId: sale.id, serial: sale.serial, trip: trip, customerName: sale.customerName, date: rbToday(), items: items, type: mine[0] ? mine[0].type : (sale.type || "customized"), mobile: sale.mobile, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() };
+    setGatePasses(function (l) { return [entry].concat(l); });
+    setSales(function (prev) { return prev.map(function (x) { return x.id === sale.id ? Object.assign({}, x, { verified: false, verifiedBy: null, verifiedAt: null }) : x; }); });
+    setGpExtraFor(null);
+    setViewingGatePass({ sale: sale, items: items, entry: entry });
+    showToast(t("makeGatePass"));
+    logActivity("gatepass_created", sale.customerName + " — #" + sale.serial + "-" + trip);
+  }
+
   function createGatePassFromBuilder(sale, items) {
     upsertGatePass(sale, items, "customized");
     setGatePassBuilderFor(null);
@@ -1902,7 +1917,7 @@ function RaeesBuilderApp() {
     var next = gatePasses.map(function (g) { return g.id === entry.id ? Object.assign({}, g, { items: items }) : g; });
     setGatePasses(next);
     setGatePassEditTarget(null);
-    setViewingGatePass({ sale: { customerName: entry.customerName, date: entry.date, serial: entry.serial, type: entry.type, mobile: entry.mobile }, items: items });
+    setViewingGatePass({ sale: { customerName: entry.customerName, date: entry.date, serial: entry.serial, type: entry.type, mobile: entry.mobile }, items: items, entry: Object.assign({}, entry, { items: items }) });
     showToast(t("billUpdated"));
     logActivity("gatepass_created", entry.customerName + " — #" + entry.serial + " (" + t("edit") + ")");
   }
@@ -2298,7 +2313,7 @@ function editStockEntry(id, qty, date) {
           var uu = updated;
           setGatePasses(function (prev) {
             return prev.map(function (g2) {
-              return g2.saleId === uu.id ? Object.assign({}, g2, { serial: uu.serial, customerName: uu.customerName, date: uu.date, mobile: uu.mobile }) : g2;
+              return g2.saleId === uu.id ? Object.assign({}, g2, { serial: uu.serial, customerName: uu.customerName, date: (Number(g2.trip) > 1 ? g2.date : uu.date), mobile: uu.mobile }) : g2;
             });
           });
         }
@@ -2436,7 +2451,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} siteWaste={siteWaste} onSiteWaste={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setSiteWasteFor({ sale: sale, entry: entry }); }} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setSiteWasteFor({ sale: sale, entry: entry }); }} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
@@ -2523,7 +2538,7 @@ function editStockEntry(id, qty, date) {
           onEdit={startEditSale}
           onDelete={(role === "admin" && rbIsSuper()) ? superDeleteBill : null}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
-          gatePassEntry={(function () { var found = null; gatePasses.forEach(function (g) { if (g.saleId === viewingBill.id) found = g; }); return found; })()}
+          gatePassEntry={rbGpCombined(rbGpsFor(gatePasses, viewingBill.id))}
           onViewGatePass={function (sale) {
             var found = null;
             gatePasses.forEach(function (g) { if (g.saleId === sale.id) found = g; });
@@ -2536,6 +2551,14 @@ function editStockEntry(id, qty, date) {
         <GatePassBuilderModal t={t} lang={lang} sale={gatePassBuilderFor} remainingFor={remainingFor} variantsFor={variantsFor}
           onClose={function () { setGatePassBuilderFor(null); }}
           onCreate={function (items) { createGatePassFromBuilder(gatePassBuilderFor, items); }} />
+      ) : null}
+
+      {gpExtraFor ? (
+        <GatePassBuilderModal t={t} lang={lang} sale={gpExtraFor} remainingFor={remainingFor} variantsFor={variantsFor}
+          extraTrip={rbGpsFor(gatePasses, gpExtraFor.id).reduce(function (m, g) { return Math.max(m, Number(g.trip) || 1); }, 0) + 1}
+          initialItems={rbGpPending(gpExtraFor, rbGpsFor(gatePasses, gpExtraFor.id))}
+          onClose={function () { setGpExtraFor(null); }}
+          onCreate={function (items) { addExtraGatePass(gpExtraFor, items); }} />
       ) : null}
 
       {gatePassEditTarget ? (
