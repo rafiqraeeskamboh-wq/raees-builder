@@ -1118,6 +1118,40 @@ function RaeesBuilderApp() {
     showToast(t("siteWasteSaved"));
     logActivity("wastage_logged", "Site: " + sale.customerName + " #" + sale.serial + " - " + rows.map(function (r) { return variantLabel(t, r.category, r.variant) + " " + r.qty; }).join(", "));
   }
+  /* paimaishi bill ki fitting mazdoori: chhat par lagi slab ki fotwari + extra garder x Rs 100 - gate pass / wapsi / site wastage badle to khud theek */
+  var RB_FIT_NEW_FROM = "2026-11-03T11:30:00Z";
+  React.useEffect(function () {
+    var cfgF = labourCfg("fitting");
+    var next = null, flags = {};
+    sales.forEach(function (sl) {
+      if (sl.isOpening || sl.type === "cash") return;
+      var gl = rbGpsFor(gatePasses, sl.id); if (!gl.length) return;
+      var lf = rbLabourFit(sl, gl, returnLog, siteWaste);
+      var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 slab " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + RB_EXTRA_GARDER_LABOUR : "");
+      var list = next || labourWork, idx = -1;
+      list.forEach(function (x, i) { if (idx < 0 && x.auto && x.src === "sale" && x.srcId === sl.id && x.kind === "fitting") idx = i; });
+      if (idx >= 0) {
+        var x = list[idx];
+        if (Math.abs((Number(x.qty) || 0) - lf.ft) > 0.001 || (Number(x.extra) || 0) !== lf.extraAmt) {
+          next = list.slice(); next[idx] = Object.assign({}, x, { qty: lf.ft, extra: lf.extraAmt, amount: labourEntryAmount(lf.ft, x.rate, lf.extraAmt, 0), note: note });
+        }
+        return;
+      }
+      if (sl.fitAuto || String(sl.createdAt || "") < RB_FIT_NEW_FROM) return;
+      if ((sl.labourMissing || []).indexOf("fitting") >= 0) return;
+      if (!(lf.ft > 0) && !lf.extraAmt) return;
+      if (!cfgF.labourerId || !(cfgF.rate > 0)) { flags[sl.id] = "missing"; return; }
+      next = [{ id: "fit-" + sl.id, labourerId: cfgF.labourerId, kind: "fitting", qty: lf.ft, rate: cfgF.rate, extra: lf.extraAmt,
+        amount: labourEntryAmount(lf.ft, cfgF.rate, lf.extraAmt, 0), note: note, date: sl.date || rbToday(), auto: true, src: "sale", srcId: sl.id,
+        by: role, verified: false, createdAt: new Date().toISOString() }].concat(list);
+      flags[sl.id] = "made";
+    });
+    if (next) setLabourWork(next);
+    if (Object.keys(flags).length) setSales(function (prev) { return prev.map(function (x) {
+      if (flags[x.id] === "made") return Object.assign({}, x, { fitAuto: true });
+      if (flags[x.id] === "missing") return Object.assign({}, x, { labourMissing: (x.labourMissing || []).filter(function (k) { return k !== "fitting"; }).concat(["fitting"]) });
+      return x; }); });
+  }, [sales, gatePasses, returnLog, siteWaste, labourWork]);
   function deleteSiteWaste(id) { setSiteWaste(function (a) { return a.filter(function (x) { return x.id !== id; }); }); }
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
@@ -1759,9 +1793,10 @@ function RaeesBuilderApp() {
   sales.forEach(function (sl) {
     var miss = sl.labourMissing || [];
     if (!miss.length) return;
-    var sq = (sl.items || []).reduce(function (n, it) { return n + (Number(it.sqft) || 0); }, 0);
+    var lfP = rbLabourFit(sl, rbGpsFor(gatePasses, sl.id), returnLog, siteWaste);
+    var sq = lfP.ft;
     miss.forEach(function (k) {
-      labourPendingItems.push({ key: "b" + sl.id + k, src: "sale", srcId: sl.id, kind: k, qty: sq,
+      labourPendingItems.push({ key: "b" + sl.id + k, src: "sale", srcId: sl.id, kind: k, qty: sq, extraDefault: k === "fitting" ? lfP.extraAmt : 0,
         date: sl.date, label: sl.customerName + " \u00b7 #" + sl.serial });
     });
   });
@@ -2398,11 +2433,7 @@ function editStockEntry(id, qty, date) {
       }
     }
     /* paimaishi bill ki chhat fitting mazdoori khud-ba-khud, bill ke kul sq ft par */
-    if (full.type === "customized" && !full.isOpening) {
-      var billSqft = (full.items || []).reduce(function (n, it) { return n + (Number(it.sqft) || 0); }, 0);
-      var fres = autoLabourFor(["fitting"], billSqft, full.date, "sale", full.id, full.customerName + " \u00b7 #" + full.serial);
-      full.labourMissing = fres.missing;
-    }
+    /* paimaishi bill ki chhat fitting mazdoori ab gate pass ke baad - chhat ki slab fotwari + extra garder (neeche wala hisab khud karta hai) */
     setSales([full].concat(sales));
     setNextSerial(Math.max(nextSerial, serial + 1));
     showToast(t("saleSaved"));
