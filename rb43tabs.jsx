@@ -1395,7 +1395,7 @@ function LabourPendingRow(p) {
   var t = p.t, item = p.item, labourers = p.labourers || [], cfg = labourCfgOf(p.config, item.kind);
   var a = React.useState(cfg.labourerId), lid = a[0], setLid = a[1];
   var b = React.useState(cfg.rate ? String(cfg.rate) : ""), rate = b[0], setRate = b[1];
-  var c = React.useState(""), extra = c[0], setExtra = c[1];
+  var c = React.useState(item.extraDefault ? String(item.extraDefault) : ""), extra = c[0], setExtra = c[1];
   var kk = labourKind(item.kind);
   var amt = labourEntryAmount(item.qty, rate, extra, 0);
   var inp = { width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "#F3EAD3", color: TC.ink, fontSize: 13 };
