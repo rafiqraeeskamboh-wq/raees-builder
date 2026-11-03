@@ -2436,14 +2436,14 @@ function WastageSummaryCard(p) {
     <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
       <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("wastageSummary")}</div>
       <RangeFilter t={t} range={range} onChange={setRange} />
-      <div style={lbl}>{t("yardWaste")}</div>
+      {siteWaste.length ? <div style={lbl}>{t("yardWaste")}</div> : null}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}>
         <StatBlock label={t("garden")} value={totalGarden} color={TC.stamp} />
         <StatBlock label={t("slab")} value={totalSlab} color={TC.stamp} />
         <StatBlock label={t("total")} value={totalGarden + totalSlab} bold color={TC.stamp} />
       </div>
-      <div style={lbl}>{t("siteWasteSum")}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}>
+      {siteWaste.length ? <div style={lbl}>{t("siteWasteSum")}</div> : null}
+{siteWaste.length ? (<div>      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 8 }}>
         <StatBlock label={t("garden")} value={siteGarden} color={TC.stamp} />
         <StatBlock label={t("slab")} value={siteSlab} color={TC.stamp} />
         <StatBlock label={t("total")} value={siteGarden + siteSlab} bold color={TC.stamp} />
@@ -2451,7 +2451,7 @@ function WastageSummaryCard(p) {
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid " + TC.paperLine, paddingTop: 6, marginBottom: 8, fontSize: 12, fontWeight: 700, color: TC.ink }}>
         <span>{t("total")} ({t("garden")} {totalGarden + siteGarden} · {t("slab")} {totalSlab + siteSlab})</span>
         <span className="rb-mono" style={{ color: TC.stamp }}>{totalGarden + totalSlab + siteGarden + siteSlab}</span>
-      </div>
+      </div></div>) : null}
       {sorted.length > 0 ? (
         <div style={{ maxHeight: 150, overflowY: "auto", borderTop: "1px dashed " + TC.paperLine, paddingTop: 8 }}>
           {sorted.map(function (e) {
