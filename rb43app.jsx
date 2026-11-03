@@ -136,7 +136,7 @@ function BillModal(p) {
                 return (
                   <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td style={{ padding: "5px 3px" }}>{i + 1}</td>
-                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{it.desc}</td>
+                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{isCash ? it.desc : rbExtraDesc(it)}</td>
                     <td style={{ padding: "5px 3px" }}>{it.qty}</td>
                     {!isCash ? <td style={{ padding: "5px 3px" }}>{it.category === "slab" ? "-" : it.length}</td> : null}
                     {!isCash ? <td style={{ padding: "5px 3px" }}>{(it.category === "slab" || it.category === "garden") ? "-" : it.width}</td> : null}
@@ -467,13 +467,24 @@ function GatePassModal(p) {
                 return (
                   <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td style={{ padding: "7px 4px" }}>{i + 1}</td>
-                    <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif" }}>{it.desc || "—"}</td>
+                    <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: it.extra ? 700 : 400 }}>{it.desc || "—"}</td>
                     <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qty}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {(function () {
+            if (!sale || sale.type === "cash" || !sale.items || items.some(function (it) { return it.extra; })) return null;
+            var ex = sale.items.filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; });
+            if (!ex.length || (p.entry && Number(p.entry.trip) > 1)) return null;
+            return (
+              <div style={{ marginTop: 8, padding: "6px 8px", border: "1px dashed " + TC.ink, borderRadius: 6, fontSize: 11, color: TC.ink }}>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>Is gate pass mein bill ka extra maal shamil hai:</div>
+                {ex.map(function (it, i) { return <div key={i} className="rb-mono">{rbExtraDesc(it)} × {it.qty}</div>; })}
+              </div>
+            );
+          })()}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 40 }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {(p.entry && p.entry.createdBy) ? rbMadeBy(t, p.entry.createdBy, p.entry.createdByName || p.entry.byName) : rbMadeBy(t, sale.createdBy, sale.createdByName)}</div>
@@ -851,7 +862,10 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   function setQ(k, v) { var n = Object.assign({}, qtys); n[k] = v; setQtys(n); }
   function create() {
     if (!canSave) return;
-    var items = rows.map(function (r) { return { id: rbUid(), category: r.category, variant: r.variant, qty: r.qty, desc: variantLabel(t, r.category, r.variant) }; }).concat(customs);
+    var userRows = []; ["garden", "slab"].forEach(function (cc) { listFor(cc).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) userRows.push({ category: cc, variant: v, qty: q }); }); });
+    var items = userRows.map(function (r) { return { id: rbUid(), category: r.category, variant: r.variant, qty: r.qty, desc: variantLabel(t, r.category, r.variant) }; })
+      .concat(autoExtras.map(function (it) { return { id: rbUid(), category: it.category, variant: it.variant, qty: Number(it.qty) || 0, desc: "Extra " + variantLabel(t, it.category, it.variant), extra: true }; }))
+      .concat(customs);
     rbDraftClear(gScope);
     p.onCreate(items);
   }
