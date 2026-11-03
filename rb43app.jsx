@@ -1126,14 +1126,16 @@ function RaeesBuilderApp() {
   }
   /* paimaishi bill ki fitting mazdoori: chhat par lagi slab ki fotwari + extra garder x Rs 100 - gate pass / wapsi / site wastage badle to khud theek */
   var RB_FIT_NEW_FROM = "2026-11-03T11:30:00Z";
+  /* extra garder (chhat) ka labour rate - Labour: banda aur rate mein badla ja sakta hai, warna Rs 100 */
+  function extraGarderRate() { var c = (labourConfig || {}).extraGarder; return (c && c.rate !== undefined && c.rate !== null && c.rate !== "") ? Number(c.rate) || 0 : RB_EXTRA_GARDER_LABOUR; }
   React.useEffect(function () {
     var cfgF = labourCfg("fitting");
     var next = null, flags = {};
     sales.forEach(function (sl) {
       if (sl.isOpening || sl.type === "cash") return;
       var gl = rbGpsFor(gatePasses, sl.id); if (!gl.length) return;
-      var lf = rbLabourFit(sl, gl, returnLog, siteWaste);
-      var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 slab " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + RB_EXTRA_GARDER_LABOUR : "");
+      var lf = rbLabourFit(sl, gl, returnLog, siteWaste, extraGarderRate());
+      var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 slab " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + lf.gRate : "");
       var list = next || labourWork, idx = -1;
       list.forEach(function (x, i) { if (idx < 0 && x.auto && x.src === "sale" && x.srcId === sl.id && x.kind === "fitting") idx = i; });
       if (idx >= 0) {
@@ -1157,7 +1159,7 @@ function RaeesBuilderApp() {
       if (flags[x.id] === "made") return Object.assign({}, x, { fitAuto: true });
       if (flags[x.id] === "missing") return Object.assign({}, x, { labourMissing: (x.labourMissing || []).filter(function (k) { return k !== "fitting"; }).concat(["fitting"]) });
       return x; }); });
-  }, [sales, gatePasses, returnLog, siteWaste, labourWork]);
+  }, [sales, gatePasses, returnLog, siteWaste, labourWork, labourConfig]);
   function deleteSiteWaste(id) { setSiteWaste(function (a) { return a.filter(function (x) { return x.id !== id; }); }); }
   var trS = React.useState(function () { return rbGet("trash", []); }), trash = trS[0], setTrash = trS[1];
   var vb = React.useState(null), viewingBill = vb[0], setViewingBill = vb[1];
@@ -1799,7 +1801,7 @@ function RaeesBuilderApp() {
   sales.forEach(function (sl) {
     var miss = sl.labourMissing || [];
     if (!miss.length) return;
-    var lfP = rbLabourFit(sl, rbGpsFor(gatePasses, sl.id), returnLog, siteWaste);
+    var lfP = rbLabourFit(sl, rbGpsFor(gatePasses, sl.id), returnLog, siteWaste, extraGarderRate());
     var sq = lfP.ft;
     miss.forEach(function (k) {
       labourPendingItems.push({ key: "b" + sl.id + k, src: "sale", srcId: sl.id, kind: k, qty: sq, extraDefault: k === "fitting" ? lfP.extraAmt : 0,
