@@ -168,6 +168,21 @@ function rbRowCalc(row, mode) {
   var sq = q * (Number(row.length) || 0) * (Number(row.width) || 0);
   return { kind: "sqft", units: sq, sqft: sq, amount: sq * r };
 }
+/* slab ki fotwari: aam slab lambai x 1.5, bacha lambai x 1 */
+function rbSlabFt(c, v, q) { if (c !== "slab") return 0; var L = Number(rbVariantNum(c, v)) || 0; var W = (typeof rbIsBacha === "function" && rbIsBacha(c, v)) ? 1 : 1.5; return L * W * (Number(q) || 0); }
+/* pemaish bill: bill ki fotwari (rooms) vs chhat par lagi slab ki fotwari (labour) - labour bill se ziada nahi honi chahiye */
+function rbFotCheck(sale, gpList, returnLog, siteWaste) {
+  if (!sale || sale.isOpening || sale.type === "cash" || !gpList || !gpList.length) return null;
+  var bill = 0, extras = 0, sent = 0, ret = 0, sw = 0;
+  (sale.items || []).forEach(function (it) { var cc = rbRowCalc(it, "area"); if (cc.kind === "sqft") bill += cc.sqft; if (it.category === "slab") extras += rbSlabFt(it.category, it.variant, it.qty); });
+  if (!(bill > 0)) return null;
+  gpList.forEach(function (g) { (g.items || []).forEach(function (it) { sent += rbSlabFt(it.category, it.variant, it.qty); }); });
+  (returnLog || []).forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { ret += rbSlabFt(it.category, it.variant, it.qty); }); });
+  (siteWaste || []).forEach(function (w) { if (w.saleId === sale.id) sw += rbSlabFt(w.category, w.variant, w.qty); });
+  var r2 = function (x) { return Math.round(x * 100) / 100; };
+  var labour = r2(sent - extras - ret - sw); bill = r2(bill);
+  return { bill: bill, labour: labour, diff: r2(bill - labour), ok: labour <= bill + 0.001 };
+}
 function rbGet(key, def) {
   try {
     var r = localStorage.getItem(rbKey(key));
