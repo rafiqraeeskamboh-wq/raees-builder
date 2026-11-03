@@ -1521,7 +1521,7 @@ function LabourKhataModal(p) {
   /* ek din ka ek kism ka kaam (sab size) ek hi line: kul nagg x rate = raqam */
   var wRows = [], wIdx = {};
   tot.works.forEach(function (x) {
-    var gk = x.date + "|" + x.kind + "|" + (Number(x.rate) || 0);
+    var gk = x.date + "|" + x.kind + "|" + (Number(x.rate) || 0) + (x.kind === "fitting" ? "|" + x.id : ""); /* chhat fitting: har customer alag */
     if (wIdx[gk] == null) { wIdx[gk] = wRows.length; wRows.push({ k: "work", id: x.id, date: x.date, kind: x.kind, qty: 0, rate: x.rate, extra: 0, note: x.note, amount: 0, n: 0 }); }
     var g = wRows[wIdx[gk]];
     g.qty = Math.round((g.qty + (Number(x.qty) || 0)) * 100) / 100; g.extra += Number(x.extra) || 0; g.amount += Number(x.amount) || 0; g.n++;
@@ -4298,15 +4298,17 @@ function RbLabourDayLedger(p) {
   var r = resolveRange(range);
   var oa = Math.max(0, Number(lb.opening) || 0), opening = lb.openingDir === "adv" ? -oa : oa;
   var days = {};
-  function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, parts: {}, work: 0, paid: 0, notes: [] }; return days[k]; }
+  function D(d) { var k = String(d || ""); if (!days[k]) days[k] = { date: k, kinds: {}, parts: {}, fits: [], pays: [], work: 0, paid: 0, notes: [] }; return days[k]; }
   (tot.works || []).forEach(function (x) {
     var d = D(x.date); var q = rbLabourQty(x); d.kinds[x.kind] = (d.kinds[x.kind] || 0) + q; d.work += Number(x.amount) || 0;
     /* hisab dikhane ke liye: kaam x rate = raqam (har kism aur rate alag) */
     var rt = Number(x.rate) || 0, pk = x.kind + "|" + rt;
+    /* chhat fitting: har customer alag line - naam, slab fotwari, extra garder */
+    if (x.kind === "fitting") { var segs = String(x.note || "").split(" \u00b7 "); var gm = String(x.note || "").match(/extra garder (\d+) x ([\d.]+)/); d.fits.push({ cust: segs.slice(0, 2).join(" \u00b7 ") || "-", qty: Number(x.qty) || 0, rate: rt, slabAmt: (Number(x.qty) || 0) * rt, extra: Number(x.extra) || 0, gN: gm ? Number(gm[1]) : 0, gR: gm ? Number(gm[2]) : 0, amt: Number(x.amount) || 0 }); return; }
     var pt = d.parts[pk] || (d.parts[pk] = { kind: x.kind, rate: rt, qty: 0, mult: 0, amt: 0 });
     pt.qty += q; pt.mult += Number(x.qty) || 0; pt.amt += Number(x.amount) || 0;
   });
-  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
+  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; d.pays.push({ amount: Number(x.amount) || 0, note: x.note || "", by: x.byName || (x.by === "admin" ? "Admin" : (x.by === "accountant" ? "User" : "")), type: x.type }); if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
   var list = Object.keys(days).sort().map(function (k) { return days[k]; });
   /* range se pehle ka sab "pichla baqi" */
   var carry = opening, shown = [];
@@ -4374,7 +4376,20 @@ function RbLabourDayLedger(p) {
                     <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
                     <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{Object.keys(d.parts).length ? Object.keys(d.parts).map(function (pk) { var pt = d.parts[pk]; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey);
                       var txt = pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US") + ")" : pt.qty + " " + unit + " \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US");
-                      return <div key={pk}>{txt} = <b>{rbMoney(pt.amt)}</b></div>; }) : (d.paid ? "" : "-")}{d.paid ? <div style={{ color: "#555", fontSize: 10 }}>Payment di{d.notes.length ? ": " + d.notes.join(", ") : ""}</div> : null}</td>
+                      return <div key={pk}>{txt} = <b>{rbMoney(pt.amt)}</b></div>; }) : ((d.paid || d.fits.length) ? "" : "-")}
+                      {d.fits.map(function (f, fi) { return (
+                        <div key={"f" + fi} style={{ borderTop: fi || Object.keys(d.parts).length ? "1px dotted #ccc" : "none", paddingTop: fi || Object.keys(d.parts).length ? 3 : 0, marginTop: fi || Object.keys(d.parts).length ? 3 : 0 }}>
+                          <div style={{ fontWeight: 700, color: "#1F3F8A", fontSize: 11 }}>{f.cust}</div>
+                          <div>Slab fotwari {f.qty} sq ft × {(Math.round(f.rate * 100) / 100).toLocaleString("en-US")} = <b>{rbMoney(f.slabAmt)}</b></div>
+                          {f.extra > 0 ? <div>Extra garder {f.gN ? f.gN + " × " + rbMoney(f.gR) : ""} = <b>{rbMoney(f.extra)}</b></div> : null}
+                          {f.extra > 0 ? <div style={{ fontWeight: 700 }}>Kul = {rbMoney(f.amt)}</div> : null}
+                        </div>
+                      ); })}
+                      {d.pays.map(function (py, pi) { return (
+                        <div key={"p" + pi} style={{ color: "#1E7A3C", fontSize: 10.5, marginTop: 3, borderTop: "1px dotted #ccc", paddingTop: 2 }}>
+                          {py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")}: <b>Rs {rbMoney(py.amount)}</b>{py.note ? " — " + py.note : ""}{py.by ? " (dene wala: " + py.by + ")" : ""}
+                        </div>
+                      ); })}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
