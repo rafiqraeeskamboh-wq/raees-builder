@@ -11,21 +11,25 @@
     });
   }
 
-  /* ---------- 1b. Auto update: app wapas kholne par naya version ho to khud reload
-     (login 5 ghante yaad rehta hai, is liye dobara PIN nahi maangega) ---------- */
+  /* ---------- 1b. Auto update: app wapas kholne par naya version ho to aik dafa reload
+     (login 5 ghante yaad rehta hai). Aik version par sirf aik reload - loop nahi. ---------- */
   (function () {
-    function curVer() { var s = document.querySelector('script[src*="i18n.js?v="]'); var m = s && s.getAttribute('src').match(/v=(\d+)/); return m ? m[1] : null; }
-    var busy = false, lastCheck = 0;
+    function curVer() { var m = document.querySelector('meta[name="rb-ver"]'); return m ? m.getAttribute('content') : null; }
+    var busy = false, lastCheck = Date.now();
     function check() {
-      var now = Date.now(); if (busy || now - lastCheck < 60000) return; lastCheck = now; busy = true;
+      var now = Date.now(); if (busy || now - lastCheck < 120000) return; lastCheck = now; busy = true;
       try { if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.update(); }); }); } catch (e) {}
       fetch('index.html?chk=' + now, { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
-        busy = false; var m = html.match(/i18n\.js\?v=(\d+)/); var cur = curVer();
-        if (m && cur && m[1] !== cur) location.reload();
+        busy = false;
+        var m = html.match(/name="rb-ver" content="(\d+)"/); var cur = curVer();
+        if (!m || !cur || m[1] === cur) return;
+        var tried = null; try { tried = localStorage.getItem('rbupd:tried'); } catch (e) {}
+        if (tried === m[1]) return;
+        try { localStorage.setItem('rbupd:tried', m[1]); } catch (e) {}
+        location.replace(location.pathname + '?u=' + m[1]);
       }).catch(function () { busy = false; });
     }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
-    window.addEventListener('focus', check);
   })();
 
   /* ---------- 2. Install button ---------- */
