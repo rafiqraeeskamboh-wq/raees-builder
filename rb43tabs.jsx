@@ -25,8 +25,9 @@ function MiniField(p) {
 function ItemRow(p) {
   var t = p.t, row = p.row, mode = p.mode, onChange = p.onChange;
   var isPiece = mode === "piece";
-  var sqft = isPiece ? 0 : (Number(row.qty) || 0) * (Number(row.length) || 0) * (Number(row.width) || 0);
-  var amount = isPiece ? (Number(row.qty) || 0) * (Number(row.rate) || 0) : sqft * (Number(row.rate) || 0);
+  var calc = rbRowCalc(row, mode), amount = calc.amount, sqft = calc.sqft;
+  var isFt = calc.kind === "ft", isNagg = calc.kind === "nagg";
+  var cols = isPiece || isNagg ? "1fr 1fr" : (isFt ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr");
   return (
     <div style={{ background: TC.cream, borderRadius: 8, padding: 10, border: "1px solid " + TC.paperLine }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
@@ -43,15 +44,15 @@ function ItemRow(p) {
           <Ico name="trash" size={15} />
         </button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: isPiece ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: cols, gap: 6 }}>
         <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} />
-        {!isPiece ? <MiniField label={t("length")} value={row.length} onChange={function (v) { onChange({ length: v }); }} disabled={row.category !== "custom"} /> : null}
-        {!isPiece ? <MiniField label={t("width")} value={row.width} onChange={function (v) { onChange({ width: v }); }} /> : null}
-        <MiniField label={t("rate")} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight />
+        {(!isPiece && !isNagg) ? <MiniField label={isFt ? t("length") + " (ft)" : t("length")} value={row.length} onChange={function (v) { onChange({ length: v }); }} disabled={row.category !== "custom"} /> : null}
+        {(!isPiece && !isFt && !isNagg) ? <MiniField label={t("width")} value={row.width} onChange={function (v) { onChange({ width: v }); }} /> : null}
+        <MiniField label={isFt ? t("ratePerFt") : (isNagg ? t("ratePerNagg") : t("rate"))} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, paddingTop: 7, borderTop: "1px dashed " + TC.paperLine }}>
         {!isPiece
-          ? <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{t("sqft")}: {sqft.toFixed(2)}</span>
+          ? <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{isFt ? (t("unitFt") + ": " + (Math.round(calc.units * 100) / 100)) : (isNagg ? (t("unitNagg") + ": " + calc.units) : (t("sqft") + ": " + sqft.toFixed(2)))}</span>
           : <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{t("qty")}: {Number(row.qty) || 0}</span>}
         <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(amount)}</span>
       </div>
@@ -173,11 +174,7 @@ function NewSaleTab(p) {
     setSerialEdit(null);
   }, [editingSale]);
 
-  var itemsTotal = rows.reduce(function (sum, r) {
-    if (mode === "piece") return sum + (Number(r.qty) || 0) * (Number(r.rate) || 0);
-    var sq = (Number(r.qty) || 0) * (Number(r.length) || 0) * (Number(r.width) || 0);
-    return sum + sq * (Number(r.rate) || 0);
-  }, 0);
+  var itemsTotal = rows.reduce(function (sum, r) { return sum + rbRowCalc(r, mode).amount; }, 0);
   var labourTotal = saleType === "cash" ? (Number(labourRate) || 0) : 0;
   var discount = Math.max(0, Math.min(itemsTotal + labourTotal, Number(discountInput) || 0));
   var totalBill = itemsTotal + labourTotal - discount;
@@ -244,8 +241,8 @@ function NewSaleTab(p) {
     setSubmitting(true);
     var items = rows.map(function (r) {
       if (mode === "piece") return Object.assign({}, r, { amount: (Number(r.qty) || 0) * (Number(r.rate) || 0) });
-      var sq = (Number(r.qty) || 0) * (Number(r.length) || 0) * (Number(r.width) || 0);
-      return Object.assign({}, r, { sqft: sq, amount: sq * (Number(r.rate) || 0) });
+      var cc = rbRowCalc(r, mode);
+      return Object.assign({}, r, { sqft: cc.sqft, amount: cc.amount, unitKind: cc.kind, units: cc.units });
     });
     var payload = {
       type: saleType, customerName: customerName.trim(), mobile: mobile.trim(), date: date, items: items, serial: Number(effSerial) || 0,
