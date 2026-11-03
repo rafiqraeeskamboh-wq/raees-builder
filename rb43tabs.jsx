@@ -2666,18 +2666,36 @@ function CollectPaymentModal(p) {
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: TC.cream }}>{sale.customerName}</div>
-        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>{sale.isOpening ? t("openingTag") : "#" + sale.serial} · {t("dues")}: Rs {rbMoney(sale.dues)}</div>
+        <div style={{ fontSize: 11.5, color: "#A39C8A", marginTop: 2 }}>{sale.isOpening ? t("openingTag") : "#" + sale.serial}</div>
       </div>
-      <Field label={t("amountReceived")}>
-        <input type="number" inputMode="decimal" autoFocus value={amount} onChange={function (e) { setAmount(e.target.value); }}
-          style={Object.assign({}, rbInput(), { fontSize: 16 })} />
-      </Field>
       <Field label={t("date")}>
         <input type="date" value={date} onChange={function (e) { setDate(e.target.value); }} style={rbInput()} />
       </Field>
-      <Field label={t("discount")}>
-        <input type="number" inputMode="decimal" value={discountInput} onChange={function (e) { setDiscountInput(e.target.value); }} placeholder="0" style={rbInput()} />
-      </Field>
+      {(function () {
+        var tot = Number(sale.dues) || 0, w = Number(amount) || 0;
+        var b1 = tot - w, b2 = tot - w - discAmt;
+        function Line(q) { return (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: TC.appBg2, borderRadius: 8, padding: "10px 12px", marginBottom: 10, border: "1.5px solid " + (q.bad ? TC.stamp : "#3A362C") }}>
+            <span style={{ fontSize: 12.5, color: "#D8CDA9", fontWeight: 700 }}>{q.label}</span>
+            <span className="rb-mono" style={{ fontSize: q.big ? 17 : 14.5, fontWeight: 700, color: q.color || TC.cream }}>Rs {rbMoney(q.value)}</span>
+          </div>
+        ); }
+        return (
+          <div>
+            <Line label={t("rcTotalBaqaya")} value={tot} big />
+            <Field label={t("rcWasooli")}>
+              <input type="number" inputMode="decimal" autoFocus value={amount} onChange={function (e) { setAmount(e.target.value); }}
+                style={Object.assign({}, rbInput(), { fontSize: 16 })} />
+            </Field>
+            <Line label={t("rcBaqaya")} value={b1} bad={b1 < 0} color={b1 < 0 ? TC.stamp : "#E6C875"} />
+            <Field label={t("rcDiscount")}>
+              <input type="number" inputMode="decimal" value={discountInput} onChange={function (e) { setDiscountInput(e.target.value); }} placeholder="0" style={rbInput()} />
+            </Field>
+            <Line label={t("rcBaqaya")} value={b2} big bad={b2 < 0} color={b2 < 0 ? TC.stamp : (b2 > 0 ? "#E6C875" : "#9FBE8A")} />
+            {b2 < 0 ? <div style={{ fontSize: 11.5, color: TC.stamp, fontWeight: 700, marginBottom: 10 }}>Wasooli + discount baqaya se ziada hai</div> : null}
+          </div>
+        );
+      })()}
       <Field label="Description (lazmi)">
         <input value={note} onChange={function (e) { setNote(e.target.value); }} placeholder="Jaise: cash, bank, JazzCash, kis ke haath" style={Object.assign({}, rbInput(), { border: "2px solid " + (note.trim() ? "#3A362C" : TC.stamp) })} />
       </Field>
