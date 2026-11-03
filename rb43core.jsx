@@ -502,6 +502,8 @@ var DEFAULT_PERMISSIONS = { stock: true, stockAdd: false, supplier: false, labou
 function rbItemKey(it) { return String(it.category || "") + "|" + String(it.variant || ""); }
 function gpExtraOverBill(sale, gp) {
   if (!sale || !gp || !gp.items || !gp.items.length) return [];
+  /* pemaish bill: chhat ka maal sq ft se hai, size-wise nahi - is ka check "Bill fotwari vs labour fotwari" se hota hai */
+  if (sale.type !== "cash" && (sale.items || []).some(function (it) { return it.category === "custom"; })) return [];
   var bill = {}; (sale.items || []).forEach(function (it) { var k = rbItemKey(it); bill[k] = (bill[k] || 0) + (Number(it.qty) || 0); });
   var pass = {}; gp.items.forEach(function (it) { var k = rbItemKey(it); pass[k] = (pass[k] || 0) + (Number(it.qty) || 0); });
   var out = [];
