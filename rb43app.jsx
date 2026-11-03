@@ -824,9 +824,12 @@ function rbIsAreaRoom(sale, it) { return !!sale && sale.type !== "cash" && it.ca
 function saleItemsToGateItems(sale) { return (sale.items || []).filter(function (it) { return !rbIsAreaRoom(sale, it); }).map(function (it) { var isStock = it.category === "garden" || it.category === "slab"; return { id: rbUid(), category: isStock ? it.category : "custom", variant: isStock ? it.variant : null, qty: Number(it.qty) || 0, desc: it.desc || "" }; }); } function GatePassBuilderModal(p) {
   /* List-wise gate pass: har size ke aage tadaad, bill wali tadaad pehle se bhari hoti hai */
   var t = p.t, lang = p.lang, sale = p.sale, remainingFor = p.remainingFor, variantsFor = p.variantsFor, urdu = lang === "ur";
-  var init = (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
+  /* pemaish bill ka extra garder / slab (nagg / fit wala) gate pass mein khud jama hota hai - upar chhat ka maal alag likhein */
+  var autoExtras = (!p.isEdit && !p.extraTrip && !p.initialItems && p.sale && p.sale.type !== "cash") ? (p.sale.items || []).filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; }) : [];
+  var init = autoExtras.length ? [] : (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
   function key(c, v) { return c + "|" + v; }
-  var gScope = "gp:" + (p.isEdit ? "e:" : "") + (p.extraTrip ? "t" + p.extraTrip + ":" : "") + (sale.id || sale.serial || "x");
+  var gScope = "gp:" + (p.isEdit ? "e:" : "") + (p.extraTrip ? "t" + p.extraTrip + ":" : "") + (autoExtras.length ? "x2:" : "") + (sale.id || sale.serial || "x");
+  function extraQ(cc, v) { return autoExtras.reduce(function (n, it) { return (it.category === cc && String(it.variant) === String(v)) ? n + (Number(it.qty) || 0) : n; }, 0); }
   var a = rbUseDraft(gScope, "cat", function () {
     var c0 = "garden"; init.forEach(function (it) { if (it.category === "garden") c0 = "garden"; }); if (!init.some(function (it) { return it.category === "garden"; }) && init.some(function (it) { return it.category === "slab"; })) c0 = "slab"; return c0;
   }), cat = a[0], setCat = a[1];
@@ -839,7 +842,9 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   function listFor(cc) { var l = rbBachaLast(cc, variantsFor(cc)).slice(), seen = {}; l.forEach(function (v) { seen[String(v)] = 1; }); Object.keys(qtys).forEach(function (k) { var pr = k.split("|"); if (pr[0] === cc && !seen[pr[1]]) { seen[pr[1]] = 1; l.push(pr[1]); } }); return l; }
   function avail(cc, v) { return Math.max(0, (remainingFor(cc, v) || 0) + (p.backQty ? p.backQty(cc, v) : 0)); }
   var rows = [], over = [];
-  ["garden", "slab"].forEach(function (cc) { listFor(cc).forEach(function (v) { var q = Number(qtys[key(cc, v)]) || 0; if (q > 0) { rows.push({ category: cc, variant: v, qty: q }); if (q > avail(cc, v)) over.push(variantLabel(t, cc, v)); } }); });
+  var seenR = {};
+  ["garden", "slab"].forEach(function (cc) { listFor(cc).forEach(function (v) { var k0 = key(cc, v); seenR[k0] = 1; var q = (Number(qtys[k0]) || 0) + extraQ(cc, v); if (q > 0) { rows.push({ category: cc, variant: v, qty: q }); if (q > avail(cc, v)) over.push(variantLabel(t, cc, v)); } }); });
+  autoExtras.forEach(function (it) { var k0 = key(it.category, it.variant); if (seenR[k0]) return; seenR[k0] = 1; var q = extraQ(it.category, it.variant); rows.push({ category: it.category, variant: it.variant, qty: q }); if (q > avail(it.category, it.variant)) over.push(variantLabel(t, it.category, it.variant)); });
   var totalPieces = rows.reduce(function (n, r) { return n + r.qty; }, 0) + customs.reduce(function (n, x) { return n + (Number(x.qty) || 0); }, 0);
   var canSave = (rows.length + customs.length) > 0 && over.length === 0;
   function catCount(cc) { return rows.filter(function (r) { return r.category === cc; }).length; }
@@ -853,7 +858,14 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   var small = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "8px 8px", textAlign: "center", width: 80 });
   var title = (p.isEdit ? t("edit") : t("makeGatePass")) + (p.extraTrip ? " #" + sale.serial + "-" + p.extraTrip : "") + " — " + sale.customerName;
   return (
-    <ModalShell noBackdropClose onClose={function () { if (totalPieces > 0 && !window.confirm("Gate pass abhi save nahi hua. Band karna hai?\n(Jo likha hai wo mehfooz rahega - dobara kholne par wapas aa jayega)")) return; p.onClose(); }} title={title}>
+    <ModalShell noBackdropClose onClose={function () { if ((totalPieces - autoExtras.reduce(function (n, it) { return n + (Number(it.qty) || 0); }, 0)) > 0 && !window.confirm("Gate pass abhi save nahi hua. Band karna hai?\n(Jo likha hai wo mehfooz rahega - dobara kholne par wapas aa jayega)")) return; p.onClose(); }} title={title}>
+      {autoExtras.length ? (
+        <div style={{ background: "#2F3A26", border: "1.5px solid " + TC.garden, borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, color: "#CFE3B8", fontWeight: 700, marginBottom: 4 }}>Bill ka extra maal — gate pass mein khud jama ho jayega:</div>
+          {autoExtras.map(function (it, i) { return <div key={i} className="rb-mono" style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700 }}>{variantLabel(t, it.category, it.variant)} × {it.qty}</div>; })}
+          <div style={{ fontSize: 10.5, color: "#A9BE96", marginTop: 4 }}>Neeche sirf chhat (room) ka maal likhein.</div>
+        </div>
+      ) : null}
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[["garden", TC.garden, "sprout"], ["slab", TC.slab, "grid"]].map(function (o) {
           var on = cat === o[0], n = catCount(o[0]);
