@@ -177,7 +177,7 @@ function NewSaleTab(p) {
   var itemsTotal = rows.reduce(function (sum, r) { return sum + rbRowCalc(r, mode).amount; }, 0);
   var labourTotal = saleType === "cash" ? (Number(labourRate) || 0) : 0;
   var discount = Math.max(0, Math.min(itemsTotal + labourTotal, Number(discountInput) || 0));
-  var totalBill = itemsTotal + labourTotal - discount;
+  var totalBill = Math.round(itemsTotal + labourTotal - discount); /* bill poore rupay mein - point (.5 waghera) na bache */
   var advance = paidInFull ? totalBill : Math.min(totalBill, Number(advanceInput) || 0);
   var dues = Math.max(0, totalBill - advance);
 
@@ -2648,12 +2648,12 @@ function PaymentsSummaryCard(p) {
 
 function CollectPaymentModal(p) {
   var t = p.t, sale = p.sale;
-  var a = React.useState(String(sale.dues || 0)), amount = a[0], setAmount = a[1];
+  var a = React.useState(String(Math.round(Number(sale.dues) || 0))), amount = a[0], setAmount = a[1];
   var b = React.useState(rbToday()), date = b[0], setDate = b[1];
   var dsc = React.useState(""), discountInput = dsc[0], setDiscountInput = dsc[1];
   var nt = React.useState(""), note = nt[0], setNote = nt[1];
   var discAmt = Math.max(0, Number(discountInput) || 0);
-  var canSave = (Number(amount) > 0 || discAmt > 0) && (Number(amount) || 0) + discAmt <= sale.dues + 0.001 && !!note.trim();
+  var canSave = (Number(amount) > 0 || discAmt > 0) && (Number(amount) || 0) + discAmt <= Math.round(Number(sale.dues) || 0) + 0.999 && !!note.trim();
   return (
     <ModalShell onClose={p.onClose} title={t("collectPayment")}>
       <div style={{ marginBottom: 12 }}>
