@@ -4320,10 +4320,14 @@ function RbLabourDayLedger(p) {
   shown.forEach(function (d) {
     var w = rbWeekOf(d.date || rbToday());
     if (!wk || w.from !== wk.from) { closeWeek(); wk = w; wAgg = { kinds: {}, work: 0, paid: 0 }; }
-    bal += d.work - d.paid; gW += d.work; gP += d.paid;
+    gW += d.work; gP += d.paid;
     Object.keys(d.kinds).forEach(function (k) { wAgg.kinds[k] = (wAgg.kinds[k] || 0) + d.kinds[k]; });
     wAgg.work += d.work; wAgg.paid += d.paid;
-    lines.push({ d: d, bal: bal });
+    /* har cheez alag line: customer + fotwari tafseel + raqam, phir payment (received) - har line ke baad balance */
+    var pk0 = Object.keys(d.parts);
+    if (pk0.length) { var pAmt = 0; var pTx = pk0.map(function (pk) { var pt = d.parts[pk]; pAmt += pt.amt; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey); var rr = (Math.round(pt.rate * 100) / 100).toLocaleString("en-US"); return (pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + rr + ")" : pt.qty + " " + unit + " \u00d7 " + rr) + " = " + rbMoney(pt.amt); }); bal += pAmt; lines.push({ date: d.date, cust: "-", tx: pTx, work: pAmt, paid: 0, bal: bal }); }
+    d.fits.forEach(function (f) { var tx = ["Slab fotwari " + f.qty + " sq ft \u00d7 " + (Math.round(f.rate * 100) / 100).toLocaleString("en-US") + " = " + rbMoney(f.slabAmt)]; if (f.extra > 0) tx.push("Extra garder " + (f.gN ? f.gN + " \u00d7 " + rbMoney(f.gR) + " " : "") + "= " + rbMoney(f.extra)); bal += f.amt; lines.push({ date: d.date, cust: f.cust, tx: tx, work: f.amt, paid: 0, bal: bal }); });
+    d.pays.forEach(function (py) { bal -= py.amount; lines.push({ date: d.date, cust: "-", pay: true, tx: [(py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")) + (py.note ? " \u2014 " + py.note : "") + (py.by ? " (dene wala: " + py.by + ")" : "")], work: 0, paid: py.amount, bal: bal }); });
   });
   closeWeek();
   var idRef = React.useRef("rbll" + rbUid());
@@ -4353,51 +4357,37 @@ function RbLabourDayLedger(p) {
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead><tr>
-              <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
-              <th style={head}>Kaam</th>
-              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Mazdoori</th>
-              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Mila</th>
-              <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Baqi</th>
+              <th style={Object.assign({}, head, { width: "12%" })}>Tareekh</th>
+              <th style={Object.assign({}, head, { width: "20%" })}>Customer</th>
+              <th style={head}>Fotwari / Tafseel</th>
+              <th style={Object.assign({}, head, { width: "13%", textAlign: "right" })}>Total amount</th>
+              <th style={Object.assign({}, head, { width: "12%", textAlign: "right" })}>Received</th>
+              <th style={Object.assign({}, head, { width: "13%", textAlign: "right" })}>Balance</th>
             </tr></thead>
             <tbody>
-              {carry ? <tr><td style={cell}>{r.from ? rbDate(r.from) : (lb.openingDate ? rbDate(lb.openingDate) : "-")}</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>{r.from ? "Pichla baqi" : "Purana baqi"}</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{bt(carry)}</td></tr> : null}
-              {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
+              {carry ? <tr><td style={cell}>{r.from ? rbDate(r.from) : (lb.openingDate ? rbDate(lb.openingDate) : "-")}</td><td style={cell}>-</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>{r.from ? "Pichla baqi" : "Purana baqi"}</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{bt(carry)}</td></tr> : null}
+              {lines.length === 0 ? <tr><td colSpan={6} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 if (l.week) return (
                   <tr key={i}>
-                    <td colSpan={2} style={Object.assign({}, wkC, { whiteSpace: "normal" })}>Hafta {rbDate(l.from)} - {rbDate(l.to)}{Object.keys(l.kinds).length ? ": " + kindsText(l.kinds) : ""}</td>
+                    <td colSpan={3} style={Object.assign({}, wkC, { whiteSpace: "normal" })}>Hafta {rbDate(l.from)} - {rbDate(l.to)}{Object.keys(l.kinds).length ? ": " + kindsText(l.kinds) : ""}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.work)}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right" })}>{rbMoney(l.paid)}</td>
                     <td style={Object.assign({}, wkC, { textAlign: "right", color: "#B0262B" })}>{bt(l.bal)}</td>
                   </tr>
                 );
-                var d = l.d, kt = kindsText(d.kinds);
                 return (
                   <tr key={i}>
-                    <td style={cell}>{d.date ? rbDate(d.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{Object.keys(d.parts).length ? Object.keys(d.parts).map(function (pk) { var pt = d.parts[pk]; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey);
-                      var txt = pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US") + ")" : pt.qty + " " + unit + " \u00d7 " + (Math.round(pt.rate * 100) / 100).toLocaleString("en-US");
-                      return <div key={pk}>{txt} = <b>{rbMoney(pt.amt)}</b></div>; }) : ((d.paid || d.fits.length) ? "" : "-")}
-                      {d.fits.map(function (f, fi) { return (
-                        <div key={"f" + fi} style={{ borderTop: fi || Object.keys(d.parts).length ? "1px dotted #ccc" : "none", paddingTop: fi || Object.keys(d.parts).length ? 3 : 0, marginTop: fi || Object.keys(d.parts).length ? 3 : 0 }}>
-                          <div style={{ fontWeight: 700, color: "#1F3F8A", fontSize: 11 }}>{f.cust}</div>
-                          <div>Slab fotwari {f.qty} sq ft × {(Math.round(f.rate * 100) / 100).toLocaleString("en-US")} = <b>{rbMoney(f.slabAmt)}</b></div>
-                          {f.extra > 0 ? <div>Extra garder {f.gN ? f.gN + " × " + rbMoney(f.gR) : ""} = <b>{rbMoney(f.extra)}</b></div> : null}
-                          {f.extra > 0 ? <div style={{ fontWeight: 700 }}>Kul = {rbMoney(f.amt)}</div> : null}
-                        </div>
-                      ); })}
-                      {d.pays.map(function (py, pi) { return (
-                        <div key={"p" + pi} style={{ color: "#1E7A3C", fontSize: 10.5, marginTop: 3, borderTop: "1px dotted #ccc", paddingTop: 2 }}>
-                          {py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")}: <b>Rs {rbMoney(py.amount)}</b>{py.note ? " — " + py.note : ""}{py.by ? " (dene wala: " + py.by + ")" : ""}
-                        </div>
-                      ); })}</td>
-                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.work)}</td>
-                    <td style={Object.assign({}, cell, { textAlign: "right" })}>{m(d.paid)}</td>
+                    <td style={cell}>{l.date ? rbDate(l.date) : "-"}</td>
+                    <td style={Object.assign({}, cell, { whiteSpace: "normal", fontWeight: l.cust !== "-" ? 700 : 400, color: l.cust !== "-" ? "#1F3F8A" : "#888" })}>{l.cust}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}</div>; })}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{m(l.work)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right", color: "#1E7A3C", fontWeight: 700 })}>{m(l.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
                   </tr>
                 );
               })}
               <tr>
-                <td colSpan={2} style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>Kul</td>
+                <td colSpan={3} style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>Kul</td>
                 <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(gW)}</td>
                 <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(gP)}</td>
                 <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{bt(bal)}</td>
