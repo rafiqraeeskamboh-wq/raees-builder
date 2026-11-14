@@ -4291,7 +4291,9 @@ function rbPersonLabel(nm, role) { var n = String(nm || "").trim(); return n || 
 function rbPeopleLedgers(all) {
   var map = {};
   var junk = { rows: [] };
-  function P(nm, role) { if (String(nm || "").trim() && rbNm(nm) === rbNm(RB_SUPER_NAME)) { junk.rows = []; return junk; } /* Super Admin ka ledger nahi banta */
+  /* purani entries (naam wale login se pehle, sirf PIN se) - Day Book ki tarah us role ke pehle bande (jaise Admin Rafiq) ke khate mein */
+  var legacyName = {}; rbMakeBooks().forEach(function (b) { if (b.legacy && b.name) legacyName[b.role] = b.name; });
+  function P(nm, role) { if (!String(nm || "").trim()) nm = legacyName[role === "admin" ? "admin" : "accountant"] || nm; if (String(nm || "").trim() && rbNm(nm) === rbNm(RB_SUPER_NAME)) { junk.rows = []; return junk; } /* Super Admin ka ledger nahi banta */
     var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
   ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
   (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount) }); }); });
