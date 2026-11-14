@@ -2751,7 +2751,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "ledger") {
     body = role === "admin" ? <RbLedgerTab t={t} parties={parties} partyLog={partyLog} remainingFor={remainingFor} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} sales={sales} suppliers={suppliers} supplierTotals={supplierTotals} labourers={labourers} labourTotals={labourTotals}
       variantsFor={variantsFor} stockLedgerRows={stockLedgerRows}
-      personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments }} />
+      personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments, transfers: transfers }} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;

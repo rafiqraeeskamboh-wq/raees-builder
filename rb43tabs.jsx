@@ -4489,28 +4489,30 @@ function rbPeopleLedgers(all) {
   function P(nm, role) { if (!String(nm || "").trim()) nm = legacyName[role === "admin" ? "admin" : "accountant"] || nm; if (String(nm || "").trim() && rbNm(nm) === rbNm(RB_SUPER_NAME)) { junk.rows = []; return junk; } /* Super Admin ka ledger nahi banta */
     var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
   ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount) }); }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
   (all.advances || []).forEach(function (x) {
-    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Advance liya #" + (x.no || "-") + " - " + (x.name || ""), a: Number(x.amount) || 0 });
-    (x.returns || []).forEach(function (rt) { P(rt.byName, rt.by || "admin").rows.push({ date: rt.date, detail: "Advance wapas diya #" + (x.no || "-") + " - " + (x.name || ""), b: Number(rt.amount) || 0 }); });
+    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Advance liya #" + (x.no || "-") + " - " + (x.name || ""), a: Number(x.amount) || 0, fix: <RbSupFix coll="advances" item={x} label={"Advance receipt #" + (x.no || "-") + " - " + (x.name || "")} /> });
+    (x.returns || []).forEach(function (rt, ri) { P(rt.byName, rt.by || "admin").rows.push({ date: rt.date, detail: "Advance wapas diya #" + (x.no || "-") + " - " + (x.name || ""), b: Number(rt.amount) || 0, fix: <RbSupFix item={rt} noAdvanced={true} label={"Advance wapas - " + (x.name || "")} onSave={function (n) { window.rbSuperApi.advReturn(x.id, ri, n); }} onDel={function () { window.rbSuperApi.advReturn(x.id, ri, null); }} /> }); });
   });
-  (all.returnLog || []).forEach(function (x) { if (Number(x.refund) > 0) P(x.byName, x.createdBy || "admin").rows.push({ date: x.date, detail: "Maal wapsi ke paise diye - " + (x.customerName || ""), b: Number(x.refund) }); });
+  (all.returnLog || []).forEach(function (x) { if (Number(x.refund) > 0) P(x.byName, x.createdBy || "admin").rows.push({ date: x.date, detail: "Maal wapsi ke paise diye - " + (x.customerName || ""), b: Number(x.refund), fix: <RbSupFix coll="returnLog" item={x} /> }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
-      P(x.byName, x.from || x.by || "admin").rows.push({ date: x.date, detail: "Cash diya " + (x.to === "admin" ? "Admin" : "User") + (x.name ? " (" + x.name + ")" : ""), b: Number(x.amount) || 0 });
-      P(x.name, x.to || "admin").rows.push({ date: x.date, detail: "Cash mila " + (x.from === "admin" ? "Admin" : "User") + (x.byName ? " (" + x.byName + ")" : ""), a: Number(x.amount) || 0 });
+      var tf = <RbSupFix coll="expenses" item={x} label={"Cash transfer Rs " + rbMoney(x.amount)} />;
+      P(x.byName, x.from || x.by || "admin").rows.push({ date: x.date, detail: "Cash diya " + (x.to === "admin" ? "Admin" : "User") + (x.name ? " (" + x.name + ")" : ""), b: Number(x.amount) || 0, fix: tf });
+      P(x.name, x.to || "admin").rows.push({ date: x.date, detail: "Cash mila " + (x.from === "admin" ? "Admin" : "User") + (x.byName ? " (" + x.byName + ")" : ""), a: Number(x.amount) || 0, fix: tf });
       return;
     }
-    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0 });
+    P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0, fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
   });
   (all.transfers || []).forEach(function (x) {
-    P(x.fromName, x.fromRole || "admin").rows.push({ date: x.date, detail: "Cash diya " + rbPersonTag({ name: x.toName, role: x.toRole }) + " (" + rbStoreOf(x.toStore) + ")" + (x.note ? " - " + x.note : ""), b: Number(x.amount) || 0 });
-    P(x.toName, x.toRole || "admin").rows.push({ date: x.date, detail: "Cash mila " + rbPersonTag({ name: x.fromName, role: x.fromRole }) + " (" + rbStoreOf(x.fromStore) + ")" + (x.note ? " - " + x.note : ""), a: Number(x.amount) || 0 });
+    var nf = <RbSupFix coll="transfers" item={x} label={"Cash transfer " + x.fromName + " > " + x.toName} />;
+    P(x.fromName, x.fromRole || "admin").rows.push({ date: x.date, detail: "Cash diya " + rbPersonTag({ name: x.toName, role: x.toRole }) + " (" + rbStoreOf(x.toStore) + ")" + (x.note ? " - " + x.note : ""), b: Number(x.amount) || 0, fix: nf });
+    P(x.toName, x.toRole || "admin").rows.push({ date: x.date, detail: "Cash mila " + rbPersonTag({ name: x.fromName, role: x.fromRole }) + " (" + rbStoreOf(x.fromStore) + ")" + (x.note ? " - " + x.note : ""), a: Number(x.amount) || 0, fix: nf });
   });
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
-  (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0 }); });
+  (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0, fix: <RbSupFix coll="supplierPayments" item={x} label={"Supplier payment - " + (supName[x.supplierId] || "")} /> }); });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: (x.type === "advance" ? "Labour ko bara advance - " : "Labour ko payment - ") + (labName[x.labourerId] || ""), b: Number(x.amount) || 0 }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: (x.type === "advance" ? "Labour ko bara advance - " : "Labour ko payment - ") + (labName[x.labourerId] || ""), b: Number(x.amount) || 0, fix: <RbSupFix coll="labourPayments" item={x} label={"Labour payment - " + (labName[x.labourerId] || "")} /> }); });
   return Object.keys(map).map(function (k) { map[k].rows = rbLedgerSort(map[k].rows); return map[k]; })
     .sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
 }
@@ -4529,7 +4531,8 @@ function RbLedgerModal(p) {
   function printIt() {
     var el = document.getElementById(idRef.current); if (!el) return;
     var w = window.open("", "_blank"); if (!w) { window.print(); return; }
-    w.document.write("<html><head><title>Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    var cl = el.cloneNode(true); Array.prototype.forEach.call(cl.querySelectorAll("[data-supfix]"), function (n) { n.parentNode.removeChild(n); });
+    w.document.write("<html><head><title>Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
   var cell = { border: "1px solid #bbb", padding: "3px 3px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
@@ -4566,7 +4569,7 @@ function RbLedgerModal(p) {
                 return (
                   <tr key={i}>
                     <td style={cell}>{l.x.date ? rbDate(l.x.date) : "-"}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{l.x.detail}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{l.x.detail}{l.x.fix || null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.a ? rbMoney(l.x.a) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.b ? rbMoney(l.x.b) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{balTxt(l.bal)}</td>
