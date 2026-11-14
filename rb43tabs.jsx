@@ -4411,11 +4411,17 @@ function RbPersonLedgerModal(p) {
   }, [p.all]);
   var a = React.useState(""), sel = a[0], setSel = a[1];
   var cur = null; list.forEach(function (x) { if (x.key === sel) cur = x; });
-  if (cur) return <RbLedgerModal t={p.t} title={cur.name} subtitle={(cur.role === "admin" ? "Admin" : "User") + " - " + rbStoreName() + " store"} rows={cur.rows} colA="Aaya" colB="Gaya" balLabel="Paas mein" onClose={function () { setSel(""); }}
+  if (sel === "__all" && list.length) {
+    var allRows = [];
+    list.forEach(function (x) { x.rows.forEach(function (r) { allRows.push(Object.assign({}, r, { detail: (x.name ? x.name + ": " : "") + r.detail })); }); });
+    cur = { key: "__all", name: "Sab ikatha", role: "", rows: rbLedgerSort(allRows) };
+  }
+  if (cur) return <RbLedgerModal t={p.t} title={cur.name} subtitle={(cur.key === "__all" ? "Admin + User ikatha" : (cur.role === "admin" ? "Admin" : "User")) + " - " + rbStoreName() + " store"} rows={cur.rows} colA="Aaya" colB="Gaya" balLabel="Paas mein" onClose={function () { setSel(""); }}
     note="Aaya = is bande ne paise liye (wasooli, advance, cash mila). Gaya = is ne paise diye (kharcha, payment, wapsi, cash diya)." />;
   return (
     <ModalShell onClose={p.onClose} title="Har bande ka ledger">
       <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>Kis ka ledger dekhna hai? (har bande ke haath mein aaye aur gaye paise)</div>
+      {list.length > 1 ? <button onClick={function () { setSel("__all"); }} style={{ width: "100%", padding: "11px 12px", marginBottom: 9, borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>Sab ikatha dekhein (Admin + User)</button> : null}
       {list.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A" }}>Abhi koi entry nahi</div> : list.map(function (x) {
         var bal = x.rows.reduce(function (n, r) { return n + (Number(r.a) || 0) - (Number(r.b) || 0); }, 0);
         return (
@@ -4882,18 +4888,24 @@ function RbIncomeExpense(p) {
   var all = p.all || {};
   var a = React.useState({ preset: "30d" }), range = a[0], setRange = a[1];
   var r = resolveRange(range);
+  /* kis ka: sab ikatha ya ek banda (Admin apna + Users, Super Admin sab) */
+  var meN = rbNm(rbSessionName());
+  var who = rbMakeBooks().filter(function (b) { return b.name && (rbIsSuper() || b.role !== "admin" || rbNm(b.name) === meN); });
+  var wS = React.useState(""), wKey = wS[0], setWKey = wS[1];
+  var wb = null; who.forEach(function (b) { if (b.key === wKey) wb = b; });
   function inR(d) { return inDateRange(d, r.from, r.to); }
+  function mineW(nm, role) { return !wb || rbBookMine(wb, nm, role); }
   var num = function (v) { return Number(v) || 0; };
-  var bills = (all.sales || []).filter(function (s) { return s && !s.isOpening && inR(s.date); })
+  var bills = (all.sales || []).filter(function (s) { return s && !s.isOpening && inR(s.date) && mineW(s.createdByName, s.createdBy); })
     .sort(function (m, n) { return (num(m.serial) - num(n.serial)) || String(m.date || "").localeCompare(String(n.date || "")); });
   var incT = bills.reduce(function (n, s) { return n + num(s.totalBill); }, 0);
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
   var exp = [];
-  (all.expenses || []).forEach(function (x) { if (!x.transfer && inR(x.date)) exp.push({ date: x.date, kind: "Kharcha", detail: x.detail || "-", by: x.byName, amt: num(x.amount) }); });
-  (all.supplierPayments || []).forEach(function (x) { if (inR(x.date)) exp.push({ date: x.date, kind: "Supplier payment", detail: (supName[x.supplierId] || "-") + (x.note ? " (" + x.note + ")" : ""), by: x.byName, amt: num(x.amount) }); });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash || !inR(x.date)) return; exp.push({ date: x.date, kind: x.type === "advance" ? "Labour advance" : "Labour payment", detail: labName[x.labourerId] || "-", by: x.byName, amt: num(x.amount) }); });
-  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && inR(x.date)) exp.push({ date: x.date, kind: "Maal wapsi", detail: (x.customerName || "-") + " (bill #" + (x.serial || "-") + ")", by: x.byName, amt: num(x.refund) }); });
+  (all.expenses || []).forEach(function (x) { if (!x.transfer && inR(x.date) && mineW(x.byName, x.by)) exp.push({ date: x.date, kind: "Kharcha", detail: x.detail || "-", by: x.byName, amt: num(x.amount) }); });
+  (all.supplierPayments || []).forEach(function (x) { if (inR(x.date) && mineW(x.byName, x.by)) exp.push({ date: x.date, kind: "Supplier payment", detail: (supName[x.supplierId] || "-") + (x.note ? " (" + x.note + ")" : ""), by: x.byName, amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash || !inR(x.date) || !mineW(x.byName, x.by)) return; exp.push({ date: x.date, kind: x.type === "advance" ? "Labour advance" : "Labour payment", detail: labName[x.labourerId] || "-", by: x.byName, amt: num(x.amount) }); });
+  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && inR(x.date) && mineW(x.byName, x.createdBy)) exp.push({ date: x.date, kind: "Maal wapsi", detail: (x.customerName || "-") + " (bill #" + (x.serial || "-") + ")", by: x.byName, amt: num(x.refund) }); });
   exp.sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
   var expT = exp.reduce(function (n, x) { return n + x.amt; }, 0);
   var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11.5, color: "#222", verticalAlign: "top" };
@@ -4908,11 +4920,20 @@ function RbIncomeExpense(p) {
   return (
     <div>
       <div style={{ background: TC.paper, borderRadius: 10, padding: 10, marginBottom: 10 }}><RangeFilter t={p.t} range={range} onChange={setRange} /></div>
+      {who.length ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {[{ key: "", label: "Sab ikatha" }].concat(who.map(function (b) { return { key: b.key, label: rbPersonTag(b) }; })).map(function (o) {
+            var on = wKey === o.key;
+            return <button key={o.key || "all"} onClick={function () { setWKey(o.key); }} style={{ flex: "1 1 30%", padding: "8px 6px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{o.label}</button>;
+          })}
+        </div>
+      ) : null}
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
       <div id="rb-incexp" style={{ background: "#fff", borderRadius: 6, padding: "12px 6px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={12} />
-        <div style={{ textAlign: "center", fontSize: 12, color: "#333", margin: "4px 0 10px" }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + rbDate(r.to || rbToday())}</div>
+        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "#1F3F8A", marginTop: 4 }}>{wb ? rbPersonTag(wb) : "Sab ikatha (Admin + User)"}</div>
+        <div style={{ textAlign: "center", fontSize: 12, color: "#333", margin: "4px 0 10px" }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from === r.to ? rbDate(r.from) : (r.from ? rbDate(r.from) : "") + " - " + rbDate(r.to || rbToday()))}</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 4 }}>Income (bill wise)</div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
           <thead><tr><th style={Object.assign({}, head, { width: "16%" })}>Bill</th><th style={head}>Naam</th><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%", textAlign: "right" })}>Income</th></tr></thead>

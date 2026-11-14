@@ -484,8 +484,11 @@ function getRangeBounds(preset) {
   if (preset === "30d") { var b = new Date(); b.setDate(b.getDate() - 29); return { from: isoOf(b), to: today }; }
   return { from: null, to: null };
 }
+function rbMonthEnd(ym) { var m = String(ym || "").match(/^(\d{4})-(\d{2})/); if (!m) return null; var d = new Date(Number(m[1]), Number(m[2]), 0); return m[1] + "-" + m[2] + "-" + String(d.getDate()).padStart(2, "0"); }
 function resolveRange(range) {
   if (range.preset === "custom") return { from: range.from || null, to: range.to || null };
+  if (range.preset === "day") { var dd = range.day || rbToday(); return { from: dd, to: dd }; }
+  if (range.preset === "month") { var mm = range.month || rbToday().slice(0, 7); return { from: mm + "-01", to: rbMonthEnd(mm) }; }
   return getRangeBounds(range.preset);
 }
 function inDateRange(d, from, to) {
@@ -745,7 +748,7 @@ function ModalShell(p) {
 }
 function RangeFilter(p) {
   var t = p.t, range = p.range, onChange = p.onChange;
-  var presets = [["today", t("today")], ["7d", t("last7Days")], ["30d", t("last30Days")], ["all", t("allTime")], ["custom", t("customRange")]];
+  var presets = [["today", t("today")], ["day", "Din"], ["month", "Mahina"], ["7d", t("last7Days")], ["30d", t("last30Days")], ["all", t("allTime")], ["custom", t("customRange")]];
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
@@ -760,6 +763,12 @@ function RangeFilter(p) {
           );
         })}
       </div>
+      {range.preset === "day" ? (
+        <input type="date" value={range.day || rbToday()} onChange={function (e) { onChange(Object.assign({}, range, { day: e.target.value })); }} style={Object.assign({}, rbInput(), { fontSize: 13, padding: "6px 8px" })} />
+      ) : null}
+      {range.preset === "month" ? (
+        <input type="month" value={range.month || rbToday().slice(0, 7)} onChange={function (e) { onChange(Object.assign({}, range, { month: e.target.value })); }} style={Object.assign({}, rbInput(), { fontSize: 13, padding: "6px 8px" })} />
+      ) : null}
       {range.preset === "custom" ? (
         <div style={{ display: "flex", gap: 8 }}>
           <input type="date" value={range.from || ""} onChange={function (e) { onChange(Object.assign({}, range, { from: e.target.value })); }}
