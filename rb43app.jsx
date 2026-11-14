@@ -1172,6 +1172,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbUiSet("open:gp", gatePassBuilderFor && gatePassBuilderFor.id ? gatePassBuilderFor.id : null); }, [gatePassBuilderFor]);
   var ge = React.useState(null), gatePassEditTarget = ge[0], setGatePassEditTarget = ge[1];
   var esS = React.useState(null), editingSale = esS[0], setEditingSale = esS[1];
+  var fsS = React.useState(null), fillSerial = fsS[0], setFillSerial = fsS[1];
   var ts = React.useState(""), toast = ts[0], setToast = ts[1];
   var toastRef = React.useRef(0);
 
@@ -2426,7 +2427,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function startEditSale(sale) {
-    setEditingSale(sale);
+    setEditingSale(sale); setFillSerial(null);
     setViewingBill(null);
     setTab("sale");
   }
@@ -2476,6 +2477,7 @@ function editStockEntry(id, qty, date) {
       return;
     }
     var serial = wantSerial > 0 ? wantSerial : nextSerial;
+    setFillSerial(null);
     var payments = sale.advance > 0 ? [{ id: rbUid(), amount: sale.advance, date: sale.date, by: role, byName: rbSessionName() }] : [];
     var full = Object.assign({}, sale, { id: rbUid(), serial: serial, payments: payments, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() });
     /* is customer ka advance ho to khud bill mein lag jaye */
@@ -2601,8 +2603,9 @@ function editStockEntry(id, qty, date) {
     body = <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text="Super Admin naya bill nahi bana sakta. Lain-dain ke liye Admin ya User se login karein." />;
   } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
-      editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+      editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
+      presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={rbIsSuper() ? null : function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
