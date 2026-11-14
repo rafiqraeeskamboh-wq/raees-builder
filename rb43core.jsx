@@ -3,6 +3,48 @@
 
 var NL = String.fromCharCode(10);
 
+/* ---------- har tareekh ka khana: pehle din, phir mahina, phir saal (DD/MM/YYYY) ----------
+   phone / browser apni marzi se 11/14/2026 (mahina pehle) dikhata hai - is liye har <input type="date">
+   ke upar apni likhawat dikhate hain, asal input neeche chhupa rehta hai (tap karne par calendar khulta hai) */
+(function () {
+  if (!window.React || React.__rbDatePatched) return;
+  React.__rbDatePatched = true;
+  var ce = React.createElement;
+  var OUTER = { flex: 1, flexGrow: 1, flexShrink: 1, flexBasis: 1, width: 1, minWidth: 1, maxWidth: 1, margin: 1, marginTop: 1, marginBottom: 1, marginLeft: 1, marginRight: 1, alignSelf: 1 };
+  function fmt(type, v) {
+    var s = String(v || "");
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (type === "date" && m) return m[3] + "/" + m[2] + "/" + m[1];
+    var n = s.match(/^(\d{4})-(\d{2})/); if (type === "month" && n) return n[2] + "/" + n[1];
+    return "";
+  }
+  function RbDateInput(p) {
+    var st = p.style || {}, outer = { position: "relative", display: st.display === "block" || st.width === "100%" ? "block" : "inline-block", boxSizing: "border-box" }, inner = {};
+    Object.keys(st).forEach(function (k) { if (OUTER[k]) outer[k] = st[k]; else inner[k] = st[k]; });
+    if (outer.width === undefined && outer.flex === undefined) outer.minWidth = outer.minWidth || 120;
+    var txt = fmt(p.type, p.value);
+    var show = Object.assign({ boxSizing: "border-box", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minHeight: 36, whiteSpace: "nowrap", overflow: "hidden" }, inner, { margin: 0 });
+    var real = {};
+    Object.keys(p).forEach(function (k) { if (k !== "style") real[k] = p[k]; });
+    real.style = { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", opacity: 0, margin: 0, padding: 0, border: 0, boxSizing: "border-box", cursor: "pointer", colorScheme: inner.colorScheme || "light" };
+    var oc = p.onClick;
+    real.onClick = function (e) { try { if (e.currentTarget.showPicker) e.currentTarget.showPicker(); } catch (x) {} if (oc) oc(e); };
+    real["data-rbdate"] = "1";
+    return ce("span", { style: outer, className: "rb-date-wrap" },
+      ce("span", { style: show, className: p.className },
+        ce("span", { style: { opacity: txt ? 1 : 0.5 } }, txt || (p.type === "month" ? "MM/YYYY" : "DD/MM/YYYY")),
+        ce("span", { style: { fontSize: "0.85em", opacity: 0.6 } }, "\u25BE")),
+      ce("input", real));
+  }
+  React.createElement = function (type, props) {
+    if (type === "input" && props && (props.type === "date" || props.type === "month") && !props["data-rbdate"]) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = RbDateInput;
+      return ce.apply(React, args);
+    }
+    return ce.apply(React, arguments);
+  };
+})();
+
 var TC = {
   appBg: "#211E17",
   appBg2: "#2A2620",
@@ -44,7 +86,7 @@ function rbDate(d) {
   var s = String(d || "");
   var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return s;
-  return m[3] + "/" + m[2] + "/" + m[1].slice(2);
+  return m[3] + "/" + m[2] + "/" + m[1];
 }
 function roleName(t, r) { return r === "accountant" ? t("accountant") : (r === "admin" ? t("admin") : "-"); }
 /* bill par: "Admin Rafiq" / "User Sajid" - jis ne banaya us ka naam */
