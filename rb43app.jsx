@@ -1259,6 +1259,28 @@ function RaeesBuilderApp() {
   }
   function superDeleteRecord(coll, id) {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
+    var item = null; (RB_COLLS[coll].list || []).forEach(function (x) { if (x && x.id === id) item = x; });
+    /* jo cheez kisi aur se judi hai us ka asar bhi wapas */
+    if (coll === "sales" && item && !item.isOpening) { superDeleteBill(item, true); return; }
+    if (coll === "returnLog" && item) {
+      /* maal wapsi delete: bill ki raqam aur customer ko diye paise wapas pehle jaise, maal stock se phir nikle */
+      var amt = Number(item.amount) || 0, rf = Number(item.refund) || 0;
+      setSales(function (l) { return l.map(function (x) {
+        if (!x || x.id !== item.saleId) return x;
+        var nt = Number(x.totalBill || 0) + amt, na = Math.min(nt, Number(x.advance || 0) + rf);
+        return Object.assign({}, x, { itemsTotal: Number(x.itemsTotal || 0) + amt, totalBill: nt, advance: na, dues: Math.max(0, nt - na), returnedTotal: Math.max(0, Number(x.returnedTotal || 0) - amt) });
+      }); });
+    }
+    if (coll === "advances" && item) {
+      /* advance receipt delete: jin billon mein ye advance laga tha un se bhi hat jaye (baqaya wapas) */
+      setSales(function (l) { return l.map(function (x) {
+        var back = 0;
+        var pays = (x.payments || []).filter(function (pp) { if (pp.fromAdvance === id) { back += Number(pp.amount) || 0; return false; } return true; });
+        if (!back) return x;
+        var na = Math.max(0, Number(x.advance || 0) - back), nt = Number(x.totalBill || 0);
+        return Object.assign({}, x, { payments: pays, advance: na, dues: Math.max(0, nt - na), paidInFull: nt - na <= 0 });
+      }); });
+    }
     RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
     showToast("Delete ho gaya - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", RB_COLLS[coll].label);
   }
@@ -1268,9 +1290,9 @@ function RaeesBuilderApp() {
     return false;
   }
   /* Super Admin: bill seedha delete (gate pass, return aur laga hua advance bhi wapas) - Recycle Bin mein jata hai */
-  function superDeleteBill(sale) {
+  function superDeleteBill(sale, noAsk) {
     if (role !== "admin" || !rbIsSuper() || !sale) return;
-    if (!window.confirm("Bill #" + sale.serial + " (" + (sale.customerName || "") + ") delete karna hai?\nIs ka gate pass cancel ho jaye ga aur maal wapas stock mein jama ho jaye ga.\nRecycle Bin se wapas la sakte hain.")) return;
+    if (!noAsk && !window.confirm("Bill #" + sale.serial + " (" + (sale.customerName || "") + ") delete karna hai?\nIs ka gate pass cancel ho jaye ga aur maal wapas stock mein jama ho jaye ga.\nRecycle Bin se wapas la sakte hain.")) return;
     setSales(function (l) { return l.filter(function (x) { return !(x && x.id === sale.id); }); });
     setGatePasses(function (l) { return l.filter(function (g) { return !(g && g.saleId === sale.id); }); });
     setReturnLog(function (l) { return l.filter(function (r) { return !(r && r.saleId === sale.id); }); });
@@ -1290,12 +1312,19 @@ function RaeesBuilderApp() {
   }
   function superRestore(entry) {
     if (role !== "admin" || !rbIsSuper() || !entry || !RB_COLLS[entry.coll]) return;
-    var it = entry.item;
-    RB_COLLS[entry.coll].set(function (l) {
-      var has = l.some(function (x) { return x && x.id === it.id; });
-      return has ? l.map(function (x) { return x && x.id === it.id ? it : x; }) : [it].concat(l);
+    /* ek hi waqt mein jo kuch badla tha (bill + us ka gate pass + advance ...) sab ek saath wapas */
+    var group = (trash || []).filter(function (x) { return x.at === entry.at && x.by === entry.by && RB_COLLS[x.coll]; });
+    if (!group.length) group = [entry];
+    var ids = {};
+    group.forEach(function (g) {
+      ids[g.id] = 1;
+      var it = g.item;
+      RB_COLLS[g.coll].set(function (l) {
+        var has = l.some(function (x) { return x && x.id === it.id; });
+        return has ? l.map(function (x) { return x && x.id === it.id ? it : x; }) : [it].concat(l);
+      });
     });
-    setTrash(function (tl) { return tl.filter(function (x) { return x.id !== entry.id; }); });
+    setTrash(function (tl) { return tl.filter(function (x) { return !ids[x.id]; }); });
     showToast("Wapas aa gaya"); logActivity("super_restore", RB_COLLS[entry.coll].label);
   }
   function superForget(id) {
@@ -1305,6 +1334,20 @@ function RaeesBuilderApp() {
   /* Super Admin: bill ki wasooli (payment) edit / delete - bill ka baqaya khud theek ho jata hai */
   function superSalePay(saleId, payId, newPay) {
     if (role !== "admin" || !rbIsSuper()) return;
+    var advFix = null;
+    sales.forEach(function (s0) { if (s0 && s0.id === saleId) (s0.payments || []).forEach(function (x) { if (x && x.id === payId && x.fromAdvance) advFix = { advId: x.fromAdvance, saleId: s0.id, oldAmt: Number(x.amount) || 0, newAmt: newPay ? Math.max(0, Number(newPay.amount) || 0) : 0 }; }); });
+    if (advFix) {
+      /* bill mein laga advance kam / khatam kiya to advance receipt mein wapas */
+      var f = advFix;
+      setAdvances(function (l) { return l.map(function (x) {
+        if (!x || x.id !== f.advId) return x;
+        var diff = f.oldAmt - f.newAmt;
+        var uses = (x.uses || []).map(function (u) { return u.saleId === f.saleId ? Object.assign({}, u, { amount: Math.max(0, (Number(u.amount) || 0) - diff) }) : u; }).filter(function (u) { return Number(u.amount) > 0; });
+        var nx = Object.assign({}, x, { uses: uses, used: Math.max(0, (Number(x.used) || 0) - diff) });
+        nx.status = advLeft(nx) > 0 ? "open" : ((Number(nx.used) || 0) > 0 ? "used" : "returned");
+        return nx;
+      }); });
+    }
     setSales(function (l) {
       return l.map(function (s) {
         if (!s || s.id !== saleId) return s;
