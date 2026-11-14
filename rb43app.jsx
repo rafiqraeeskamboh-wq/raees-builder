@@ -1090,6 +1090,9 @@ function RaeesBuilderApp() {
   var cnS = React.useState(function () { return rbGet("cat-names", {}); }), catNames = cnS[0], setCatNames = cnS[1];
   var alS = React.useState(function () { return rbGet("activity-log", []); }), activityLog = alS[0], setActivityLog = alS[1];
   var rlS = React.useState(function () { return rbGet("returns", []); }), returnLog = rlS[0], setReturnLog = rlS[1];
+  /* dusri factory se len-den: hum ne maal liya (aaya) / unhon ne liya (gaya) - fotwari hisaab */
+  var ptS = React.useState(function () { return rbGet("parties", []); }), parties = ptS[0], setParties = ptS[1];
+  var plS = React.useState(function () { return rbGet("party-log", []); }), partyLog = plS[0], setPartyLog = plS[1];
   var moS = React.useState(function () { return rbGet("material-opening", {}) || {}; }), materialOpening = moS[0], setMaterialOpening = moS[1];
   var dvS = React.useState(function () { return rbGet("day-verify", {}) || {}; }), dayVerify = dvS[0], setDayVerify = dvS[1];
   var rfS = React.useState(null), returnFor = rfS[0], setReturnFor = rfS[1];
@@ -1202,6 +1205,8 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("cat-names", catNames); }, [catNames]);
   React.useEffect(function () { rbSet("activity-log", activityLog); }, [activityLog]);
   React.useEffect(function () { rbSet("returns", returnLog); }, [returnLog]);
+  React.useEffect(function () { rbSet("parties", parties); }, [parties]);
+  React.useEffect(function () { rbSet("party-log", partyLog); }, [partyLog]);
   React.useEffect(function () { rbSet("material-opening", materialOpening); }, [materialOpening]);
   React.useEffect(function () { rbSet("day-verify", dayVerify); }, [dayVerify]);
   React.useEffect(function () { rbSet("trash", trash); }, [trash]);
@@ -1216,6 +1221,8 @@ function RaeesBuilderApp() {
     advances: { list: advances, set: setAdvances, label: "Advance" },
     expenses: { list: expenses, set: setExpenses, label: "Kharche (Expenses)" },
     transfers: { list: transfers, set: setTransfers, label: "Cash transfer" },
+    parties: { list: parties, set: setParties, label: "Dusri factory" },
+    partyLog: { list: partyLog, set: setPartyLog, label: "Dusri factory len-den" },
     labourers: { list: labourers, set: setLabourers, label: "Labour (mazdoor)" },
     labourWork: { list: labourWork, set: setLabourWork, label: "Labour kaam" },
     labourPayments: { list: labourPayments, set: setLabourPayments, label: "Labour payments" },
@@ -1244,7 +1251,7 @@ function RaeesBuilderApp() {
       });
     });
     if (found.length) setTrash(function (tl) { return found.concat(tl || []).slice(0, 500); });
-  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
+  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, parties, partyLog, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
   function superSaveRecord(coll, item) {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
     RB_COLLS[coll].set(function (l) { return l.map(function (x) { return x && x.id === item.id ? item : x; }); });
@@ -1416,6 +1423,15 @@ function RaeesBuilderApp() {
       convertedOut[c.category][c.fromVariant] = (convertedOut[c.category][c.fromVariant] || 0) + Number(c.qty || 0);
       convertedIn[c.category][c.toVariant] = (convertedIn[c.category][c.toVariant] || 0) + Number(c.qty || 0);
     });
+    partyLog.forEach(function (x) {
+      if (x.stockCut) return;
+      (x.items || []).forEach(function (it) {
+        if (!added[it.category]) return;
+        var q = Number(it.qty) || 0;
+        if (x.dir === "in") added[it.category][it.variant] = (added[it.category][it.variant] || 0) + q;
+        else sold[it.category][it.variant] = (sold[it.category][it.variant] || 0) + q;
+      });
+    });
     returnLog.forEach(function (r) {
       if (r.stockCut) return;
       (r.items || []).forEach(function (it) {
@@ -1423,7 +1439,7 @@ function RaeesBuilderApp() {
       });
     });
     return { added: added, sold: sold, wasted: wasted, convertedOut: convertedOut, convertedIn: convertedIn };
-  }, [stockLog, gatePasses, wastageLog, conversionLog, returnLog]);
+  }, [stockLog, gatePasses, wastageLog, conversionLog, returnLog, partyLog]);
 
   /* User (accountant) ka ek din ka sara kaam - Admin roz verify karta hai */
   function userDayItems(date) {
@@ -1468,6 +1484,8 @@ function RaeesBuilderApp() {
     stockLog.forEach(function (e) { if (!ok(e.category, e.variant)) return; rows.push({ date: e.date, detail: nm(e.category, e.variant) + (e.isOpening ? "Purana stock (opening)" : (e.supplierId ? "Khareeda (supplier)" : "Bana")) + (e.byName ? " - " + e.byName : ""), a: Number(e.qty) || 0 }); });
     gatePasses.forEach(function (g) { if (g.stockCut) return; (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (rbGpNo(g) || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
     returnLog.forEach(function (x) { if (x.stockCut) return; (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: x.date, detail: nm(it.category, it.variant) + "Maal wapas aaya (bill #" + (x.serial || "-") + ") - " + (x.customerName || ""), a: Number(it.qty) || 0 }); }); });
+    var ptName = {}; parties.forEach(function (x) { ptName[x.id] = x.name; });
+    partyLog.forEach(function (x) { if (x.stockCut) return; (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; var row = { date: x.date, detail: nm(it.category, it.variant) + (x.dir === "in" ? "Dusri factory se aaya - " : "Dusri factory ko diya - ") + (ptName[x.partyId] || "") }; if (x.dir === "in") row.a = Number(it.qty) || 0; else row.b = Number(it.qty) || 0; rows.push(row); }); });
     wastageLog.forEach(function (x) { if (!ok(x.category, x.variant)) return; rows.push({ date: x.date, detail: nm(x.category, x.variant) + "Wastage" + (x.reason ? " - " + x.reason : (x.note ? " - " + x.note : "")), b: Number(x.qty) || 0 }); });
     conversionLog.forEach(function (c) {
       var q = Number(c.qty) || 0;
@@ -1486,6 +1504,7 @@ function RaeesBuilderApp() {
     gatePasses.forEach(function (g) { if (g.stockCut) return; var w = where(g.date); (g.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; }); });
     returnLog.forEach(function (x) { if (x.stockCut) return; var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening += q; else if (w === "in") r.sold -= q; }); });
     wastageLog.forEach(function (x) { var r = R(x.category, x.variant); if (!r) return; var q = Number(x.qty) || 0, w = where(x.date); if (w === "before") r.opening -= q; else if (w === "in") r.wasted += q; });
+    partyLog.forEach(function (x) { if (x.stockCut) return; var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (x.dir === "in") { if (w === "before") r.opening += q; else if (w === "in") r.made += q; } else { if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; } }); });
     conversionLog.forEach(function (c) { var w = where(c.date), q = Number(c.qty) || 0; var a = R(c.category, c.fromVariant), b = R(c.category, c.toVariant); if (!a || !b) return; if (w === "before") { a.opening -= q; b.opening += q; } else if (w === "in") { a.conv -= q; b.conv += q; } });
     Object.keys(out).forEach(function (c) { Object.keys(out[c]).forEach(function (k) { var r = out[c][k]; r.closing = r.opening + r.made - r.sold - r.wasted + r.conv; }); });
     return out;
@@ -1608,6 +1627,27 @@ function RaeesBuilderApp() {
     setExpenses(function (a) { return [entry].concat(a); });
     showToast("Cash transfer: Rs " + rbMoney(amt));
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
+  }
+
+  function addParty(name, mobile) {
+    if (rbSuperNoTx()) return;
+    var nm = String(name || "").trim(); if (!nm) return;
+    setParties(function (a) { return a.concat([{ id: rbUid(), name: nm, mobile: String(mobile || "").trim(), createdAt: new Date().toISOString() }]); });
+    showToast("Factory add ho gayi: " + nm);
+  }
+  function addPartyEntry(partyId, dir, items, date, note) {
+    if (rbSuperNoTx()) return false;
+    var list = (items || []).filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; });
+    if (!partyId || !list.length) return false;
+    if (dir === "out") {
+      for (var i = 0; i < list.length; i++) { var it = list[i]; if ((Number(it.qty) || 0) > remainingFor(it.category, it.variant)) { showToast(variantLabel(t, it.category, it.variant) + ": stock mein itna maal nahi"); return false; } }
+    }
+    var entry = { id: rbUid(), partyId: partyId, dir: dir === "in" ? "in" : "out", date: date || rbToday(), note: String(note || "").trim(),
+      items: list.map(function (it) { return { category: it.category, variant: it.variant, qty: Number(it.qty) || 0 }; }), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    setPartyLog(function (a) { return [entry].concat(a); });
+    showToast(dir === "in" ? "Maal aa gaya - stock mein jama" : "Maal de diya - stock se nikal gaya");
+    logActivity("stock_added", "Dusri factory " + (dir === "in" ? "se aaya" : "ko diya"));
+    return true;
   }
 
   /* naam wala cash transfer: koi bhi Admin / User (dono store) kisi dusre ko raqam de */
@@ -2593,7 +2633,7 @@ function editStockEntry(id, qty, date) {
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
     trackMute.current = true; setTrash([]); setMaterialOpening({}); setDayVerify({});
-    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setTransfers([]); setReturnLog([]); setSiteWaste([]);
+    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setTransfers([]); setParties([]); setPartyLog([]); setReturnLog([]); setSiteWaste([]);
     showToast(t("clearData"));
   }
 
@@ -2607,7 +2647,7 @@ function editStockEntry(id, qty, date) {
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
-    body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
+    body = can("stock") ? <StockTab t={t} parties={parties} partyLog={partyLog} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;

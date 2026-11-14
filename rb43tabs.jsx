@@ -2214,6 +2214,132 @@ function LabourTab(p) {
     </InlineShell>
   );
 }
+/* ---------- Dusri factory: slab / garder ka len-den fotwari mein ----------
+   garder: tadaad x lambai (jaise 2 garder x 16 ft = 32 ft). slab: lambai x chaurai (1.5, bacha 1) x tadaad */
+function rbPartyFt(it) {
+  var q = Number(it.qty) || 0;
+  if (it.category === "garden") return q * (Number(rbVariantNum(it.category, it.variant)) || 0);
+  return rbSlabFt(it.category, it.variant, q);
+}
+function rbR2(x) { return Math.round((Number(x) || 0) * 100) / 100; }
+function rbPartyTotals(log, partyId) {
+  var t = { gIn: 0, gOut: 0, sIn: 0, sOut: 0 };
+  log.forEach(function (x) { if (x.partyId !== partyId) return; (x.items || []).forEach(function (it) { var f = rbPartyFt(it); if (it.category === "garden") { if (x.dir === "in") t.gIn += f; else t.gOut += f; } else { if (x.dir === "in") t.sIn += f; else t.sOut += f; } }); });
+  t.g = rbR2(t.gOut - t.gIn); t.s = rbR2(t.sOut - t.sIn); /* + = unhon ne humein dena hai, - = hum ne dena hai */
+  return t;
+}
+function rbPartyBalTxt(v, unit) { if (!v) return "Barabar"; return rbMoney(Math.abs(v)) + " " + unit + (v > 0 ? " unhon ne dena hai" : " hum ne dena hai"); }
+function RbPartyModal(p) {
+  rbUseBack(true, p.onClose);
+  var t = p.t, parties = p.parties, log = p.partyLog;
+  var a = React.useState(null), openId = a[0], setOpenId = a[1];
+  var b = React.useState(false), adding = b[0], setAdding = b[1];
+  var c = React.useState(""), nm = c[0], setNm = c[1];
+  var d = React.useState(""), mob = d[0], setMob = d[1];
+  var e = React.useState(null), dir = e[0], setDir = e[1];
+  var f = React.useState([]), rows = f[0], setRows = f[1];
+  var g = React.useState(rbToday()), date = g[0], setDate = g[1];
+  var h = React.useState(""), note = h[0], setNote = h[1];
+  var cur = null; parties.forEach(function (x) { if (x.id === openId) cur = x; });
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 6 };
+  var btn = function (on) { return { flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }; };
+  function startEntry(dd) { setDir(dd); setRows([{ id: rbUid(), category: "garden", variant: String((p.variantsFor("garden") || [])[0] || ""), qty: "" }]); setDate(rbToday()); setNote(""); }
+  function upd(id, patch) { setRows(rows.map(function (r) { if (r.id !== id) return r; var n = Object.assign({}, r, patch); if (patch.category) n.variant = String((p.variantsFor(patch.category) || [])[0] || ""); return n; })); }
+  if (!cur) return (
+    <ModalShell onClose={p.onClose} title="Dusri factory">
+      <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 10 }}>Dusri factory se slab / garder liya ya unhon ne hum se liya - hisaab fotwari mein. Garder: tadaad x lambai (2 garder x 16 ft = 32 ft). Slab: lambai x chaurai.</div>
+      {parties.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 10 }}>Abhi koi factory nahi</div> : parties.map(function (x) {
+        var tt = rbPartyTotals(log, x.id);
+        return (
+          <button key={x.id} onClick={function () { setOpenId(x.id); setDir(null); }} style={{ width: "100%", textAlign: "left", padding: "11px 12px", marginBottom: 7, borderRadius: 8, border: "none", background: TC.paper, cursor: "pointer" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{x.name}<RbSupFix coll="parties" item={x} label={"Factory - " + x.name} /></div>
+            <div style={{ fontSize: 11, color: TC.inkSoft, marginTop: 3 }}>Garder: {rbPartyBalTxt(tt.g, "ft")}</div>
+            <div style={{ fontSize: 11, color: TC.inkSoft }}>Slab: {rbPartyBalTxt(tt.s, "fot")}</div>
+          </button>
+        );
+      })}
+      {p.onAddParty ? (adding ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10 }}>
+          <input value={nm} onChange={function (ev) { setNm(ev.target.value); }} placeholder="Factory / party ka naam" style={inp} />
+          <input type="tel" value={mob} onChange={function (ev) { setMob(ev.target.value); }} placeholder="Mobile (agar chahein)" style={inp} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button disabled={!nm.trim()} onClick={function () { p.onAddParty(nm, mob); setNm(""); setMob(""); setAdding(false); }} style={Object.assign({}, btn(true), { opacity: nm.trim() ? 1 : 0.5 })}>Save</button>
+            <button onClick={function () { setAdding(false); }} style={btn(false)}>Cancel</button>
+          </div>
+        </div>
+      ) : <button onClick={function () { setAdding(true); }} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "1.5px dashed " + TC.amber, background: "transparent", color: TC.amber, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nayi factory add karein</button>) : null}
+    </ModalShell>
+  );
+  var tt = rbPartyTotals(log, cur.id);
+  var mine = log.filter(function (x) { return x.partyId === cur.id; }).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || String(m.createdAt || "").localeCompare(String(n.createdAt || "")); });
+  var bg = 0, bs = 0;
+  var cell = { border: "1px solid #bbb", padding: "4px 4px", fontSize: 10.5, color: "#222", verticalAlign: "top" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  var entryG = 0, entryS = 0; rows.forEach(function (r) { var f2 = rbPartyFt(r); if (r.category === "garden") entryG += f2; else entryS += f2; });
+  return (
+    <ModalShell onClose={p.onClose} title={cur.name}>
+      <button onClick={function () { setOpenId(null); setDir(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; Sab factory</button>
+      <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10, color: TC.ink }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700 }}><span>Garder</span><span className="rb-mono" style={{ color: tt.g > 0 ? TC.success : (tt.g < 0 ? TC.stamp : TC.ink) }}>{rbPartyBalTxt(tt.g, "ft")}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700, marginTop: 4 }}><span>Slab</span><span className="rb-mono" style={{ color: tt.s > 0 ? TC.success : (tt.s < 0 ? TC.stamp : TC.ink) }}>{rbPartyBalTxt(tt.s, "fot")}</span></div>
+      </div>
+      {p.onAddEntry && !dir ? (
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          <button onClick={function () { startEntry("in"); }} style={btn(false)}>Hum ne liya (aaya)</button>
+          <button onClick={function () { startEntry("out"); }} style={btn(false)}>Unhon ne liya (gaya)</button>
+        </div>
+      ) : null}
+      {dir ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TC.cream, marginBottom: 8 }}>{dir === "in" ? "Hum ne " + cur.name + " se liya (stock mein aaye ga)" : cur.name + " ne hum se liya (stock se nikle ga)"}</div>
+          {rows.map(function (r) {
+            var vs = p.variantsFor(r.category) || [];
+            return (
+              <div key={r.id} style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 6 }}>
+                <select value={r.category} onChange={function (ev) { upd(r.id, { category: ev.target.value }); }} style={Object.assign({}, inp, { flex: 1.1, marginBottom: 0, background: TC.appBg2, padding: "8px 4px" })}><option value="garden">{t("garden")}</option><option value="slab">{t("slab")}</option></select>
+                <select value={r.variant} onChange={function (ev) { upd(r.id, { variant: ev.target.value }); }} style={Object.assign({}, inp, { flex: 1, marginBottom: 0, background: TC.appBg2, padding: "8px 4px" })}>{vs.map(function (v) { return <option key={v} value={String(v)}>{variantLabel(t, r.category, v)}{dir === "out" ? " (" + p.remainingFor(r.category, v) + ")" : ""}</option>; })}</select>
+                <input type="number" inputMode="numeric" value={r.qty} onChange={function (ev) { upd(r.id, { qty: ev.target.value }); }} placeholder="Tadaad" style={Object.assign({}, inp, { flex: 0.9, marginBottom: 0, padding: "8px 6px" })} />
+                <span className="rb-mono" style={{ minWidth: 48, fontSize: 11, color: "#D8CDA9", textAlign: "right" }}>{rbR2(rbPartyFt(r))} {r.category === "garden" ? "ft" : "fot"}</span>
+                {rows.length > 1 ? <button onClick={function () { setRows(rows.filter(function (x) { return x.id !== r.id; })); }} style={{ background: "none", border: "none", color: TC.stamp, fontSize: 16, cursor: "pointer", padding: 0 }}>&#215;</button> : null}
+              </div>
+            );
+          })}
+          <button onClick={function () { setRows(rows.concat([{ id: rbUid(), category: "slab", variant: String((p.variantsFor("slab") || [])[0] || ""), qty: "" }])); }} style={{ width: "100%", padding: "8px", borderRadius: 7, border: "1.5px dashed #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>+ Aur line</button>
+          <div style={{ fontSize: 12, color: TC.cream, marginBottom: 8 }}>Garder kul: <b>{rbR2(entryG)} ft</b> · Slab kul: <b>{rbR2(entryS)} fot</b></div>
+          <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={Object.assign({}, inp, { colorScheme: "dark" })} />
+          <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder="Note (jaise trolley no, kis ke haath)" style={inp} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={function () { if (p.onAddEntry(cur.id, dir, rows, date, note)) setDir(null); }} style={btn(true)}>Save</button>
+            <button onClick={function () { setDir(null); }} style={btn(false)}>Cancel</button>
+          </div>
+        </div>
+      ) : null}
+      <div style={{ background: "#fff", borderRadius: 6, padding: "8px 4px", overflowX: "auto" }}>
+        <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Ledger - {cur.name}</div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={Object.assign({}, head, { width: "15%" })}>Tareekh</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { textAlign: "right" })}>Garder ft</th><th style={Object.assign({}, head, { textAlign: "right" })}>Slab fot</th><th style={Object.assign({}, head, { textAlign: "right" })}>Baqi</th></tr></thead>
+          <tbody>
+            {mine.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : mine.map(function (x) {
+              var g2 = 0, s2 = 0; (x.items || []).forEach(function (it) { var f3 = rbPartyFt(it); if (it.category === "garden") g2 += f3; else s2 += f3; });
+              var sg = x.dir === "in" ? -1 : 1; bg += sg * g2; bs += sg * s2;
+              return (
+                <tr key={x.id}>
+                  <td style={cell}>{rbDate(x.date)}</td>
+                  <td style={Object.assign({}, cell, { wordBreak: "break-word" })}><b>{x.dir === "in" ? "Hum ne liya" : "Unhon ne liya"}</b>: {(x.items || []).map(function (it) { return it.qty + " x " + variantLabel(t, it.category, it.variant); }).join(", ")}{x.note ? " (" + x.note + ")" : ""}{x.byName ? <span style={{ color: "#777" }}>{" - " + x.byName}</span> : null}<RbSupFix coll="partyLog" item={x} noAdvanced={false} label={"Factory len-den " + rbDate(x.date)} /></td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{g2 ? (x.dir === "in" ? "+" : "-") + rbR2(g2) : ""}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{s2 ? (x.dir === "in" ? "+" : "-") + rbR2(s2) : ""}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "right", whiteSpace: "nowrap" })}>G {rbR2(bg)}<br />S {rbR2(bs)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>+ = hum ne liya, - = unhon ne liya. Baqi plus (+) mein ho to unhon ne humein dena hai, minus (-) mein ho to hum ne unhein dena hai.</div>
+      </div>
+    </ModalShell>
+  );
+}
+
 function StockTab(p) {
   var t = p.t, stockLog = p.stockLog, stockTotals = p.stockTotals, remainingFor = p.remainingFor;
   var variantsFor = p.variantsFor, onAddStock = p.onAddStock, onAddVariant = p.onAddVariant, onEditStock = p.onEditStock, onDeleteStock = p.onDeleteStock;
@@ -2222,6 +2348,7 @@ function StockTab(p) {
   var canAdd = p.canAdd === undefined ? canEdit : !!p.canAdd; /* stock add karna - admin ya ijazat wala user */
   var cementTotals = p.cementTotals || { added: 0, used: 0, remaining: 0 };
   var sm = React.useState(false), supplierOpen = sm[0], setSupplierOpen = sm[1];
+  var pfS = React.useState(false), partyOpen = pfS[0], setPartyOpen = pfS[1];
   var a = React.useState("garden"), cat = a[0], setCat = a[1];
   var b = React.useState(null), addingFor = b[0], setAddingFor = b[1];
   var h = React.useState(null), historyFor = h[0], setHistoryFor = h[1];
@@ -2263,6 +2390,8 @@ function StockTab(p) {
         </div>
       ) : null}
 
+      <button onClick={function () { setPartyOpen(true); }} style={{ width: "100%", marginBottom: 14, padding: "12px", borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Dusri factory - slab / garder len-den</button>
+      {partyOpen ? <RbPartyModal t={t} parties={p.parties || []} partyLog={p.partyLog || []} variantsFor={variantsFor} remainingFor={remainingFor} onAddParty={p.onAddParty} onAddEntry={p.onAddPartyEntry} onClose={function () { setPartyOpen(false); }} /> : null}
       {p.canSupplier ? (
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("materials")}</div>
@@ -3739,7 +3868,7 @@ function ReportsTab(p) {
     </div>
   );
 }
-  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers"];
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers", "parties", "party-log"];
 function rbMakeBackup() { return rbMakeBackupFor(RB_STORE); }
 function rbMakeBackupFor(st) { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKeyFor(st, k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: st, at: new Date().toISOString(), data: d }; }
 /* ---------- Super Admin: har store ka alag alag, jo hissa chunein sirf wohi saaf (phir wahin se naya shuru) ---------- */
@@ -3751,6 +3880,7 @@ var RB_CLEAR_PARTS = [
   ["supplier", "Supplier", "is store ke supplier, khareedari, payments"],
   ["labour", "Labour", "mazdoor, kaam, payments"],
   ["daybook", "Day Book", "kharche, cash transfer, roz ka verify"],
+  ["party", "Dusri factory", "factory ke naam aur slab / garder len-den"],
   ["logs", "Activity log + Recycle Bin", ""]
 ];
 function rbClearStoreParts(st, parts) {
@@ -3781,6 +3911,7 @@ function rbClearStoreParts(st, parts) {
       put("gate-passes", get("gate-passes", []).map(function (g) { return Object.assign({}, g, { stockCut: true }); }));
       put("returns", get("returns", []).map(function (r) { return Object.assign({}, r, { stockCut: true }); }));
     }
+    if (!on.party) put("party-log", get("party-log", []).map(function (x) { return Object.assign({}, x, { stockCut: true }); }));
   }
   if (on.supplier) {
     var pur = get("purchases", []).filter(function (x) { return stOf(x) !== st; });
@@ -3794,6 +3925,7 @@ function rbClearStoreParts(st, parts) {
     put("expenses", []); put("day-verify", {});
     put("cash-transfers", get("cash-transfers", []).filter(function (x) { return stOf(x) !== st; }));
   }
+  if (on.party) { put("parties", []); put("party-log", []); }
   if (on.logs) { put("activity-log", []); put("trash", []); }
 }
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
