@@ -2809,10 +2809,17 @@ function WastageTab(p) {
 function PaymentsSummaryCard(p) {
   var t = p.t, sales = p.sales;
   var a = React.useState({ preset: "today" }), range = a[0], setRange = a[1];
-  var r = resolveRange(range);
+  /* User: sirf apni wasooli aur sirf pichle 7 din */
+  var isUser = p.role === "accountant";
+  var r = isUser ? getRangeBounds("7d") : resolveRange(range);
+  var meN = rbNm(rbSessionName());
   var all = [];
   sales.forEach(function (s) {
     (s.payments || []).forEach(function (pay) {
+      if (isUser) {
+        if (pay.fromAdvance || (pay.by || s.createdBy) !== "accountant") return;
+        if (meN && pay.byName && rbNm(pay.byName) !== meN) return;
+      }
       all.push({ id: pay.id, amount: pay.amount, date: pay.date, customerName: s.customerName, serial: s.serial });
     });
   });
@@ -2822,7 +2829,7 @@ function PaymentsSummaryCard(p) {
   return (
     <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
       <div className="rb-display" style={{ fontSize: 12, color: TC.inkSoft, fontWeight: 600, marginBottom: 8 }}>{t("paymentsSummary")}</div>
-      <RangeFilter t={t} range={range} onChange={setRange} />
+      {isUser ? <div style={{ fontSize: 11, color: TC.inkSoft, marginBottom: 8 }}>Sirf aap ki wasooli - pichle 7 din ({rbDate(r.from)} se {rbDate(r.to)})</div> : <RangeFilter t={t} range={range} onChange={setRange} />}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 10, color: TC.inkSoft }}>{t("totalReceived")}</div>
         <div className="rb-mono" style={{ fontSize: 20, fontWeight: 700, color: TC.success }}>Rs {rbMoney(total)}</div>
@@ -3181,7 +3188,7 @@ function DuesTab(p) {
         );
       })()}
       {dView === "advance" ? <RbAdvanceView t={t} advances={p.advances || []} sales={sales} onAdd={p.onAddAdvance} onReturn={p.onReturnAdvance} /> : dView === "customers" ? <CustomerListView t={t} sales={sales} /> : (<React.Fragment>
-      <PaymentsSummaryCard t={t} sales={sales} />
+      <PaymentsSummaryCard t={t} sales={sales} role={p.role} />
       {p.onAddOpening ? (
         <button onClick={function () { setObOpen(true); }} style={{
           width: "100%", marginBottom: 10, padding: "10px", borderRadius: 8,
