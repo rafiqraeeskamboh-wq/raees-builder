@@ -3329,6 +3329,58 @@ function DbSumRow(p) {
     </tr>
   );
 }
+/* ---------- har bande (login wale naam) ki apni Day Book ---------- */
+function rbNm(s) { return String(s || "").trim().toLowerCase(); }
+function rbPersonTag(x) { if (!x) return ""; return (x.role === "admin" ? "Admin" : "User") + (x.name ? " " + x.name : ""); }
+function rbStoreOf(st) { return st === "rangpur" ? "Rangpur" : "Himmat"; }
+/* sab login wale naam (dono store). purani entries (jin par naam nahi) har role ke pehle bande ki book mein */
+function rbMakeBooks() {
+  var people = ((rbGet("security", {}) || {}).people || []).filter(function (x) { return x && String(x.name || "").trim(); });
+  if (!people.length) return [{ key: "~admin", name: "", role: "admin", legacy: true }, { key: "~accountant", name: "", role: "accountant", legacy: true }];
+  var books = people.map(function (x) { return { key: "p" + (x.id || x.name), name: String(x.name).trim(), role: x.role === "admin" ? "admin" : "accountant", store: x.store || "himmat", legacy: false }; });
+  ["admin", "accountant"].forEach(function (rl) {
+    var own = null;
+    books.forEach(function (b) { if (!own && b.role === rl && b.store === RB_STORE) own = b; });
+    books.forEach(function (b) { if (!own && b.role === rl) own = b; });
+    if (own) own.legacy = true;
+  });
+  return books.sort(function (m, n) { return (m.role === n.role ? 0 : (m.role === "admin" ? -1 : 1)) || (m.store === n.store ? 0 : (m.store === RB_STORE ? -1 : 1)) || m.name.localeCompare(n.name); });
+}
+function rbBookMine(book, byName, byRole) {
+  if (!book) return false;
+  var bn = rbNm(byName);
+  if (bn && book.name) return bn === rbNm(book.name);
+  return book.legacy && (byRole || "admin") === book.role;
+}
+function RbTransferModal(p) {
+  rbUseBack(true, p.onClose);
+  var books = p.books.filter(function (b) { return b.name; });
+  var a = React.useState(p.from ? p.from.key : ""), fromKey = a[0], setFromKey = a[1];
+  var b = React.useState(""), toKey = b[0], setToKey = b[1];
+  var c = React.useState(""), amt = c[0], setAmt = c[1];
+  var d = React.useState(rbToday()), date = d[0], setDate = d[1];
+  var e = React.useState(""), note = e[0], setNote = e[1];
+  var from = null, to = null; books.forEach(function (x) { if (x.key === fromKey) from = x; if (x.key === toKey) to = x; });
+  var ok = from && to && from.key !== to.key && Number(amt) > 0;
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 };
+  function chip(x, on, click) { return <button key={x.key} type="button" onClick={click} style={{ width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: 6, borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : TC.cream, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>{rbPersonTag(x)}<span style={{ fontSize: 11, fontWeight: 600, opacity: 0.75 }}>{" · " + rbStoreOf(x.store) + " store"}</span></button>; }
+  return (
+    <ModalShell onClose={p.onClose} title="Cash Transfer">
+      {books.length < 2 ? <div style={{ fontSize: 12.5, color: "#E6C875", marginBottom: 10 }}>Pehle Settings mein Admin / User ke naam aur PIN banayein - phir yahan un ke naam aayen ge.</div> : null}
+      <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 6, fontWeight: 700 }}>Kis ne paise diye</div>
+      {p.lockFrom ? (from ? chip(from, true, function () {}) : <div style={{ fontSize: 12, color: "#F0A08A", marginBottom: 8 }}>Apne naam se login karein</div>) : books.map(function (x) { return chip(x, x.key === fromKey, function () { setFromKey(x.key); if (toKey === x.key) setToKey(""); }); })}
+      <div style={{ fontSize: 12, color: "#A39C8A", margin: "8px 0 6px", fontWeight: 700 }}>Kis ko paise diye</div>
+      {books.filter(function (x) { return x.key !== fromKey; }).map(function (x) { return chip(x, x.key === toKey, function () { setToKey(x.key); }); })}
+      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+        <input type="number" inputMode="numeric" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="Raqam (Rs)" style={inp} />
+        <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={Object.assign({}, inp, { colorScheme: "dark" })} />
+      </div>
+      <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder="Note (agar chahein)" style={inp} />
+      <button disabled={!ok} onClick={function () { if (!window.confirm(rbPersonTag(from) + " ne " + rbPersonTag(to) + " ko Rs " + rbMoney(amt) + " diye?")) return; p.onSave(from, to, amt, date, note); p.onClose(); }} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: ok ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 14, cursor: ok ? "pointer" : "not-allowed" }}>Cash Transfer karein</button>
+    </ModalShell>
+  );
+}
+
 function DayBookReport(p) {
   var all = p.all, r = p.range;
   function before(d) { return r.from ? String(d || "") < r.from : false; }
@@ -3338,8 +3390,8 @@ function DayBookReport(p) {
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
 
-  var book = p.book || "admin";
-  function mine(who) { return (who || "admin") === book; }
+  var book = p.book;
+  function mine(nm, who) { return rbBookMine(book, nm, who); }
   var opening = 0;
   var rec = [];
   var out = [];
@@ -3348,26 +3400,33 @@ function DayBookReport(p) {
   /* advance: jis ne liya us ki day book mein aaya; wapas kiya to jis ne diya us ki book se gaya.
      bill mein advance lagne par naqad nahi aata, is liye wo yahan dobara shumar nahi hota */
   (all.advances || []).forEach(function (x) {
-    if (mine(x.by)) addIn(x.date, { date: x.date, title: x.name || "-", part: "Advance mila (receipt #" + (x.no || "-") + ")" + (x.byName ? " - " + x.byName : ""), vno: "", amt: num(x.amount), fix: <RbSupFix coll="advances" item={x} label={"Advance receipt #" + (x.no || "-") + " - " + (x.name || "")} /> });
-    (x.returns || []).forEach(function (rt, ri) { if (mine(rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount), fix: <RbSupFix item={rt} noAdvanced={true} label={"Advance wapas - " + (x.name || "")} onSave={function (n) { window.rbSuperApi.advReturn(x.id, ri, n); }} onDel={function () { window.rbSuperApi.advReturn(x.id, ri, null); }} /> }); });
+    if (mine(x.byName, x.by)) addIn(x.date, { date: x.date, title: x.name || "-", part: "Advance mila (receipt #" + (x.no || "-") + ")" + (x.byName ? " - " + x.byName : ""), vno: "", amt: num(x.amount), fix: <RbSupFix coll="advances" item={x} label={"Advance receipt #" + (x.no || "-") + " - " + (x.name || "")} /> });
+    (x.returns || []).forEach(function (rt, ri) { if (mine(rt.byName, rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount), fix: <RbSupFix item={rt} noAdvanced={true} label={"Advance wapas - " + (x.name || "")} onSave={function (n) { window.rbSuperApi.advReturn(x.id, ri, n); }} onDel={function () { window.rbSuperApi.advReturn(x.id, ri, null); }} /> }); });
   });
-  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund), fix: <RbSupFix coll="returnLog" item={x} /> }); });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.note ? " (" + pay.note + ")" : "") + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
-  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="supplierPayments" item={x} label={"Supplier payment - " + (supName[x.supplierId] || "")} /> }); });
+  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.byName, x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund), fix: <RbSupFix coll="returnLog" item={x} /> }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.byName || (pay.by ? "" : s.createdByName), pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.note ? " (" + pay.note + ")" : "") + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
+  (all.supplierPayments || []).forEach(function (x) { if (mine(x.byName, x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="supplierPayments" item={x} label={"Supplier payment - " + (supName[x.supplierId] || "")} /> }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
       var tfix = <RbSupFix coll="expenses" item={x} label={"Cash transfer Rs " + rbMoney(x.amount)} />;
-      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount), fix: tfix });
-      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount), fix: tfix });
+      if (mine(x.name, x.to)) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount), fix: tfix });
+      else if (mine(x.byName, x.from)) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount), fix: tfix });
       return;
     }
-    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
+    if (mine(x.byName, x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
   });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="labourPayments" item={x} label={"Labour payment - " + (labName[x.labourerId] || "")} /> }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.byName, x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="labourPayments" item={x} label={"Labour payment - " + (labName[x.labourerId] || "")} /> }); });
+  /* naam wale cash transfer (dono store) */
+  (all.transfers || []).forEach(function (x) {
+    var nt = <RbSupFix coll="transfers" item={x} label={"Cash transfer " + x.fromName + " > " + x.toName} />;
+    var nn = x.note ? " (" + x.note + ")" : "";
+    if (book && book.name && rbNm(x.toName) === rbNm(book.name)) addIn(x.date, { date: x.date, title: (x.fromRole === "admin" ? "Admin " : "User ") + x.fromName, part: "Cash Transfer mila - " + rbStoreOf(x.fromStore) + nn, vno: "", amt: num(x.amount), fix: nt });
+    else if (book && book.name && rbNm(x.fromName) === rbNm(book.name)) addOut(x.date, { date: x.date, title: (x.toRole === "admin" ? "Admin " : "User ") + x.toName, part: "Cash Transfer diya - " + rbStoreOf(x.toStore) + nn, amt: num(x.amount), fix: nt });
+  });
   rec.sort(byDate);
   out.sort(byDate);
-  var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
-  var cp = (all.purchases || []).filter(function (x) { return inR(x.date) && mine(x.by); }).sort(byDate);
+  var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdByName, x.createdBy); }).sort(byDate);
+  var cp = (all.purchases || []).filter(function (x) { return inR(x.date) && mine(x.byName, x.by); }).sort(byDate);
 
   var recT = rec.reduce(function (n, x) { return n + x.amt; }, 0);
   var outT = out.reduce(function (n, x) { return n + x.amt; }, 0);
@@ -3401,7 +3460,7 @@ function DayBookReport(p) {
         <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={13} />
         <div style={{ textAlign: "center", fontSize: 19, fontWeight: 700, fontStyle: "italic", color: DB_C.blue, margin: "10px 0 6px" }}>Day Book</div>
-        <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book === "admin" ? "Bara Cash (Admin)" : "Parchoon Cash (User)"}</div>
+        <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book && book.name ? rbPersonTag(book) + " - Cash" : (book && book.role === "accountant" ? "User Cash" : "Admin Cash")}</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
@@ -3496,9 +3555,15 @@ function ReportsTab(p) {
   var e3 = React.useState(rbToday()), expDate = e3[0], setExpDate = e3[1];
   var r = resolveRange(range);
   var isAdmin = p.role !== "accountant";
-  var bk = React.useState(isAdmin ? "admin" : "accountant"), book = isAdmin ? bk[0] : "accountant", setBook = bk[1];
-  var tf1 = React.useState(""), tfAmt = tf1[0], setTfAmt = tf1[1];
-  var tf2 = React.useState(""), tfName = tf2[0], setTfName = tf2[1];
+  var books = rbMakeBooks();
+  var meName = rbNm(rbSessionName());
+  var meBook = null; books.forEach(function (b) { if (!meBook && meName && rbNm(b.name) === meName) meBook = b; });
+  if (!meBook) books.forEach(function (b) { if (!meBook && !meName && b.legacy && b.role === p.role) meBook = b; });
+  var bk = React.useState(""), bookKey = bk[0], setBookKey = bk[1];
+  var book = null;
+  if (isAdmin) { books.forEach(function (b) { if (b.key === bookKey) book = b; }); if (!book) book = meBook || books[0]; }
+  else book = meBook || { key: "~me", name: rbSessionName(), role: "accountant", legacy: !rbSessionName() };
+  var tfS = React.useState(false), tfOpen = tfS[0], setTfOpen = tfS[1];
   function inR(d) { return inDateRange(d, r.from, r.to); }
   var supName = {};
   (p.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
@@ -3552,23 +3617,17 @@ function ReportsTab(p) {
       {isAdmin && p.userDayItems ? <RbUserDayVerify dayVerify={p.dayVerify || {}} items={p.userDayItems} onVerify={p.onVerifyUserDay} /> : null}
       <RbLedgerButton onClick={function () { setPersonLedger(true); }} label={isAdmin ? "Har bande ka ledger (User / Admin)" : "Mera ledger"} />
       {isAdmin ? (
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          {[["accountant", "Parchoon Cash (User)"], ["admin", "Bara Cash (Admin)"]].map(function (o) {
-            var on = book === o[0];
-            return <button key={o[0]} onClick={function () { setBook(o[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>;
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {books.map(function (o) {
+            var on = book && book.key === o.key;
+            return <button key={o.key} onClick={function () { setBookKey(o.key); }} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{(o.name ? rbPersonTag(o) : (o.role === "admin" ? "Admin" : "User")) + " Cash"}{o.name && o.store !== RB_STORE ? <span style={{ fontSize: 10.5, fontWeight: 600 }}>{" (" + rbStoreOf(o.store) + ")"}</span> : null}</button>;
           })}
         </div>
       ) : null}
-      {p.onCashTransfer ? (
-        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 14 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{book === "accountant" ? "Parchoon Cash se Admin ko cash dein" : "Bara Cash se User ko cash dein"}</div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input value={tfName} onChange={function (ev) { setTfName(ev.target.value); }} placeholder={book === "accountant" ? "Admin ka naam" : "User ka naam"} style={{ flex: 1.3, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
-            <input type="number" inputMode="numeric" value={tfAmt} onChange={function (ev) { setTfAmt(ev.target.value); }} placeholder="Rs" style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 }} />
-            <button disabled={!(Number(tfAmt) > 0)} onClick={function () { if (window.confirm("Rs " + rbMoney(tfAmt) + (book === "accountant" ? " Admin" : " User") + (tfName.trim() ? " (" + tfName.trim() + ")" : "") + " ko diye?")) { p.onCashTransfer(tfAmt, rbToday(), book === "accountant" ? "admin" : "accountant", tfName); setTfAmt(""); setTfName(""); } }} style={{ padding: "9px 14px", borderRadius: 7, border: "none", background: Number(tfAmt) > 0 ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: Number(tfAmt) > 0 ? "pointer" : "not-allowed" }}>Cash dein</button>
-          </div>
-        </div>
+      {p.onPersonTransfer ? (
+        <button onClick={function () { setTfOpen(true); }} style={{ width: "100%", marginBottom: 14, padding: "11px", borderRadius: 8, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Cash Transfer</button>
       ) : null}
+      {tfOpen ? <RbTransferModal books={books} from={isAdmin ? (meBook && meBook.name ? meBook : null) : meBook} lockFrom={!isAdmin} onSave={p.onPersonTransfer} onClose={function () { setTfOpen(false); }} /> : null}
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
         <RangeFilter t={t} range={range} onChange={setRange} />
@@ -3607,7 +3666,7 @@ function ReportsTab(p) {
           </div>
           <button disabled={!(Number(expAmt) > 0 && expDetail.trim())} onClick={function () { p.onAddExpense(expDetail, expAmt, expDate); setExpDetail(""); setExpAmt(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(expAmt) > 0 && expDetail.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: (Number(expAmt) > 0 && expDetail.trim()) ? "pointer" : "not-allowed" }}>{t("addExpense")}</button>
           {(function () {
-            var myExps = exps.filter(function (x) { return (x.by || "admin") === book; }).slice().sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
+            var myExps = exps.filter(function (x) { return rbBookMine(book, x.byName, x.by); }).slice().sort(function (m, n) { return String(n.date || "").localeCompare(String(m.date || "")); });
             var tot = myExps.reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
             return (
               <div style={{ marginTop: 10, borderTop: "1px dashed #3A362C", paddingTop: 8 }}>
@@ -3653,7 +3712,7 @@ function ReportsTab(p) {
     </div>
   );
 }
-  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify"];
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers"];
 function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
@@ -4137,6 +4196,10 @@ function rbPeopleLedgers(all) {
       return;
     }
     P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0 });
+  });
+  (all.transfers || []).forEach(function (x) {
+    P(x.fromName, x.fromRole || "admin").rows.push({ date: x.date, detail: "Cash diya " + rbPersonTag({ name: x.toName, role: x.toRole }) + " (" + rbStoreOf(x.toStore) + ")" + (x.note ? " - " + x.note : ""), b: Number(x.amount) || 0 });
+    P(x.toName, x.toRole || "admin").rows.push({ date: x.date, detail: "Cash mila " + rbPersonTag({ name: x.fromName, role: x.fromRole }) + " (" + rbStoreOf(x.fromStore) + ")" + (x.note ? " - " + x.note : ""), a: Number(x.amount) || 0 });
   });
   var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
   (all.supplierPayments || []).forEach(function (x) { P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Supplier ko payment - " + (supName[x.supplierId] || "") + (x.note ? " (" + x.note + ")" : ""), b: Number(x.amount) || 0 }); });

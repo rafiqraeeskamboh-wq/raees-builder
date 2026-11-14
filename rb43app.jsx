@@ -1070,6 +1070,7 @@ function RaeesBuilderApp() {
   var advS = React.useState(function () { return rbGet("advances", []); }), advances = advS[0], setAdvances = advS[1];
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
+  var ctz = React.useState(function () { return rbGet("cash-transfers", []); }), transfers = ctz[0], setTransfers = ctz[1];
   var lbr = React.useState(function () { return rbGet("labourers", []); }), labourers = lbr[0], setLabourers = lbr[1];
   var lbw = React.useState(function () { return rbGet("labour-work", []); }), labourWork = lbw[0], setLabourWork = lbw[1];
   var lbp = React.useState(function () { return rbGet("labour-payments", []); }), labourPayments = lbp[0], setLabourPayments = lbp[1];
@@ -1183,6 +1184,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("advances", advances); }, [advances]);
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
+  React.useEffect(function () { rbSet("cash-transfers", transfers); }, [transfers]);
   React.useEffect(function () { rbSet("labourers", labourers); }, [labourers]);
   React.useEffect(function () { rbSet("labour-work", labourWork); }, [labourWork]);
   React.useEffect(function () { rbSet("labour-payments", labourPayments); }, [labourPayments]);
@@ -1212,6 +1214,7 @@ function RaeesBuilderApp() {
     supplierPayments: { list: supplierPayments, set: setSupplierPayments, label: "Supplier payments" },
     advances: { list: advances, set: setAdvances, label: "Advance" },
     expenses: { list: expenses, set: setExpenses, label: "Kharche (Expenses)" },
+    transfers: { list: transfers, set: setTransfers, label: "Cash transfer" },
     labourers: { list: labourers, set: setLabourers, label: "Labour (mazdoor)" },
     labourWork: { list: labourWork, set: setLabourWork, label: "Labour kaam" },
     labourPayments: { list: labourPayments, set: setLabourPayments, label: "Labour payments" },
@@ -1240,7 +1243,7 @@ function RaeesBuilderApp() {
       });
     });
     if (found.length) setTrash(function (tl) { return found.concat(tl || []).slice(0, 500); });
-  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
+  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
   function superSaveRecord(coll, item) {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
     RB_COLLS[coll].set(function (l) { return l.map(function (x) { return x && x.id === item.id ? item : x; }); });
@@ -1429,6 +1432,7 @@ function RaeesBuilderApp() {
       (x.payments || []).forEach(function (pay) { if (pay.by === U && pay.date === d && !pay.fromAdvance && Number(pay.amount) > 0) add("Wasooli", (x.customerName || "") + (x.isOpening ? " (purana baqi)" : " #" + x.serial) + (pay.note ? " - " + pay.note : ""), Number(pay.amount) || 0); });
     });
     expenses.forEach(function (x) { if (x.by === U && x.date === d) add(x.transfer ? "Cash diya" : "Kharcha", (x.detail || ""), Number(x.amount) || 0); });
+    (transfers || []).forEach(function (x) { if (x.date !== d) return; if (x.fromRole === U && (x.fromStore || "himmat") === RB_STORE) add("Cash diya", x.fromName + " > " + x.toName, Number(x.amount) || 0); else if (x.toRole === U && (x.toStore || "himmat") === RB_STORE) add("Cash mila", x.fromName + " > " + x.toName, Number(x.amount) || 0); });
     advances.forEach(function (x) {
       if (x.by === U && x.date === d) add("Advance liya", "#" + x.no + " " + (x.name || ""), Number(x.amount) || 0);
       (x.returns || []).forEach(function (rt) { if (rt.by === U && rt.date === d) add("Advance wapas", "#" + x.no + " " + (x.name || ""), Number(rt.amount) || 0); });
@@ -1601,6 +1605,20 @@ function RaeesBuilderApp() {
     setExpenses(function (a) { return [entry].concat(a); });
     showToast("Cash transfer: Rs " + rbMoney(amt));
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
+  }
+
+  /* naam wala cash transfer: koi bhi Admin / User (dono store) kisi dusre ko raqam de */
+  function addPersonTransfer(from, to, amount, date, note) {
+    if (rbSuperNoTx()) return;
+    var amt = Number(amount) || 0;
+    if (amt <= 0 || !from || !to || !from.name || !to.name) return;
+    var entry = { id: rbUid(), amount: amt, date: date || rbToday(), note: String(note || "").trim(),
+      fromName: from.name, fromRole: from.role, fromStore: from.store || "himmat",
+      toName: to.name, toRole: to.role, toStore: to.store || "himmat",
+      store: RB_STORE, by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    setTransfers(function (a) { return [entry].concat(a || []); });
+    showToast("Cash transfer: " + from.name + " se " + to.name + " - Rs " + rbMoney(amt));
+    logActivity("expense_added", "Cash transfer " + from.name + " > " + to.name + " - Rs " + rbMoney(amt));
   }
 
   /* advance receipts: bill se pehle liya gaya advance */
@@ -2570,7 +2588,7 @@ function editStockEntry(id, qty, date) {
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
     trackMute.current = true; setTrash([]); setMaterialOpening({}); setDayVerify({});
-    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setReturnLog([]); setSiteWaste([]);
+    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setTransfers([]); setReturnLog([]); setSiteWaste([]);
     showToast(t("clearData"));
   }
 
@@ -2610,7 +2628,7 @@ function editStockEntry(id, qty, date) {
     }} />;
   } else if (tab === "book") {
     body = can("reports") ? <ReportsTab t={t} advances={advances} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
-      suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses}
+      suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses} transfers={transfers} onPersonTransfer={rbIsSuper() ? null : addPersonTransfer}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments} returnLog={returnLog}
       canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer}
       dayVerify={dayVerify} userDayItems={userDayItems} onVerifyUserDay={verifyUserDay} />
