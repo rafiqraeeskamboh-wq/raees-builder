@@ -627,7 +627,9 @@ function CementSummaryCard(p) {
           return (
             <div key={e.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft, gap: 8 }}>
               <span>{rbDate(e.date)} &middot; {variantLabel(t, e.category, e.variant)} &middot; +{e.qty}</span>
-              <span className="rb-mono" style={{ fontWeight: 700, color: color, whiteSpace: "nowrap" }}>{e.cementBags} {t("cementBag")}</span>
+              <span className="rb-mono" style={{ fontWeight: 700, color: color, whiteSpace: "nowrap" }}>{e.cementBags} {t("cementBag")}<RbSupFix item={{ id: e.id, date: e.date, cementBags: e.cementBags }} noAdvanced={true} label={"Cement istemal - " + variantLabel(t, e.category, e.variant) + " +" + e.qty + " (sirf cement badle ga, slab/garder ka stock nahi)"}
+                onSave={function (n) { window.rbSuperApi.save("stockLog", Object.assign({}, e, { cementBags: Number(n.cementBags) || 0, date: n.date || e.date })); }}
+                onDel={function () { window.rbSuperApi.save("stockLog", Object.assign({}, e, { cementBags: 0 })); }} /></span>
             </div>
           );
         })}
@@ -673,7 +675,9 @@ function CementSummaryCard(p) {
               return (
                 <div key={x.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft, gap: 8 }}>
                   <span>{rbDate(x.date)} &middot; {supName[x.supplierId] || "-"}</span>
-                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink, whiteSpace: "nowrap" }}>+{rbQtyOf(x)} {t("cementBag")}</span>
+                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink, whiteSpace: "nowrap" }}>+{rbQtyOf(x)} {t("cementBag")}<RbSupFix item={{ id: x.id, date: x.date, qty: rbQtyOf(x), rate: Number(x.rate) || 0 }} noAdvanced={true} label={"Cement khareed - " + (supName[x.supplierId] || "")}
+                    onSave={function (n) { var q = Number(n.qty) || 0, rt = Number(n.rate) || 0; window.rbSuperApi.save("purchases", Object.assign({}, x, { date: n.date || x.date, qty: q, bags: rbMaterialOf(x) === "cement" ? q : x.bags, rate: rt, amount: q * rt })); }}
+                    onDel={function () { window.rbSuperApi.del("purchases", x.id); }} /></span>
                 </div>
               );
             })}
@@ -4281,7 +4285,7 @@ var rbSupRow = { background: "#1F1C16", borderRadius: 7, padding: "8px 10px", ma
 
 /* ---------- Super Admin: kisi bhi entry ke saath chhote Edit / Delete buttons ----------
    <RbSupFix coll="expenses" item={x} />  ya nested ke liye onSave / onDel khud dein */
-var RB_FIX_FIELDS = [["date", "Tareekh", "date"], ["amount", "Raqam (Rs)", "num"], ["discount", "Discount (Rs)", "num"], ["detail", "Tafseel", "text"], ["name", "Naam", "text"], ["customerName", "Customer", "text"], ["mobile", "Mobile", "text"], ["note", "Note", "text"], ["qty", "Tadaad", "num"], ["bags", "Bags", "num"], ["rate", "Rate", "num"], ["totalBill", "Bill raqam", "num"]];
+var RB_FIX_FIELDS = [["date", "Tareekh", "date"], ["amount", "Raqam (Rs)", "num"], ["discount", "Discount (Rs)", "num"], ["detail", "Tafseel", "text"], ["name", "Naam", "text"], ["customerName", "Customer", "text"], ["mobile", "Mobile", "text"], ["note", "Note", "text"], ["qty", "Tadaad", "num"], ["bags", "Bags", "num"], ["cementBags", "Cement (bags)", "num"], ["rate", "Rate", "num"], ["totalBill", "Bill raqam", "num"]];
 function RbSupFixModal(p) {
   var item = p.item;
   var fields = RB_FIX_FIELDS.filter(function (f) { return Object.prototype.hasOwnProperty.call(item, f[0]) && (item[f[0]] == null || typeof item[f[0]] !== "object"); });
