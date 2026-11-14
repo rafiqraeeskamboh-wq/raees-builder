@@ -1396,6 +1396,7 @@ function RaeesBuilderApp() {
     });
     var sold = { garden: {}, slab: {} };
     gatePasses.forEach(function (g) {
+      if (g.stockCut) return; /* stock nil karne se pehle wala maal - naye stock se nahi katta */
       (g.items || []).forEach(function (it) {
         if (it.category === "garden" || it.category === "slab") {
           sold[it.category][it.variant] = (sold[it.category][it.variant] || 0) + Number(it.qty || 0);
@@ -1415,6 +1416,7 @@ function RaeesBuilderApp() {
       convertedIn[c.category][c.toVariant] = (convertedIn[c.category][c.toVariant] || 0) + Number(c.qty || 0);
     });
     returnLog.forEach(function (r) {
+      if (r.stockCut) return;
       (r.items || []).forEach(function (it) {
         if (sold[it.category]) sold[it.category][it.variant] = (sold[it.category][it.variant] || 0) - Number(it.qty || 0);
       });
@@ -1463,8 +1465,8 @@ function RaeesBuilderApp() {
     function ok(c, v) { return c === cat && (variant === null || variant === undefined || String(v) === String(variant)); }
     function nm(c, v) { return variant === null || variant === undefined ? variantLabel(t, c, v) + " - " : ""; }
     stockLog.forEach(function (e) { if (!ok(e.category, e.variant)) return; rows.push({ date: e.date, detail: nm(e.category, e.variant) + (e.isOpening ? "Purana stock (opening)" : (e.supplierId ? "Khareeda (supplier)" : "Bana")) + (e.byName ? " - " + e.byName : ""), a: Number(e.qty) || 0 }); });
-    gatePasses.forEach(function (g) { (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (rbGpNo(g) || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
-    returnLog.forEach(function (x) { (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: x.date, detail: nm(it.category, it.variant) + "Maal wapas aaya (bill #" + (x.serial || "-") + ") - " + (x.customerName || ""), a: Number(it.qty) || 0 }); }); });
+    gatePasses.forEach(function (g) { if (g.stockCut) return; (g.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: g.date, detail: nm(it.category, it.variant) + "Gate pass #" + (rbGpNo(g) || "-") + " - " + (g.customerName || ""), b: Number(it.qty) || 0 }); }); });
+    returnLog.forEach(function (x) { if (x.stockCut) return; (x.items || []).forEach(function (it) { if (!ok(it.category, it.variant)) return; rows.push({ date: x.date, detail: nm(it.category, it.variant) + "Maal wapas aaya (bill #" + (x.serial || "-") + ") - " + (x.customerName || ""), a: Number(it.qty) || 0 }); }); });
     wastageLog.forEach(function (x) { if (!ok(x.category, x.variant)) return; rows.push({ date: x.date, detail: nm(x.category, x.variant) + "Wastage" + (x.reason ? " - " + x.reason : (x.note ? " - " + x.note : "")), b: Number(x.qty) || 0 }); });
     conversionLog.forEach(function (c) {
       var q = Number(c.qty) || 0;
@@ -1480,8 +1482,8 @@ function RaeesBuilderApp() {
     function R(c, v) { if (!out[c]) return null; var k = String(v); if (!out[c][k]) out[c][k] = { variant: v, opening: 0, made: 0, sold: 0, wasted: 0, conv: 0 }; return out[c][k]; }
     function where(d) { d = String(d || ""); if (from && d < from) return "before"; if (to && d > to) return "after"; return "in"; }
     stockLog.forEach(function (e) { var r = R(e.category, e.variant); if (!r) return; var q = Number(e.qty) || 0, w = where(e.date); if (e.isOpening) { if (w !== "after") r.opening += q; return; } if (w === "before") r.opening += q; else if (w === "in") r.made += q; });
-    gatePasses.forEach(function (g) { var w = where(g.date); (g.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; }); });
-    returnLog.forEach(function (x) { var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening += q; else if (w === "in") r.sold -= q; }); });
+    gatePasses.forEach(function (g) { if (g.stockCut) return; var w = where(g.date); (g.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening -= q; else if (w === "in") r.sold += q; }); });
+    returnLog.forEach(function (x) { if (x.stockCut) return; var w = where(x.date); (x.items || []).forEach(function (it) { var r = R(it.category, it.variant); if (!r) return; var q = Number(it.qty) || 0; if (w === "before") r.opening += q; else if (w === "in") r.sold -= q; }); });
     wastageLog.forEach(function (x) { var r = R(x.category, x.variant); if (!r) return; var q = Number(x.qty) || 0, w = where(x.date); if (w === "before") r.opening -= q; else if (w === "in") r.wasted += q; });
     conversionLog.forEach(function (c) { var w = where(c.date), q = Number(c.qty) || 0; var a = R(c.category, c.fromVariant), b = R(c.category, c.toVariant); if (!a || !b) return; if (w === "before") { a.opening -= q; b.opening += q; } else if (w === "in") { a.conv -= q; b.conv += q; } });
     Object.keys(out).forEach(function (c) { Object.keys(out[c]).forEach(function (k) { var r = out[c][k]; r.closing = r.opening + r.made - r.sold - r.wasted + r.conv; }); });

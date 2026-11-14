@@ -3730,7 +3730,62 @@ function ReportsTab(p) {
   );
 }
   var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers"];
-function rbMakeBackup() { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKey(k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: RB_STORE, at: new Date().toISOString(), data: d }; }
+function rbMakeBackup() { return rbMakeBackupFor(RB_STORE); }
+function rbMakeBackupFor(st) { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKeyFor(st, k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: st, at: new Date().toISOString(), data: d }; }
+/* ---------- Super Admin: har store ka alag alag, jo hissa chunein sirf wohi saaf (phir wahin se naya shuru) ---------- */
+var RB_CLEAR_PARTS = [
+  ["bills", "Bills", "sab bill, gate pass, maal wapsi, site wastage - bill number 1 se"],
+  ["baqaya", "Baqaya", "customers ka purana baqi"],
+  ["advance", "Advance", "advance receipts"],
+  ["stock", "Stock", "stock nil - opening, stock entries, wastage, conversion"],
+  ["supplier", "Supplier", "is store ke supplier, khareedari, payments"],
+  ["labour", "Labour", "mazdoor, kaam, payments"],
+  ["daybook", "Day Book", "kharche, cash transfer, roz ka verify"],
+  ["logs", "Activity log + Recycle Bin", ""]
+];
+function rbClearStoreParts(st, parts) {
+  function get(k, d) { try { var r = localStorage.getItem(rbKeyFor(st, k)); return r === null ? d : JSON.parse(r); } catch (e) { return d; } }
+  function put(k, v) { localStorage.setItem(rbKeyFor(st, k), JSON.stringify(v)); }
+  function stOf(x) { return (x && x.store) || "himmat"; }
+  var on = {}; parts.forEach(function (p) { on[p] = true; });
+  if (on.bills) {
+    var keep = get("sales", []).filter(function (s) { return s && s.isOpening; });
+    put("sales", keep); put("gate-passes", []); put("returns", []); put("site-wastage", []); put("next-serial", 1);
+    if (!on.advance) {
+      var ids = {}; keep.forEach(function (s) { ids[s.id] = 1; });
+      put("advances", get("advances", []).map(function (x) {
+        var uses = (x.uses || []).filter(function (u) { return ids[u.saleId]; });
+        var used = uses.reduce(function (n, u) { return n + (Number(u.amount) || 0); }, 0);
+        var nx = Object.assign({}, x, { uses: uses, used: used });
+        var left = (Number(nx.amount) || 0) - used - (Number(nx.returnedAmt) || 0);
+        nx.status = left > 0 ? "open" : (used > 0 ? "used" : "returned");
+        return nx;
+      }));
+    }
+  }
+  if (on.baqaya) put("sales", get("sales", []).filter(function (s) { return !(s && s.isOpening); }));
+  if (on.advance) put("advances", []);
+  if (on.stock) {
+    put("stock-log", []); put("wastage-log", []); put("conversion-log", []); put("material-opening", {});
+    if (!on.bills) {
+      put("gate-passes", get("gate-passes", []).map(function (g) { return Object.assign({}, g, { stockCut: true }); }));
+      put("returns", get("returns", []).map(function (r) { return Object.assign({}, r, { stockCut: true }); }));
+    }
+  }
+  if (on.supplier) {
+    var pur = get("purchases", []).filter(function (x) { return stOf(x) !== st; });
+    var pay = get("supplier-payments", []).filter(function (x) { return stOf(x) !== st; });
+    var used2 = {}; pur.concat(pay).forEach(function (x) { used2[x.supplierId] = 1; });
+    put("purchases", pur); put("supplier-payments", pay);
+    put("suppliers", get("suppliers", []).filter(function (x) { return used2[x.id]; }));
+  }
+  if (on.labour) { put("labourers", []); put("labour-work", []); put("labour-payments", []); }
+  if (on.daybook) {
+    put("expenses", []); put("day-verify", {});
+    put("cash-transfers", get("cash-transfers", []).filter(function (x) { return stOf(x) !== st; }));
+  }
+  if (on.logs) { put("activity-log", []); put("trash", []); }
+}
 function rbSaveLocalBackup(b) { try { localStorage.setItem("raees-backup-" + b.store, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function rbGetLocalBackup() { try { var r = localStorage.getItem("raees-backup-" + RB_STORE); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
 /* Mehfooz backup: dono store ka data, Super Admin PIN se taala-band (AES-256). File sirf phone / computer par - GitHub ya kisi aur jagah nahi jati. */
@@ -3761,12 +3816,20 @@ function RbSuperDataTools(p) {
   function superPin() { return (rbGet("security", {}) || {}).superPin || ""; }
   function reset() { setStep(0); setPin1(""); setPin2(""); }
   function next1() { if (!pin1 || pin1 !== superPin()) { setMsg("Galat PIN"); setPin1(""); return; } setMsg(""); setStep(2); }
+  var g = React.useState(RB_STORE), cst = g[0], setCst = g[1];
+  var h = React.useState({}), sel = h[0], setSel = h[1];
+  var picked = RB_CLEAR_PARTS.filter(function (x) { return sel[x[0]]; }).map(function (x) { return x[0]; });
+  var allOn = picked.length === RB_CLEAR_PARTS.length;
   function doClear() {
     if (!pin2 || pin2 !== superPin() || pin1 !== pin2) { setMsg("Doosri dafa PIN galat - data saaf nahi hua"); reset(); return; }
-    var backup = rbMakeBackup();
-    var ok = rbSaveLocalBackup(backup);
-    p.onClear(); reset();
-    setMsg(ok ? "Data saaf ho gaya. Is ka backup isi phone par mehfooz hai - neeche se wapas laa sakte hain." : "Data saaf ho gaya. (Backup save nahi ho saka)");
+    if (!picked.length) { setMsg("Pehle chunein kya saaf karna hai"); reset(); return; }
+    var backup = rbMakeBackupFor(cst);
+    try { localStorage.setItem("raees-backup-" + cst, JSON.stringify(backup)); } catch (e) {}
+    window.rbClearing = true;
+    rbClearStoreParts(cst, picked);
+    setRestoring(true);
+    setMsg((cst === "rangpur" ? "Rangpur" : "Himmat") + " store: " + RB_CLEAR_PARTS.filter(function (x) { return sel[x[0]]; }).map(function (x) { return x[1]; }).join(", ") + " saaf ho gaya. Backup isi phone par hai. App dobara khul rahi hai...");
+    setTimeout(function () { location.reload(); }, 5000);
   }
   function restore(backup) {
     if (backup && backup.stores) { var sd = backup.stores[RB_STORE]; if (!sd) { setMsg("Is backup mein is store ka data nahi"); return; } backup = { at: backup.at, store: RB_STORE, data: sd }; }
@@ -3793,8 +3856,29 @@ function RbSuperDataTools(p) {
   var ghost = { width: "100%", padding: "10px", borderRadius: 8, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12.5, fontWeight: 700, cursor: "pointer", marginTop: 6 };
   return (
     <div style={{ background: TC.appBg2, borderRadius: 8, padding: 12 }}>
-      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Data (sirf Super Admin) - {RB_STORE === "rangpur" ? "Rangpur" : "Himmat"} Store</div>
-      {step === 0 ? <button onClick={function () { setMsg(""); setStep(1); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "1.5px solid " + TC.stamp, background: "transparent", color: TC.stamp, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear all data</button> : null}
+      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Data (sirf Super Admin)</div>
+      {step === 0 ? (
+        <div style={{ background: "#2A2620", borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Data saaf karein (Clear data)</div>
+          <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 6 }}>Kis store ka?</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            {RB_STORES.map(function (o) { var on = cst === o[0]; return <button key={o[0]} type="button" onClick={function () { setCst(o[0]); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{o[1]} Store</button>; })}
+          </div>
+          <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 6 }}>Kya saaf karna hai? (sirf jis par tick ho wohi saaf hoga, phir wahin se naya shuru)</div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 4px", color: TC.cream, fontSize: 13, fontWeight: 700, borderBottom: "1px solid #3A362C", cursor: "pointer" }}>
+            <input type="checkbox" checked={allOn} onChange={function (ev) { var n = {}; if (ev.target.checked) RB_CLEAR_PARTS.forEach(function (x) { n[x[0]] = true; }); setSel(n); }} style={{ width: 18, height: 18, accentColor: TC.stamp }} /> Sab kuch
+          </label>
+          {RB_CLEAR_PARTS.map(function (x) {
+            return (
+              <label key={x[0]} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "7px 4px", color: TC.cream, fontSize: 13, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!sel[x[0]]} onChange={function (ev) { var n = Object.assign({}, sel); n[x[0]] = ev.target.checked; setSel(n); }} style={{ width: 18, height: 18, marginTop: 1, accentColor: TC.stamp }} />
+                <span><b>{x[1]}</b>{x[2] ? <span style={{ display: "block", fontSize: 10.5, color: "#A39C8A" }}>{x[2]}</span> : null}</span>
+              </label>
+            );
+          })}
+          <button disabled={!picked.length} onClick={function () { setMsg(""); setStep(1); }} style={{ width: "100%", marginTop: 8, padding: "12px", borderRadius: 8, border: "1.5px solid " + TC.stamp, background: picked.length ? TC.stamp : "transparent", color: TC.cream, fontSize: 13, fontWeight: 700, cursor: picked.length ? "pointer" : "not-allowed", opacity: picked.length ? 1 : 0.5 }}>Saaf karein ({picked.length})</button>
+        </div>
+      ) : null}
       {step === 1 ? (
         <div style={{ background: "#3A2A22", borderRadius: 8, padding: 12 }}>
           <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 8 }}>Super Admin PIN darj karein (1/2)</div>
@@ -3805,9 +3889,9 @@ function RbSuperDataTools(p) {
       ) : null}
       {step === 2 ? (
         <div style={{ background: "#3A2A22", borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 8 }}>Pakka? Bills, stock, labour, gate pass sab saaf ho jaye ga. Dobara Super Admin PIN darj karein (2/2)</div>
+          <div style={{ fontSize: 12, color: "#E8C9B8", marginBottom: 8 }}>Pakka? {cst === "rangpur" ? "Rangpur" : "Himmat"} Store ka ye saaf ho jaye ga: <b>{RB_CLEAR_PARTS.filter(function (x) { return sel[x[0]]; }).map(function (x) { return x[1]; }).join(", ")}</b>. Dobara Super Admin PIN darj karein (2/2)</div>
           <input type="password" inputMode="numeric" maxLength={6} value={pin2} onChange={function (ev) { setPin2(ev.target.value.replace(/\D/g, "")); }} style={inp} />
-          <button onClick={doClear} style={red}>Haan, saara data saaf karein</button>
+          <button disabled={restoring} onClick={doClear} style={red}>Haan, saaf karein</button>
           <button onClick={reset} style={ghost}>Cancel</button>
         </div>
       ) : null}

@@ -203,6 +203,7 @@ function rbGet(key, def) {
   } catch (e) { return def; }
 }
 function rbSet(key, val) {
+  if (window.rbClearing) return false; /* data saaf ho raha hai - purani halat dobara na likhi jaye */
   try { localStorage.setItem(rbKey(key), JSON.stringify(val)); return true; }
   catch (e) { return false; }
 }
