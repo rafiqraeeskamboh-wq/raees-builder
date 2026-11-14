@@ -3596,7 +3596,7 @@ function RbBalFix(p) {
       ) : (
         <span style={{ display: "inline-flex", gap: 5 }}>
           <button type="button" onClick={function () { setV(String(Math.round((p.value || 0) * 100) / 100)); setOpen(true); }} style={Object.assign({}, bt, { border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" })}>Edit</button>
-          <button type="button" onClick={function () { if (window.confirm(p.label + " Rs " + rbMoney(p.value) + " delete (0) karein?")) p.onSave(0); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
+          <button type="button" onClick={function () { if (window.confirm(p.label + " Rs " + rbMoney(p.value) + " delete (0) karein?")) p.onSave(0, true); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
         </span>
       )}
     </div>
@@ -3642,9 +3642,9 @@ function DayBookReport(p) {
   (all.cashAdjust || []).forEach(function (x) {
     if (!mine(x.name, x.role)) return;
     var fx = <RbSupFix coll="cashAdjust" item={x} label={"Balance theek - Rs " + rbMoney(x.amount)} />;
-    var nn = x.note || "Balance theek kiya (Super Admin)";
-    if (num(x.amount) > 0) addIn(x.date, { date: x.date, title: "Balance adjust", part: nn, vno: "", amt: num(x.amount), fix: fx });
-    else addOut(x.date, { date: x.date, title: "Balance adjust", part: nn, amt: -num(x.amount), fix: fx });
+    var nn = (x.note || "Super Admin ne balance badla") + " - farq Rs " + rbMoney(Math.abs(num(x.amount))) + (num(x.amount) > 0 ? " jama" : " kam");
+    if (num(x.amount) > 0) addIn(x.date, { date: x.date, title: "Super Admin", part: <b style={{ color: "#B0262B" }}>{nn}</b>, vno: "", amt: num(x.amount), fix: fx });
+    else addOut(x.date, { date: x.date, title: "Super Admin", part: <b style={{ color: "#B0262B" }}>{nn}</b>, amt: -num(x.amount), fix: fx });
   });
   /* naam wale cash transfer (dono store) */
   (all.transfers || []).forEach(function (x) {
@@ -3696,7 +3696,7 @@ function DayBookReport(p) {
           <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
           <span style={{ minWidth: 110, border: "1px solid " + DB_C.line, padding: "4px 8px", textAlign: "right", fontSize: 13, fontWeight: 700, color: DB_C.red }}>{rbMoney(opening)}</span>
         </div>
-        {p.onCashAdjust && r.from ? <RbBalFix label="Opening Balance" value={opening} onSave={function (v) { var x = new Date(r.from + "T00:00:00"); x.setDate(x.getDate() - 1); p.onCashAdjust(book, isoOf(x), v - opening, "Opening balance theek kiya (" + rbMoney(opening) + " se " + rbMoney(v) + ")"); }} /> : null}
+        {p.onCashAdjust && r.from ? <RbBalFix label="Opening Balance" value={opening} onSave={function (v, del) { var x = new Date(r.from + "T00:00:00"); x.setDate(x.getDate() - 1); p.onCashAdjust(book, isoOf(x), v - opening, del ? "Super Admin ne opening balance delete kiya: Rs " + rbMoney(opening) + " (0 kar diya)" : "Super Admin ne opening balance edit kiya: Rs " + rbMoney(opening) + " se Rs " + rbMoney(v)); }} /> : null}
 
         <DbSection title="Cash Received / Recovery" tag="RV" total={recT}
           cols={dCol.concat([{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "V.No", w: "14%" }, { label: "Amount", w: "22%", right: true }])}
@@ -3729,7 +3729,7 @@ function DayBookReport(p) {
             <DbSumRow label="Closing Balance" value={rbMoney(closing)} color={DB_C.red} />
           </tbody>
         </table>
-        {p.onCashAdjust ? <RbBalFix label="Closing Balance" value={closing} onSave={function (v) { p.onCashAdjust(book, r.to || rbToday(), v - closing, "Closing balance theek kiya (" + rbMoney(closing) + " se " + rbMoney(v) + ")"); }} /> : null}
+        {p.onCashAdjust ? <RbBalFix label="Closing Balance" value={closing} onSave={function (v, del) { p.onCashAdjust(book, r.to || rbToday(), v - closing, del ? "Super Admin ne closing balance delete kiya: Rs " + rbMoney(closing) + " (0 kar diya)" : "Super Admin ne closing balance edit kiya: Rs " + rbMoney(closing) + " se Rs " + rbMoney(v)); }} /> : null}
       </div>
     </div>
   );
