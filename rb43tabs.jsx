@@ -3884,6 +3884,25 @@ function ReportsTab(p) {
         </div>
       ) : null}
 
+      {view === "book" ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Day Book ki tareekh (custom)</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+            {[["Aaj", function () { var d = rbToday(); return { preset: "custom", from: d, to: d }; }],
+              ["Kal", function () { var x = new Date(); x.setDate(x.getDate() - 1); var d = isoOf(x); return { preset: "custom", from: d, to: d }; }],
+              ["Is mahina", function () { var m = rbToday().slice(0, 7); return { preset: "custom", from: m + "-01", to: rbMonthEnd(m) }; }],
+              ["Sab", function () { return { preset: "all" }; }]].map(function (o) {
+              return <button key={o[0]} onClick={function () { setRange(o[1]()); }} style={{ flex: 1, padding: "7px 6px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{o[0]}</button>;
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: 11.5, color: "#A39C8A" }}>Se</span>
+            <input type="date" value={r.from || ""} onChange={function (ev) { var v = ev.target.value; setRange({ preset: "custom", from: v || null, to: r.to && v && r.to < v ? v : (r.to || v) }); }} style={{ flex: 1, minWidth: 0, padding: "8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
+            <span style={{ fontSize: 11.5, color: "#A39C8A" }}>Tak</span>
+            <input type="date" value={r.to || ""} onChange={function (ev) { var v = ev.target.value; setRange({ preset: "custom", from: r.from && v && r.from > v ? v : r.from, to: v || null }); }} style={{ flex: 1, minWidth: 0, padding: "8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
+          </div>
+        </div>
+      ) : null}
       {view === "book" ? <DayBookReport t={t} range={r} all={p} book={book} /> : rows.length === 0 ? (
         <EmptyState icon={<Ico name="grid" size={28} color={TC.concrete} />} text={t("noEntriesRange")} />
       ) : (
