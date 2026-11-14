@@ -1291,6 +1291,52 @@ function RaeesBuilderApp() {
     if (role !== "admin" || !rbIsSuper()) return;
     setTrash(function (tl) { return id === "ALL" ? [] : tl.filter(function (x) { return x.id !== id; }); });
   }
+  /* Super Admin: bill ki wasooli (payment) edit / delete - bill ka baqaya khud theek ho jata hai */
+  function superSalePay(saleId, payId, newPay) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    setSales(function (l) {
+      return l.map(function (s) {
+        if (!s || s.id !== saleId) return s;
+        var old = null; (s.payments || []).forEach(function (x) { if (x && x.id === payId) old = x; });
+        if (!old) return s;
+        var total = (Number(s.totalBill) || 0) + (Number(old.discount) || 0);
+        var disc = Math.max(0, (Number(s.discount) || 0) - (Number(old.discount) || 0));
+        var adv = Math.max(0, (Number(s.advance) || 0) - (Number(old.amount) || 0));
+        var pays = (s.payments || []).filter(function (x) { return !(x && x.id === payId); });
+        if (newPay) {
+          var d2 = Math.max(0, Number(newPay.discount) || 0), a2 = Math.max(0, Number(newPay.amount) || 0);
+          total = Math.max(0, total - d2); disc += d2; adv = Math.min(total, adv + a2);
+          pays = (s.payments || []).map(function (x) { return x && x.id === payId ? Object.assign({}, newPay, { amount: a2, discount: d2 }) : x; });
+        }
+        var dues = Math.max(0, total - adv);
+        return Object.assign({}, s, { totalBill: total, discount: disc, advance: adv, dues: dues, paidInFull: dues <= 0, payments: pays });
+      });
+    });
+    showToast(newPay ? "Wasooli theek ho gayi" : "Wasooli delete - Recycle Bin se wapas la sakte hain");
+    logActivity(newPay ? "super_edit" : "super_delete", "Bill wasooli");
+  }
+  /* Super Admin: advance ki wapsi edit / delete */
+  function superAdvReturn(advId, idx, newRt) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    setAdvances(function (l) {
+      return l.map(function (x) {
+        if (!x || x.id !== advId) return x;
+        var rts = (x.returns || []).slice();
+        if (!rts[idx]) return x;
+        if (newRt) rts[idx] = Object.assign({}, rts[idx], newRt, { amount: Math.max(0, Number(newRt.amount) || 0) }); else rts.splice(idx, 1);
+        var nx = Object.assign({}, x, { returns: rts, returnedAmt: rts.reduce(function (n, r) { return n + (Number(r.amount) || 0); }, 0) });
+        nx.status = advLeft(nx) > 0 ? "open" : ((Number(nx.used) || 0) > 0 ? "used" : "returned");
+        return nx;
+      });
+    });
+    showToast(newRt ? "Tabdeeli save ho gayi" : "Delete ho gaya - Recycle Bin se wapas la sakte hain");
+    logActivity(newRt ? "super_edit" : "super_delete", "Advance wapsi");
+  }
+  /* har jagah (Day book, supplier, kharcha, labour ...) Super Admin ke Edit / Delete buttons isi se chalte hain */
+  window.rbSuperApi = (role === "admin" && rbIsSuper()) ? {
+    save: superSaveRecord, del: superDeleteRecord, salePay: superSalePay, advReturn: superAdvReturn,
+    delBill: superDeleteBill, editBill: startEditSale
+  } : null;
 
   function t(k) {
     var dict = TRANSLATIONS[lang] || TRANSLATIONS.en;

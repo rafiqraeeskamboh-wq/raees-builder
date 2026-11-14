@@ -1119,8 +1119,8 @@ function SupplierModal(p) {
 
   if (current) {
     var tot = supplierTotals(current.id);
-    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, date: x.date, bags: rbQtyOf(x), unit: x.unit || "", matName: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || ""), rate: x.rate, amount: x.amount }; })
-      .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, date: x.date, amount: x.amount }; }))
+    var rows = tot.purchases.map(function (x) { return { k: "buy", id: x.id, src: x, date: x.date, bags: rbQtyOf(x), unit: x.unit || "", matName: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || ""), rate: x.rate, amount: x.amount }; })
+      .concat(tot.payments.map(function (x) { return { k: "pay", id: x.id, src: x, date: x.date, amount: x.amount }; }))
       .sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
     return (
       <Shell onClose={p.onClose} title={current.name}>
@@ -1198,7 +1198,10 @@ function SupplierModal(p) {
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? (r.matName || t("buyMaterial")) : t("payToSupplier")}</div>
                     <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") : ""}</div>
                   </div>
-                  <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                  <div style={{ textAlign: "right" }}>
+                    <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                    <div><RbSupFix inline={false} coll={r.k === "buy" ? "purchases" : "supplierPayments"} item={r.src} /></div>
+                  </div>
                 </div>
               );
             })}
@@ -1272,7 +1275,7 @@ function SupplierModal(p) {
             return (
               <div key={sp.id} onClick={function () { setOpenId(sp.id); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{sp.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{sp.name}<RbSupFix coll="suppliers" item={sp} label={"Supplier - " + sp.name} /></span>
                   <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
@@ -3345,21 +3348,22 @@ function DayBookReport(p) {
   /* advance: jis ne liya us ki day book mein aaya; wapas kiya to jis ne diya us ki book se gaya.
      bill mein advance lagne par naqad nahi aata, is liye wo yahan dobara shumar nahi hota */
   (all.advances || []).forEach(function (x) {
-    if (mine(x.by)) addIn(x.date, { date: x.date, title: x.name || "-", part: "Advance mila (receipt #" + (x.no || "-") + ")" + (x.byName ? " - " + x.byName : ""), vno: "", amt: num(x.amount) });
-    (x.returns || []).forEach(function (rt) { if (mine(rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount) }); });
+    if (mine(x.by)) addIn(x.date, { date: x.date, title: x.name || "-", part: "Advance mila (receipt #" + (x.no || "-") + ")" + (x.byName ? " - " + x.byName : ""), vno: "", amt: num(x.amount), fix: <RbSupFix coll="advances" item={x} label={"Advance receipt #" + (x.no || "-") + " - " + (x.name || "")} /> });
+    (x.returns || []).forEach(function (rt, ri) { if (mine(rt.by)) addOut(rt.date, { date: rt.date, title: x.name || "-", part: "Advance wapas (receipt #" + (x.no || "-") + ")" + (rt.byName ? " - " + rt.byName : ""), amt: num(rt.amount), fix: <RbSupFix item={rt} noAdvanced={true} label={"Advance wapas - " + (x.name || "")} onSave={function (n) { window.rbSuperApi.advReturn(x.id, ri, n); }} onDel={function () { window.rbSuperApi.advReturn(x.id, ri, null); }} /> }); });
   });
-  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund) }); });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.note ? " (" + pay.note + ")" : "") + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount) }); }); });
-  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
+  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && mine(x.createdBy)) addOut(x.date, { date: x.date, title: x.customerName || "-", part: "Maal wapsi - paise wapas (bill #" + (x.serial || "-") + ")" + (x.byName ? " - " + x.byName : ""), amt: num(x.refund), fix: <RbSupFix coll="returnLog" item={x} /> }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance) return; if (mine(pay.by || s.createdBy)) addIn(pay.date, { date: pay.date, title: s.customerName || "-", part: "Cash Received" + (pay.note ? " (" + pay.note + ")" : "") + (pay.byName ? " - " + pay.byName : ""), vno: s.serial, amt: num(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
+  (all.supplierPayments || []).forEach(function (x) { if (mine(x.by)) addOut(x.date, { date: x.date, title: supName[x.supplierId] || "-", part: (x.note || "Supplier Payment") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="supplierPayments" item={x} label={"Supplier payment - " + (supName[x.supplierId] || "")} /> }); });
   (all.expenses || []).forEach(function (x) {
     if (x.transfer) {
-      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount) });
-      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount) });
+      var tfix = <RbSupFix coll="expenses" item={x} label={"Cash transfer Rs " + rbMoney(x.amount)} />;
+      if (x.to === book) addIn(x.date, { date: x.date, title: x.from === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), vno: "", amt: num(x.amount), fix: tfix });
+      else if (x.from === book) addOut(x.date, { date: x.date, title: x.to === "admin" ? "Admin" : "User", part: "Cash Transfer" + (x.name ? " (" + x.name + ")" : ""), amt: num(x.amount), fix: tfix });
       return;
     }
-    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) });
+    if (mine(x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
   });
-  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="labourPayments" item={x} label={"Labour payment - " + (labName[x.labourerId] || "")} /> }); });
   rec.sort(byDate);
   out.sort(byDate);
   var cs = (all.sales || []).filter(function (x) { return !x.isOpening && inR(x.date) && mine(x.createdBy); }).sort(byDate);
@@ -3380,7 +3384,8 @@ function DayBookReport(p) {
     if (!el) return;
     var w = window.open("", "_blank");
     if (!w) { window.print(); return; }
-    w.document.write("<html><head><title>Day Book Report</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    var cl = el.cloneNode(true); Array.prototype.forEach.call(cl.querySelectorAll("[data-supfix]"), function (n) { n.parentNode.removeChild(n); });
+    w.document.write("<html><head><title>Day Book Report</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
     w.document.close();
     w.focus();
     setTimeout(function () { w.print(); }, 400);
@@ -3405,19 +3410,19 @@ function DayBookReport(p) {
 
         <DbSection title="Cash Received / Recovery" tag="RV" total={recT}
           cols={dCol.concat([{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "V.No", w: "14%" }, { label: "Amount", w: "22%", right: true }])}
-          rows={rec.map(function (x) { return dCell(x).concat([x.title, x.part, x.vno ? "#" + x.vno : "-", rbMoney(x.amt)]); })} />
+          rows={rec.map(function (x) { return dCell(x).concat([x.title, <span>{x.part}{x.fix}</span>, x.vno ? "#" + x.vno : "-", rbMoney(x.amt)]); })} />
 
         <DbSection title="Payments / Expenses" tag="PV" total={outT}
           cols={dCol.concat([{ label: "Title of Account", w: showDate ? "34%" : "40%" }, { label: "Particular" }, { label: "Amount", w: "24%", right: true }])}
-          rows={out.map(function (x) { return dCell(x).concat([x.title, x.part, rbMoney(x.amt)]); })} />
+          rows={out.map(function (x) { return dCell(x).concat([x.title, <span>{x.part}{x.fix}</span>, rbMoney(x.amt)]); })} />
 
         <DbSection title="Credit Sale / Return" tag="SI" total={csT}
           cols={dCol.concat([{ label: "Inv No", w: "16%" }, { label: "Customer Name" }, { label: "Amount", w: "26%", right: true }])}
-          rows={cs.map(function (x) { return dCell(x).concat([x.serial || "-", x.customerName || "-", rbMoney(x.totalBill)]); })} />
+          rows={cs.map(function (x) { return dCell(x).concat([x.serial || "-", <span>{x.customerName || "-"}<RbSupFix item={x} noConfirm={true} onEditClick={function () { window.rbSuperApi.editBill(x); }} onDel={function () { window.rbSuperApi.delBill(x); }} /></span>, rbMoney(x.totalBill)]); })} />
 
         <DbSection title="Credit Purchase (Maal)" tag="PI" total={cpT}
           cols={dCol.concat([{ label: "Supplier", w: "32%" }, { label: "Detail" }, { label: "Amount", w: "24%", right: true }])}
-          rows={cp.map(function (x) { return dCell(x).concat([supName[x.supplierId] || "-", (x.materialName || "Cement") + " " + rbQtyOf(x) + " " + (x.unit || ""), rbMoney(x.amount)]); })} />
+          rows={cp.map(function (x) { return dCell(x).concat([supName[x.supplierId] || "-", <span>{(x.materialName || "Cement") + " " + rbQtyOf(x) + " " + (x.unit || "")}<RbSupFix coll="purchases" item={x} label={"Khareedari - " + (supName[x.supplierId] || "")} /></span>, rbMoney(x.amount)]); })} />
 
         <div style={{ margin: "18px auto 14px", width: "60%", border: "2px solid #222", textAlign: "center", padding: "6px 0", fontSize: 17, fontWeight: 700, color: DB_C.red, letterSpacing: 1 }}>SUMMARY</div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
@@ -3614,7 +3619,7 @@ function ReportsTab(p) {
                   return (
                     <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderBottom: "1px solid #2E2B23", fontSize: 12, color: "#D8CDA9" }}>
                       <span style={{ minWidth: 0 }}>{rbDate(x.date)} · {x.detail || "-"}{x.byName ? <span style={{ color: "#A39C8A" }}> · {x.byName}</span> : null}</span>
-                      <span className="rb-mono" style={{ whiteSpace: "nowrap", fontWeight: 700 }}>Rs {rbMoney(x.amount)}</span>
+                      <span className="rb-mono" style={{ whiteSpace: "nowrap", fontWeight: 700 }}>Rs {rbMoney(x.amount)}<RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /></span>
                     </div>
                   );
                 })}
@@ -3877,6 +3882,73 @@ var rbSupIn = { width: "100%", boxSizing: "border-box", padding: "8px 10px", bor
 var rbSupBtn = { padding: "7px 10px", borderRadius: 7, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" };
 var rbSupRed = Object.assign({}, rbSupBtn, { border: "none", background: TC.stamp, color: TC.cream });
 var rbSupRow = { background: "#1F1C16", borderRadius: 7, padding: "8px 10px", marginBottom: 6, fontSize: 12.5, color: TC.cream };
+
+/* ---------- Super Admin: kisi bhi entry ke saath chhote Edit / Delete buttons ----------
+   <RbSupFix coll="expenses" item={x} />  ya nested ke liye onSave / onDel khud dein */
+var RB_FIX_FIELDS = [["date", "Tareekh", "date"], ["amount", "Raqam (Rs)", "num"], ["discount", "Discount (Rs)", "num"], ["detail", "Tafseel", "text"], ["name", "Naam", "text"], ["customerName", "Customer", "text"], ["mobile", "Mobile", "text"], ["note", "Note", "text"], ["qty", "Tadaad", "num"], ["bags", "Bags", "num"], ["rate", "Rate", "num"], ["totalBill", "Bill raqam", "num"]];
+function RbSupFixModal(p) {
+  var item = p.item;
+  var fields = RB_FIX_FIELDS.filter(function (f) { return Object.prototype.hasOwnProperty.call(item, f[0]) && (item[f[0]] == null || typeof item[f[0]] !== "object"); });
+  var s0 = {}; fields.forEach(function (f) { s0[f[0]] = item[f[0]] == null ? "" : String(item[f[0]]); });
+  var a = React.useState(s0), vals = a[0], setVals = a[1];
+  var b = React.useState(false), adv = b[0], setAdv = b[1];
+  var c = React.useState(""), err = c[0], setErr = c[1];
+  function save() {
+    var out = Object.assign({}, item);
+    for (var i = 0; i < fields.length; i++) {
+      var f = fields[i], v = vals[f[0]];
+      if (f[2] === "num") { var n = Number(v); if (v === "" || isNaN(n) || n < 0) { setErr(f[1] + ": sahi number likhein"); return; } out[f[0]] = n; }
+      else out[f[0]] = v;
+    }
+    p.onSave(out);
+  }
+  var box = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 };
+  return (
+    <div data-supfix="1" style={box} onClick={function (e) { if (e.target === e.currentTarget) p.onClose(); }}>
+      <div style={{ background: TC.appBg2, borderRadius: 10, padding: 14, width: "100%", maxWidth: 420, maxHeight: "85vh", overflowY: "auto", textAlign: "left", fontFamily: "inherit" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: TC.cream, marginBottom: 2 }}>Entry edit karein (Super Admin)</div>
+        <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>{p.label || rbRecSummary(item)}{item.byName ? " · " + item.byName : ""}</div>
+        {adv ? <RbRecordEditor item={item} onCancel={function () { setAdv(false); }} onSave={p.onSave} /> : (
+          <div>
+            {fields.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 8 }}>Is entry mein seedhe fields nahi - "Poori entry" se edit karein.</div> : null}
+            {fields.map(function (f) {
+              return (
+                <div key={f[0]}>
+                  <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 2 }}>{f[1]}</div>
+                  <input type={f[2] === "date" ? "date" : "text"} inputMode={f[2] === "num" ? "decimal" : "text"} value={vals[f[0]]} onChange={function (e) { var n = Object.assign({}, vals); n[f[0]] = e.target.value; setVals(n); }} style={rbSupIn} />
+                </div>
+              );
+            })}
+            {err ? <div style={{ fontSize: 12, color: "#F0A08A", marginBottom: 6 }}>{err}</div> : null}
+            <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+              <button onClick={save} style={Object.assign({}, rbSupRed, { flex: 1 })}>Save</button>
+              <button onClick={p.onClose} style={Object.assign({}, rbSupBtn, { flex: 1 })}>Cancel</button>
+            </div>
+            {p.noAdvanced ? null : <button onClick={function () { setAdv(true); }} style={Object.assign({}, rbSupBtn, { width: "100%", marginTop: 8, fontSize: 11 })}>Poori entry (sab fields) edit karein</button>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+function RbSupFix(p) {
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var api = window.rbSuperApi;
+  if (!api || !p.item) return null;
+  function doSave(n) { if (p.onSave) p.onSave(n); else api.save(p.coll, n); setOpen(false); }
+  function doDel() {
+    if (!p.noConfirm && !window.confirm("Ye entry delete karein?\n" + (p.label || rbRecSummary(p.item)) + "\n(Recycle Bin se wapas la sakte hain)")) return;
+    if (p.onDel) p.onDel(); else api.del(p.coll, p.item.id);
+  }
+  var btn = { padding: "2px 7px", borderRadius: 5, fontSize: 10.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.4, fontFamily: "Arial, sans-serif" };
+  return (
+    <span data-supfix="1" style={{ display: "inline-flex", gap: 4, marginLeft: p.inline === false ? 0 : 6, marginTop: p.inline === false ? 4 : 0, verticalAlign: "middle", whiteSpace: "nowrap" }} onClick={function (e) { e.stopPropagation(); }}>
+      <button type="button" onClick={function () { if (p.onEditClick) p.onEditClick(); else setOpen(true); }} style={Object.assign({}, btn, { border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" })}>Edit</button>
+      <button type="button" onClick={doDel} style={Object.assign({}, btn, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
+      {open ? ReactDOM.createPortal(<RbSupFixModal item={p.item} label={p.label} noAdvanced={p.noAdvanced} onSave={doSave} onClose={function () { setOpen(false); }} />, document.body) : null}
+    </span>
+  );
+}
 
 function RbRecordEditor(p) {
   var item = p.item;
@@ -4267,7 +4339,7 @@ function RbAdvanceView(p) {
           <div key={x.id} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{x.name}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: TC.ink }}>{x.name}<RbSupFix coll="advances" item={x} label={"Advance receipt #" + x.no + " - " + x.name} /></div>
                 <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>#{x.no} · {rbDate(x.date)}{x.mobile ? " · " + x.mobile : ""}{x.byName ? " · " + x.byName : ""}</div>
                 {x.note ? <div style={{ fontSize: 10.5, color: TC.inkSoft }}>{x.note}</div> : null}
               </div>
