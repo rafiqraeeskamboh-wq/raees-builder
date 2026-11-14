@@ -4877,6 +4877,67 @@ function RbUserDayVerify(p) {
 }
 
 /* ---------- Ledger tab: har kisi ka ledger ek jagah ---------- */
+/* ---------- Ledger: bill wise income, neeche total, phir kharcha tafseel wise ---------- */
+function RbIncomeExpense(p) {
+  var all = p.all || {};
+  var a = React.useState({ preset: "30d" }), range = a[0], setRange = a[1];
+  var r = resolveRange(range);
+  function inR(d) { return inDateRange(d, r.from, r.to); }
+  var num = function (v) { return Number(v) || 0; };
+  var bills = (all.sales || []).filter(function (s) { return s && !s.isOpening && inR(s.date); })
+    .sort(function (m, n) { return (num(m.serial) - num(n.serial)) || String(m.date || "").localeCompare(String(n.date || "")); });
+  var incT = bills.reduce(function (n, s) { return n + num(s.totalBill); }, 0);
+  var supName = {}; (all.suppliers || []).forEach(function (x) { supName[x.id] = x.name; });
+  var labName = {}; (all.labourers || []).forEach(function (x) { labName[x.id] = x.name; });
+  var exp = [];
+  (all.expenses || []).forEach(function (x) { if (!x.transfer && inR(x.date)) exp.push({ date: x.date, kind: "Kharcha", detail: x.detail || "-", by: x.byName, amt: num(x.amount) }); });
+  (all.supplierPayments || []).forEach(function (x) { if (inR(x.date)) exp.push({ date: x.date, kind: "Supplier payment", detail: (supName[x.supplierId] || "-") + (x.note ? " (" + x.note + ")" : ""), by: x.byName, amt: num(x.amount) }); });
+  (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash || !inR(x.date)) return; exp.push({ date: x.date, kind: x.type === "advance" ? "Labour advance" : "Labour payment", detail: labName[x.labourerId] || "-", by: x.byName, amt: num(x.amount) }); });
+  (all.returnLog || []).forEach(function (x) { if (num(x.refund) > 0 && inR(x.date)) exp.push({ date: x.date, kind: "Maal wapsi", detail: (x.customerName || "-") + " (bill #" + (x.serial || "-") + ")", by: x.byName, amt: num(x.refund) }); });
+  exp.sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")); });
+  var expT = exp.reduce(function (n, x) { return n + x.amt; }, 0);
+  var cell = { border: "1px solid #bbb", padding: "4px 5px", fontSize: 11.5, color: "#222", verticalAlign: "top" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
+  var tot = Object.assign({}, cell, { fontWeight: 700, background: "#F7F2E2" });
+  function printIt() {
+    var el = document.getElementById("rb-incexp"); if (!el) return;
+    var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Income / Kharcha</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+  }
+  return (
+    <div>
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 10, marginBottom: 10 }}><RangeFilter t={p.t} range={range} onChange={setRange} /></div>
+      <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
+      <div id="rb-incexp" style={{ background: "#fff", borderRadius: 6, padding: "12px 6px", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")} - {rbStoreName()}</div>
+        <RbTagline color="#9A6A12" size={12} />
+        <div style={{ textAlign: "center", fontSize: 12, color: "#333", margin: "4px 0 10px" }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + rbDate(r.to || rbToday())}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 4 }}>Income (bill wise)</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
+          <thead><tr><th style={Object.assign({}, head, { width: "16%" })}>Bill</th><th style={head}>Naam</th><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%", textAlign: "right" })}>Income</th></tr></thead>
+          <tbody>
+            {bills.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi bill nahi</td></tr> : bills.map(function (s) {
+              return <tr key={s.id}><td style={cell}>Bill {s.serial}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{s.customerName || "-"}</td><td style={cell}>{rbDate(s.date)}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(s.totalBill)}</td></tr>;
+            })}
+            <tr><td colSpan={3} style={Object.assign({}, tot, { textAlign: "right", color: "#1F3F8A" })}>Total Income ({bills.length} bill)</td><td style={Object.assign({}, tot, { textAlign: "right", color: "#1F3F8A" })}>{rbMoney(incT)}</td></tr>
+          </tbody>
+        </table>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#B0262B", marginBottom: 4 }}>Expense (tafseel wise)</div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%" })}>Qism</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { width: "22%", textAlign: "right" })}>Raqam</th></tr></thead>
+          <tbody>
+            {exp.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharcha nahi</td></tr> : exp.map(function (x, i) {
+              return <tr key={i}><td style={cell}>{rbDate(x.date)}</td><td style={cell}>{x.kind}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{x.detail}{x.by ? <span style={{ color: "#777" }}>{" - " + x.by}</span> : null}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(x.amt)}</td></tr>;
+            })}
+            <tr><td colSpan={3} style={Object.assign({}, tot, { textAlign: "right", color: "#B0262B" })}>Total Expense</td><td style={Object.assign({}, tot, { textAlign: "right", color: "#B0262B" })}>{rbMoney(expT)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function RbLedgerTab(p) {
   var t = p.t;
   var a = React.useState(function () { return rbUiGet("ledgerSec", "customer") || "customer"; }), sec = a[0], setSec = a[1];
@@ -4891,13 +4952,14 @@ function RbLedgerTab(p) {
   if (qk) list = list.filter(function (x) { return String(x.name).toLowerCase().indexOf(qk) >= 0 || String(x.sub).indexOf(q.trim()) >= 0; });
   list.sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
   var cur = null; list.forEach(function (x) { if (x.key === openKey) cur = x; });
-  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["stock", "Stock"]];
+  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["stock", "Stock"], ["income", "Income / Kharcha"]];
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber, marginBottom: 10 }}>Ledger</div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
         {tabs.map(function (o) { var on = sec === o[0]; return <button key={o[0]} onClick={function () { pick(o[0]); }} style={{ flex: "1 1 30%", padding: "9px 6px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
       </div>
+      {sec === "income" ? <RbIncomeExpense t={t} all={p.personAll} /> : null}
       {sec === "people" ? <RbPersonLedgerModal t={t} all={p.personAll} onClose={function () { pick("customer"); }} /> : null}
       {sec === "stock" ? (
         <div>
