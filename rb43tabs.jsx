@@ -4290,7 +4290,9 @@ function rbPersonKey(nm, role) { var n = String(nm || "").trim(); return n ? rbC
 function rbPersonLabel(nm, role) { var n = String(nm || "").trim(); return n || ("(" + (role === "admin" ? "Admin" : "User") + " - naam ke baghair)"); }
 function rbPeopleLedgers(all) {
   var map = {};
-  function P(nm, role) { var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
+  var junk = { rows: [] };
+  function P(nm, role) { if (String(nm || "").trim() && rbNm(nm) === rbNm(RB_SUPER_NAME)) { junk.rows = []; return junk; } /* Super Admin ka ledger nahi banta */
+    var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
   ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
   (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount) }); }); });
   (all.advances || []).forEach(function (x) {
@@ -4402,11 +4404,7 @@ function RbPersonLedgerModal(p) {
   var list = React.useMemo(function () {
     var l = rbPeopleLedgers(p.all);
     if (p.all.onlyMe) { var me = rbPersonKey(rbSessionName(), "accountant"); l = l.filter(function (x) { return x.key === me; }); }
-    else if (!rbIsSuper()) {
-      /* Admin: apna ledger + sab Users ke ledger. dusre Admin ka nahi (sirf Super Admin sab dekhta hai) */
-      var meA = rbPersonKey(rbSessionName(), "admin");
-      l = l.filter(function (x) { return x.key === meA || x.role !== "admin"; });
-    }
+    /* Admin: sab Admin aur User ke ledger. User: sirf apna */
     return l;
   }, [p.all]);
   var a = React.useState(""), sel = a[0], setSel = a[1];
@@ -4890,7 +4888,7 @@ function RbIncomeExpense(p) {
   var r = resolveRange(range);
   /* kis ka: sab ikatha ya ek banda (Admin apna + Users, Super Admin sab) */
   var meN = rbNm(rbSessionName());
-  var who = rbMakeBooks().filter(function (b) { return b.name && (rbIsSuper() || b.role !== "admin" || rbNm(b.name) === meN); });
+  var who = rbMakeBooks().filter(function (b) { return b.name && rbNm(b.name) !== rbNm(RB_SUPER_NAME); });
   var wS = React.useState(""), wKey = wS[0], setWKey = wS[1];
   var wb = null; who.forEach(function (b) { if (b.key === wKey) wb = b; });
   function inR(d) { return inDateRange(d, r.from, r.to); }
