@@ -1828,18 +1828,18 @@ function RbLabBalEdit(p) {
   return (
     <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + TC.paperLine }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink }}>{p.label}: <span className="rb-mono" style={{ color: p.value > 0 ? TC.stamp : TC.success }}>Rs {(p.value < 0 ? "-" : "") + rbMoney(Math.abs(p.value || 0))}</span></span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink }}>{p.label}: <span className="rb-mono" style={{ color: p.value > 0 ? TC.stamp : TC.success }}>{p.money === false ? "" : "Rs "}{(p.value < 0 ? "-" : "") + rbMoney(Math.abs(p.value || 0))}</span></span>
         {!open ? (
           <span style={{ display: "flex", gap: 5 }}>
             <button type="button" onClick={function () { setV(String(Math.round((p.value || 0) * 100) / 100)); setOpen(true); }} style={Object.assign({}, bt, { border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" })}>Edit</button>
-            <button type="button" onClick={function () { if (window.confirm(p.label + " Rs " + rbMoney(Math.abs(p.value || 0)) + " delete (0) karein?")) p.onSave(0); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
+            <button type="button" onClick={function () { if (window.confirm(p.label + " " + (p.money === false ? "" : "Rs ") + rbMoney(Math.abs(p.value || 0)) + " delete (0) karein?")) p.onSave(0); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
           </span>
         ) : null}
       </div>
       {open ? (
         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
           <input type="number" inputMode="decimal" value={v} autoFocus onChange={function (e) { setV(e.target.value); }} style={{ flex: 1, minWidth: 0, padding: "7px 9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "#fff", color: TC.ink, fontSize: 14 }} />
-          <button type="button" disabled={!ok} onClick={function () { if (!window.confirm(p.label + " ab Rs " + rbMoney(num) + " karein?")) return; p.onSave(num); setOpen(false); }} style={Object.assign({}, bt, { border: "none", background: ok ? TC.garden : "#999", color: TC.cream, padding: "7px 12px" })}>Save</button>
+          <button type="button" disabled={!ok} onClick={function () { if (!window.confirm(p.label + " ab " + (p.money === false ? "" : "Rs ") + rbMoney(num) + " karein?")) return; p.onSave(num); setOpen(false); }} style={Object.assign({}, bt, { border: "none", background: ok ? TC.garden : "#999", color: TC.cream, padding: "7px 12px" })}>Save</button>
           <button type="button" onClick={function () { setOpen(false); }} style={Object.assign({}, bt, { border: "1px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, padding: "7px 10px" })}>Cancel</button>
         </div>
       ) : null}
@@ -2444,7 +2444,7 @@ function StockTab(p) {
         {(p.materials || []).map(function (m) {
           var mt = p.materialTotals ? p.materialTotals(m.id) : { added: 0, used: 0, remaining: 0 };
           return (
-            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px dashed " + TC.paperLine }}>
+            <div key={m.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px dashed " + TC.paperLine }}>
               <div style={{ minWidth: 74 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>{m.name}</div>
                 <div style={{ fontSize: 9, color: TC.concrete }}>{m.unit}</div>
@@ -2454,6 +2454,7 @@ function StockTab(p) {
                 <StatBlock label={t("bagsUsed")} value={mt.used} />
                 <StatBlock label={t("bagsLeft")} value={mt.remaining} bold color={mt.remaining > 0 ? TC.success : (mt.remaining < 0 ? TC.stamp : TC.inkSoft)} />
               </div>
+              {p.onSetMaterialStock ? <div style={{ width: "100%" }}><RbLabBalEdit label={m.name + " maujood (" + m.unit + ")"} value={mt.remaining} money={false} onSave={function (v) { p.onSetMaterialStock(m.id, v); }} /></div> : null}
             </div>
           );
         })}

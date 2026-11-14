@@ -1584,10 +1584,20 @@ function RaeesBuilderApp() {
   }
   function saveMaterialOpening(map, date) {
     if (role !== "admin" || !rbIsSuper()) return;
-    var next = {}; Object.keys(map || {}).forEach(function (k) { var q = Number(map[k]) || 0; if (q > 0) next[k] = { qty: q, date: date || rbToday() }; });
+    var next = {}; Object.keys(map || {}).forEach(function (k) { var q = Number(map[k]) || 0; if (q !== 0) next[k] = { qty: q, date: date || rbToday() }; });
     setMaterialOpening(next);
     showToast("Maal ka purana stock save ho gaya");
     logActivity("material_opening", Object.keys(next).length + " maal");
+  }
+  /* Super Admin: maal (cement waghera) ka maujood seedha set karna - farq purane stock (opening) mein */
+  function superSetMaterialStock(materialId, target) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    var mt = materialTotals(materialId);
+    var want = Number(target) || 0;
+    var op = Math.round(((Number(mt.opening) || 0) + (want - mt.remaining)) * 100) / 100;
+    setMaterialOpening(function (m) { var n = Object.assign({}, m || {}); if (op) n[materialId] = { qty: op, date: (n[materialId] && n[materialId].date) || rbToday(), setTo: want, setAt: new Date().toISOString() }; else delete n[materialId]; return n; });
+    showToast("Maujood set: " + want);
+    logActivity("material_opening", materialId + " maujood " + mt.remaining + " se " + want);
   }
   var cementTotals = materialTotals("cement");
   var storePurchases = purchases.filter(function (x) { return (x.store || "himmat") === RB_STORE; });
@@ -2730,7 +2740,7 @@ function editStockEntry(id, qty, date) {
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
   } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} parties={parties} partyLog={partyLog} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
-          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
+          variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} onSetMaterialStock={rbIsSuper() ? superSetMaterialStock : null} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
       : <EmptyState icon={<Ico name="pkg" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "wastage") {
