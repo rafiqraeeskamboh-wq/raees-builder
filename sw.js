@@ -1,5 +1,5 @@
 /* Raees Builder - service worker */
-const CACHE = 'raees-builder-v163';
+const CACHE = 'raees-builder-v164';
 
 const CORE_ASSETS = [
   './',
@@ -69,7 +69,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(req).then((hit) => {
       const network = fetch(req)
         .then((res) => {
-          if (sameOrigin && res && res.status === 200 && res.type === 'basic') {
+          if (res && res.status === 200 && ((sameOrigin && res.type === 'basic') || res.type === 'cors')) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
           }
