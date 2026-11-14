@@ -675,7 +675,7 @@ function CementSummaryCard(p) {
               return (
                 <div key={x.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", color: TC.inkSoft, gap: 8 }}>
                   <span>{rbDate(x.date)} &middot; {supName[x.supplierId] || "-"}</span>
-                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink, whiteSpace: "nowrap" }}>+{rbQtyOf(x)} {t("cementBag")}<RbSupFix item={{ id: x.id, date: x.date, qty: rbQtyOf(x), rate: Number(x.rate) || 0 }} noAdvanced={true} label={"Cement khareed - " + (supName[x.supplierId] || "")}
+                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink, whiteSpace: "nowrap" }}>+{rbQtyOf(x)} {t("cementBag")}{Number(x.rate) ? " x " + rbMoney(x.rate) + " = " + rbMoney(x.amount) : ""}<RbSupFix item={{ id: x.id, date: x.date, qty: rbQtyOf(x), rate: Number(x.rate) || 0 }} noAdvanced={true} label={"Cement khareed - " + (supName[x.supplierId] || "")}
                     onSave={function (n) { var q = Number(n.qty) || 0, rt = Number(n.rate) || 0; window.rbSuperApi.save("purchases", Object.assign({}, x, { date: n.date || x.date, qty: q, bags: rbMaterialOf(x) === "cement" ? q : x.bags, rate: rt, amount: q * rt })); }}
                     onDel={function () { window.rbSuperApi.del("purchases", x.id); }} /></span>
                 </div>
@@ -1209,7 +1209,7 @@ function SupplierModal(p) {
                 <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? (r.matName || t("buyMaterial")) : t("payToSupplier")}</div>
-                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") : ""}</div>
+                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") + (Number(r.rate) ? " x " + rbMoney(r.rate) : "") : ""}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
@@ -3712,7 +3712,7 @@ function DayBookReport(p) {
 
         <DbSection title="Credit Purchase (Maal)" tag="PI" total={cpT}
           cols={dCol.concat([{ label: "Supplier", w: "32%" }, { label: "Detail" }, { label: "Amount", w: "24%", right: true }])}
-          rows={cp.map(function (x) { return dCell(x).concat([supName[x.supplierId] || "-", <span>{(x.materialName || "Cement") + " " + rbQtyOf(x) + " " + (x.unit || "")}<RbSupFix coll="purchases" item={x} label={"Khareedari - " + (supName[x.supplierId] || "")} /></span>, rbMoney(x.amount)]); })} />
+          rows={cp.map(function (x) { return dCell(x).concat([supName[x.supplierId] || "-", <span>{(x.materialName || "Cement") + " " + rbQtyOf(x) + " " + (x.unit || "") + (Number(x.rate) ? " x " + rbMoney(x.rate) : "")}<RbSupFix coll="purchases" item={x} label={"Khareedari - " + (supName[x.supplierId] || "")} /></span>, rbMoney(x.amount)]); })} />
 
         <div style={{ margin: "18px auto 14px", width: "60%", border: "2px solid #222", textAlign: "center", padding: "6px 0", fontSize: 17, fontWeight: 700, color: DB_C.red, letterSpacing: 1 }}>SUMMARY</div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
@@ -4505,7 +4505,7 @@ function rbSupplierLedgerRows(sup, tot) {
   var rows = [];
   var oa = Math.max(0, Number(sup.opening) || 0);
   if (oa) rows.push(sup.openingDir === "adv" ? { date: sup.openingDate || "", detail: "Purana advance (hum ne diya hua)", b: oa } : { date: sup.openingDate || "", detail: "Purana baqi", a: oa });
-  (tot.purchases || []).forEach(function (x) { rows.push({ date: x.date, detail: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || "Maal") + " " + rbQtyOf(x) + " " + (x.unit || ""), a: Number(x.amount) || 0 }); });
+  (tot.purchases || []).forEach(function (x) { rows.push({ date: x.date, detail: (x.store === "rangpur" ? "Rangpur: " : "Himmat: ") + (x.materialName || "Maal") + " " + rbQtyOf(x) + " " + (x.unit || "") + (Number(x.rate) ? " x " + rbMoney(x.rate) + " = " + rbMoney(x.amount) : ""), a: Number(x.amount) || 0 }); });
   (tot.payments || []).forEach(function (x) { rows.push({ date: x.date, detail: "Payment di" + (x.note ? " - " + x.note : "") + (x.byName ? " (" + x.byName + ")" : ""), b: Number(x.amount) || 0 }); });
   return rbLedgerSort(rows);
 }
