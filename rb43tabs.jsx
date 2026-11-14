@@ -1134,9 +1134,10 @@ function SupplierModal(p) {
       <Shell onClose={p.onClose} title={current.name}>
         <button onClick={function () { setOpenId(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; {t("suppliers")}</button>
         {p.isAdmin && rbIsSuper() && p.onRenameSupplier ? <RbLabourerRename lb={current} onSave={p.onRenameSupplier} /> : null}
-        <RbLedgerButton onClick={function () { setSupLedger(true); }} label="Supplier ka ledger" />
+        {p.isAdmin ? <RbLedgerButton onClick={function () { setSupLedger(true); }} label="Supplier ka ledger" /> : null}
         {supLedger ? <RbLedgerModal t={t} title={current.name} subtitle="Supplier" rows={rbSupplierLedgerRows(current, tot)} colA="Maal liya" colB="Payment di" balLabel="Baqi" onClose={function () { setSupLedger(false); }} note="Baqi = hum ne supplier ko dena hai. Minus (-) = hum ne zyada diya hua hai." /> : null}
-        <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+        {/* User sirf entry aur payment kare - supplier ka balance / hisaab sirf Admin dekhe */}
+        {!p.isAdmin ? null : <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
             <StatBlock label={t("qty")} value={tot.bags} bold />
             <StatBlock label={t("billsTotal")} value={"Rs " + rbMoney(tot.amount)} bold />
@@ -1149,7 +1150,7 @@ function SupplierModal(p) {
               <span className="rb-mono" style={{ fontWeight: 700, color: tot.opening > 0 ? TC.stamp : TC.success }}>{tot.opening < 0 ? "-" : ""}Rs {rbMoney(Math.abs(tot.opening))}</span>
             </div>
           ) : null}
-        </div>
+        </div>}
 
         {(p.isAdmin && p.onSetSupplierOpening) ? (
           obOpen ? (
@@ -1195,7 +1196,7 @@ function SupplierModal(p) {
           <button disabled={!(Number(payAmt) > 0 && supNote.trim())} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate, supNote.trim()); setPayAmt(""); setSupNote(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && supNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("payToSupplier")}</button>
         </div>
 
-        {rows.length === 0 ? (
+        {!p.isAdmin ? null : rows.length === 0 ? (
           <div style={{ fontSize: 11.5, color: "#A39C8A", textAlign: "center", padding: "10px 0" }}>{t("noEntriesRange")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1253,6 +1254,7 @@ function SupplierModal(p) {
       )) : null}
 
       {suppliers.length > 0 ? (function () {
+        if (!p.isAdmin) return null;
         var sAll = { amount: 0, paid: 0, dues: 0, bags: 0 };
         suppliers.forEach(function (sp) {
           var q = supplierTotals(sp.id);
@@ -1284,12 +1286,12 @@ function SupplierModal(p) {
               <div key={sp.id} onClick={function () { setOpenId(sp.id); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{sp.name}<RbSupFix coll="suppliers" item={sp} label={"Supplier - " + sp.name} /></span>
-                  <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
+                  {p.isAdmin ? <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span> : null}
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
+                {!p.isAdmin ? null : <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 2, gap: 8 }}>
                   <span style={{ color: TC.inkSoft }}>{tt.bags} {t("cementBags")}{tt.opening ? " · " + t("openingBalance") + " " + (tt.opening < 0 ? "-" : "") + rbMoney(Math.abs(tt.opening)) : ""}</span>
                   <span style={{ color: TC.inkSoft }}>{t("billsTotal")} {rbMoney(tt.amount)} · {t("billsReceived")} {rbMoney(tt.paid)}</span>
-                </div>
+                </div>}
               </div>
             );
           })}
