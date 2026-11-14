@@ -2433,7 +2433,8 @@ function editStockEntry(id, qty, date) {
   }
 
   function saveSale(sale) {
-    if (!sale.editId && rbSuperNoTx()) return;
+    /* Super Admin naya bill nahi banata - sirf khali S/No (dabi) bhar sakta hai */
+    if (!sale.editId && !(rbIsSuper() && fillSerial && Number(sale.serial) === Number(fillSerial)) && rbSuperNoTx()) return;
     var wantSerial = Number(sale.serial) || 0;
     if (wantSerial > 0) {
       var clash = sales.some(function (x) { return x.id !== sale.editId && Number(x.serial) === wantSerial; });
@@ -2599,13 +2600,13 @@ function editStockEntry(id, qty, date) {
   var duesCount = sales.filter(function (s) { return (s.dues || 0) > 0; }).length;
 
   var body = null;
-  if (tab === "sale" && role === "admin" && rbIsSuper() && !editingSale) {
+  if (tab === "sale" && role === "admin" && rbIsSuper() && !editingSale && !fillSerial) {
     body = <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text="Super Admin naya bill nahi bana sakta. Lain-dain ke liye Admin ya User se login karein." />;
   } else if (tab === "sale") {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={rbIsSuper() ? null : function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
