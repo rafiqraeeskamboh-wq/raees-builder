@@ -3575,7 +3575,10 @@ function ReportsTab(p) {
   if (!meBook) books.forEach(function (b) { if (!meBook && !meName && b.legacy && b.role === p.role) meBook = b; });
   var bk = React.useState(""), bookKey = bk[0], setBookKey = bk[1];
   var book = null;
-  if (isAdmin) { books.forEach(function (b) { if (b.key === bookKey) book = b; }); if (!book) book = meBook || books[0]; }
+  /* sirf Super Admin sab ke naam dekh kar kisi ki bhi Day Book khol sakta hai; Admin / User ko sirf apni Day Book */
+  var canPick = isAdmin && rbIsSuper();
+  if (canPick) { books.forEach(function (b) { if (b.key === bookKey) book = b; }); if (!book) book = books[0]; }
+  else if (isAdmin) book = meBook || { key: "~me", name: rbSessionName(), role: "admin", legacy: !rbSessionName() };
   else book = meBook || { key: "~me", name: rbSessionName(), role: "accountant", legacy: !rbSessionName() };
   var tfS = React.useState(false), tfOpen = tfS[0], setTfOpen = tfS[1];
   function inR(d) { return inDateRange(d, r.from, r.to); }
@@ -3630,7 +3633,7 @@ function ReportsTab(p) {
       </div>
       {isAdmin && p.userDayItems ? <RbUserDayVerify dayVerify={p.dayVerify || {}} items={p.userDayItems} onVerify={p.onVerifyUserDay} /> : null}
       <RbLedgerButton onClick={function () { setPersonLedger(true); }} label={isAdmin ? "Har bande ka ledger (User / Admin)" : "Mera ledger"} />
-      {isAdmin ? (
+      {canPick ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
           {books.map(function (o) {
             var on = book && book.key === o.key;
