@@ -1815,6 +1815,34 @@ function RbLabourWeekCard(p) {
     </div>
   );
 }
+/* labour khate mein baqi / advance baqi ka Edit aur Delete (0) */
+function RbLabBalEdit(p) {
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState(""), v = b[0], setV = b[1];
+  var bt = { padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" };
+  var num = Number(v), ok = v !== "" && !isNaN(num) && (p.allowMinus || num >= 0);
+  return (
+    <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + TC.paperLine }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink }}>{p.label}: <span className="rb-mono" style={{ color: p.value > 0 ? TC.stamp : TC.success }}>Rs {(p.value < 0 ? "-" : "") + rbMoney(Math.abs(p.value || 0))}</span></span>
+        {!open ? (
+          <span style={{ display: "flex", gap: 5 }}>
+            <button type="button" onClick={function () { setV(String(Math.round((p.value || 0) * 100) / 100)); setOpen(true); }} style={Object.assign({}, bt, { border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" })}>Edit</button>
+            <button type="button" onClick={function () { if (window.confirm(p.label + " Rs " + rbMoney(Math.abs(p.value || 0)) + " delete (0) karein?")) p.onSave(0); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
+          </span>
+        ) : null}
+      </div>
+      {open ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+          <input type="number" inputMode="decimal" value={v} autoFocus onChange={function (e) { setV(e.target.value); }} style={{ flex: 1, minWidth: 0, padding: "7px 9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "#fff", color: TC.ink, fontSize: 14 }} />
+          <button type="button" disabled={!ok} onClick={function () { if (!window.confirm(p.label + " ab Rs " + rbMoney(num) + " karein?")) return; p.onSave(num); setOpen(false); }} style={Object.assign({}, bt, { border: "none", background: ok ? TC.garden : "#999", color: TC.cream, padding: "7px 12px" })}>Save</button>
+          <button type="button" onClick={function () { setOpen(false); }} style={Object.assign({}, bt, { border: "1px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, padding: "7px 10px" })}>Cancel</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function LabourTab(p) {
   var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
   var pendingItems = p.pendingItems || [];
@@ -1883,6 +1911,8 @@ function LabourTab(p) {
             <StatBlock label={t("labourPaidTotal")} value={"Rs " + rbMoney(tot.paid)} bold color={TC.success} />
             <StatBlock label={t("labourBaqi")} value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
           </div>
+          {p.isAdmin && p.onSetBaqi ? <RbLabBalEdit label="Labour baqi (dena)" value={tot.dues} onSave={function (v) { p.onSetBaqi(current.id, v); }} allowMinus={true} /> : null}
+          {p.isAdmin && p.onSetAdvBal ? <RbLabBalEdit label="Bara advance baqi" value={tot.advBal || 0} onSave={function (v) { p.onSetAdvBal(current.id, v); }} /> : null}
           {(tot.advGiven || 0) > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + TC.paperLine }}>
               <StatBlock label="Bara advance diya" value={"Rs " + rbMoney(tot.advGiven)} bold />
@@ -4814,12 +4844,13 @@ function RbLabourDayLedger(p) {
                   </tr></thead>
                   <tbody>
                     {list.map(function (x, i) {
-                      var given = x.type === "advance" ? Number(x.amount) || 0 : 0, cut = x.type === "advCut" ? Number(x.amount) || 0 : 0;
+                      var aj = x.type === "advAdj" ? Number(x.amount) || 0 : 0;
+                      var given = x.type === "advance" ? Number(x.amount) || 0 : (aj > 0 ? aj : 0), cut = x.type === "advCut" ? Number(x.amount) || 0 : (aj < 0 ? -aj : 0);
                       ab += given - cut;
                       return (
                         <tr key={i}>
                           <td style={cell}>{rbDate(x.date)}</td>
-                          <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : "Mazdoori se kata") + (x.note ? " - " + x.note : "")}</td>
+                          <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : (x.type === "advAdj" ? "Advance theek kiya" : "Mazdoori se kata")) + (x.note ? " - " + x.note : "")}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{given ? rbMoney(given) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{cut ? rbMoney(cut) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{rbMoney(ab)}</td>

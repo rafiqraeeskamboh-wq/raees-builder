@@ -1759,10 +1759,11 @@ function RaeesBuilderApp() {
     var allWorks = labourWork.filter(function (x) { return x.labourerId === labourerId; });
     var allAll = labourPayments.filter(function (x) { return x.labourerId === labourerId; });
     /* bara advance (type "advance") mazdoori ke hisaab se alag; "advCut" = mazdoori mein se advance kata (naqad nahi) */
-    var advEntries = allAll.filter(function (x) { return x.type === "advance" || x.type === "advCut"; });
+    var advEntries = allAll.filter(function (x) { return x.type === "advance" || x.type === "advCut" || x.type === "advAdj"; });
+    var advAdj = allAll.filter(function (x) { return x.type === "advAdj"; }).reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     var advGiven = allAll.filter(function (x) { return x.type === "advance"; }).reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
     var advCutTot = allAll.filter(function (x) { return x.type === "advCut"; }).reduce(function (n, x) { return n + (Number(x.amount) || 0); }, 0);
-    var allPays = allAll.filter(function (x) { return x.type !== "advance"; });
+    var allPays = allAll.filter(function (x) { return x.type !== "advance" && x.type !== "advAdj"; });
     var works = allWorks.filter(function (x) { return !x.settledAt; });
     var pays = allPays.filter(function (x) { return !x.settledAt; });
     var oldWorks = allWorks.filter(function (x) { return !!x.settledAt; });
@@ -1777,7 +1778,7 @@ function RaeesBuilderApp() {
     });
     return { opening: opening, openingDate: lb ? lb.openingDate : null, work: work, paid: paid, dues: opening + work - paid,
       works: works, payments: pays, byKind: byKind,
-      advGiven: advGiven, advCut: advCutTot, advBal: advGiven - advCutTot, advEntries: advEntries,
+      advGiven: advGiven + Math.max(0, advAdj), advCut: advCutTot + Math.max(0, -advAdj), advBal: advGiven - advCutTot + advAdj, advEntries: advEntries,
       oldWorks: oldWorks, oldPayments: oldPays, lastSettled: (lb && lb.lastSettled) || null };
   }
 
@@ -1827,6 +1828,31 @@ function RaeesBuilderApp() {
     setLabourPayments(function (a) { return [entry].concat(a); });
     showToast(t("labourAdvance"));
     logActivity("labour_paid", "Rs " + rbMoney(amt));
+  }
+
+  /* Labour baqi seedha theek karna (Edit / Delete = 0): purana baqi itna rakho ke kul baqi yehi ho jaye */
+  function setLabourBaqi(labourerId, target) {
+    if (role !== "admin") return;
+    var tt = labourTotals(labourerId);
+    var want = Number(target) || 0;
+    var op = want - ((Number(tt.work) || 0) - (Number(tt.paid) || 0));
+    op = Math.round(op * 100) / 100;
+    setLabourers(function (a) { return a.map(function (x) { return x.id === labourerId ? Object.assign({}, x, { opening: Math.abs(op), openingDir: op < 0 ? "adv" : "due", openingDate: x.openingDate || rbToday() }) : x; }); });
+    showToast("Labour baqi: Rs " + rbMoney(want));
+    logActivity("labourer_opening", "Baqi theek kiya - Rs " + rbMoney(want));
+  }
+  /* Bara advance baqi seedha theek karna: farq ki ek entry (naqad nahi) - ledger mein nazar aaye */
+  function setLabourAdvBal(labourerId, target) {
+    if (role !== "admin") return;
+    var tt = labourTotals(labourerId);
+    var want = Math.max(0, Number(target) || 0);
+    var diff = Math.round((want - (Number(tt.advBal) || 0)) * 100) / 100;
+    if (!diff) return;
+    var entry = { id: rbUid(), labourerId: labourerId, amount: diff, type: "advAdj", noCash: true,
+      note: "Advance baqi theek kiya (" + rbMoney(tt.advBal) + " se " + rbMoney(want) + ")", date: rbToday(), by: role, byName: rbSessionName(), createdAt: new Date().toISOString() };
+    setLabourPayments(function (a) { return [entry].concat(a); });
+    showToast("Advance baqi: Rs " + rbMoney(want));
+    logActivity("labour_paid", "Advance baqi theek kiya - Rs " + rbMoney(want));
   }
 
   function deleteLabourEntry(kind, id) {
@@ -2705,7 +2731,7 @@ function editStockEntry(id, qty, date) {
       : <EmptyState icon={<Ico name="usercog" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "labour") {
     body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
-      onAddLabourer={addLabourer} onRenameLabourer={renameLabourer} onSetOpening={setLabourerOpening} onAddWork={addLabourWork}
+      onAddLabourer={addLabourer} onRenameLabourer={renameLabourer} onSetOpening={setLabourerOpening} onSetBaqi={setLabourBaqi} onSetAdvBal={setLabourAdvBal} onAddWork={addLabourWork}
       onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry} onDeleteGroup={deleteLabourGroup} onMergeGroup={mergeLabourGroup}
       labourConfig={labourConfig} onSaveConfig={saveLabourConfig} onSetKinds={setLabourerKinds}
       pendingItems={labourPendingItems} onPostPending={postPendingLabour} onSkipPending={skipPendingLabour}
