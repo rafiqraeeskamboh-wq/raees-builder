@@ -4310,6 +4310,11 @@ function RbPersonLedgerModal(p) {
   var list = React.useMemo(function () {
     var l = rbPeopleLedgers(p.all);
     if (p.all.onlyMe) { var me = rbPersonKey(rbSessionName(), "accountant"); l = l.filter(function (x) { return x.key === me; }); }
+    else if (!rbIsSuper()) {
+      /* Admin: apna ledger + sab Users ke ledger. dusre Admin ka nahi (sirf Super Admin sab dekhta hai) */
+      var meA = rbPersonKey(rbSessionName(), "admin");
+      l = l.filter(function (x) { return x.key === meA || x.role !== "admin"; });
+    }
     return l;
   }, [p.all]);
   var a = React.useState(""), sel = a[0], setSel = a[1];
