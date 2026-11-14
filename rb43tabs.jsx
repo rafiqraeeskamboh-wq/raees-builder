@@ -3355,6 +3355,7 @@ function rbBookMine(book, byName, byRole) {
 function RbTransferModal(p) {
   rbUseBack(true, p.onClose);
   var books = p.books.filter(function (b) { return b.name; });
+  /* dene wala: jo login hai (naam se). naam ke baghair login ho to pehle apna naam chunein */
   var a = React.useState(p.from ? p.from.key : ""), fromKey = a[0], setFromKey = a[1];
   var b = React.useState(""), toKey = b[0], setToKey = b[1];
   var c = React.useState(""), amt = c[0], setAmt = c[1];
@@ -3362,23 +3363,36 @@ function RbTransferModal(p) {
   var e = React.useState(""), note = e[0], setNote = e[1];
   var from = null, to = null; books.forEach(function (x) { if (x.key === fromKey) from = x; if (x.key === toKey) to = x; });
   var ok = from && to && from.key !== to.key && Number(amt) > 0;
-  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 14, marginBottom: 8 };
-  function chip(x, on, click) { return <button key={x.key} type="button" onClick={click} style={{ width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: 6, borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : TC.cream, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>{rbPersonTag(x)}<span style={{ fontSize: 11, fontWeight: 600, opacity: 0.75 }}>{" · " + rbStoreOf(x.store) + " store"}</span></button>; }
-  return (
-    <ModalShell onClose={p.onClose} title="Cash Transfer">
-      {books.length < 2 ? <div style={{ fontSize: 12.5, color: "#E6C875", marginBottom: 10 }}>Pehle Settings mein Admin / User ke naam aur PIN banayein - phir yahan un ke naam aayen ge.</div> : null}
-      <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 6, fontWeight: 700 }}>Kis ne paise diye</div>
-      {p.lockFrom ? (from ? chip(from, true, function () {}) : <div style={{ fontSize: 12, color: "#F0A08A", marginBottom: 8 }}>Apne naam se login karein</div>) : books.map(function (x) { return chip(x, x.key === fromKey, function () { setFromKey(x.key); if (toKey === x.key) setToKey(""); }); })}
-      <div style={{ fontSize: 12, color: "#A39C8A", margin: "8px 0 6px", fontWeight: 700 }}>Kis ko paise diye</div>
-      {books.filter(function (x) { return x.key !== fromKey; }).map(function (x) { return chip(x, x.key === toKey, function () { setToKey(x.key); }); })}
-      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-        <input type="number" inputMode="numeric" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="Raqam (Rs)" style={inp} />
-        <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={Object.assign({}, inp, { colorScheme: "dark" })} />
-      </div>
-      <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder="Note (agar chahein)" style={inp} />
-      <button disabled={!ok} onClick={function () { if (!window.confirm(rbPersonTag(from) + " ne " + rbPersonTag(to) + " ko Rs " + rbMoney(amt) + " diye?")) return; p.onSave(from, to, amt, date, note); p.onClose(); }} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: ok ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 14, cursor: ok ? "pointer" : "not-allowed" }}>Cash Transfer karein</button>
-    </ModalShell>
+  var inp = { width: "100%", boxSizing: "border-box", padding: "10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 15, marginBottom: 8 };
+  function row(x, click) { return <button key={x.key} type="button" onClick={click} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left", padding: "12px 14px", marginBottom: 7, borderRadius: 8, border: "none", background: TC.paper, color: TC.ink, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}><span>{rbPersonTag(x)}</span><span style={{ fontSize: 11.5, fontWeight: 600, color: TC.inkSoft }}>{rbStoreOf(x.store) + " store"}</span></button>; }
+  var body;
+  if (books.length < 2) body = <div style={{ fontSize: 12.5, color: "#E6C875" }}>Pehle Settings mein Admin / User ke naam aur PIN banayein - phir yahan un ke naam aayen ge.</div>;
+  else if (!from) body = (
+    <div>
+      <div style={{ fontSize: 12.5, color: "#E6C875", marginBottom: 8 }}>Aap naam se login nahi hain - pehle apna naam chunein (paise kis ke paas se ja rahe hain):</div>
+      {books.map(function (x) { return row(x, function () { setFromKey(x.key); }); })}
+    </div>
   );
+  else if (!to) body = (
+    <div>
+      <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 8 }}>{rbPersonTag(from)} - kis ko raqam deni hai? Naam chunein:</div>
+      {books.filter(function (x) { return x.key !== from.key; }).map(function (x) { return row(x, function () { setToKey(x.key); }); })}
+    </div>
+  );
+  else body = (
+    <div>
+      <div style={{ background: TC.paper, borderRadius: 8, padding: "12px 14px", marginBottom: 10, color: TC.ink }}>
+        <div style={{ fontSize: 11.5, color: TC.inkSoft }}>{rbPersonTag(from)} se</div>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>{rbPersonTag(to)} <span style={{ fontSize: 11.5, fontWeight: 600, color: TC.inkSoft }}>({rbStoreOf(to.store)} store)</span></div>
+        <button type="button" onClick={function () { setToKey(""); }} style={{ marginTop: 6, padding: "4px 10px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Naam badlein</button>
+      </div>
+      <input type="number" inputMode="numeric" autoFocus value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="Raqam (Rs)" style={inp} />
+      <input type="date" value={date} onChange={function (ev) { setDate(ev.target.value); }} style={Object.assign({}, inp, { colorScheme: "dark" })} />
+      <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder="Note (agar chahein)" style={inp} />
+      <button disabled={!ok} onClick={function () { if (!window.confirm(rbPersonTag(to) + " ko Rs " + rbMoney(amt) + " transfer karein?")) return; p.onSave(from, to, amt, date, note); p.onClose(); }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: ok ? TC.amber : "#4A4638", color: TC.ink, fontWeight: 700, fontSize: 14.5, cursor: ok ? "pointer" : "not-allowed" }}>Raqam transfer karein</button>
+    </div>
+  );
+  return <ModalShell onClose={p.onClose} title="Cash Transfer">{body}</ModalShell>;
 }
 
 function DayBookReport(p) {
