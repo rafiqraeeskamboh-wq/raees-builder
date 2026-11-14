@@ -124,6 +124,7 @@
       b = document.createElement("div"); b.id = "rbPend";
       b.style.cssText = "position:fixed;right:10px;bottom:76px;z-index:9999;font-family:system-ui,sans-serif;padding:7px 12px;border-radius:8px;background:#7A4E12;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.45)";
       document.body.appendChild(b);
+      b.onclick = function () { b.style.display = "none"; }; /* dabane se chhup jaye, entry pending hi rahe gi */
     }
     b.textContent = "Internet ka intezar: " + n + " cheez pending - internet aate hi khud chali jaye gi";
     b.style.display = "block";

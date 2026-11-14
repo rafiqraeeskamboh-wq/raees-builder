@@ -3574,6 +3574,31 @@ function RbTransferModal(p) {
   return <ModalShell onClose={p.onClose} title="Cash Transfer">{body}</ModalShell>;
 }
 
+/* Super Admin: Day Book ke opening / closing balance ka Edit aur Delete (0) */
+function RbBalFix(p) {
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState(""), v = b[0], setV = b[1];
+  var n = Number(v), ok = v !== "" && !isNaN(n);
+  var bt = { padding: "3px 9px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "Arial, sans-serif" };
+  return (
+    <div data-supfix="1" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, margin: "-6px 0 10px", flexWrap: "wrap" }}>
+      <span style={{ fontSize: 10.5, color: "#666" }}>{p.label}:</span>
+      {open ? (
+        <span style={{ display: "inline-flex", gap: 5 }}>
+          <input type="number" inputMode="decimal" autoFocus value={v} onChange={function (e) { setV(e.target.value); }} style={{ width: 110, padding: "4px 6px", border: "1px solid #999", borderRadius: 5, fontSize: 13 }} />
+          <button type="button" disabled={!ok} onClick={function () { if (!window.confirm(p.label + " Rs " + rbMoney(n) + " karein?")) return; p.onSave(n); setOpen(false); }} style={Object.assign({}, bt, { border: "none", background: ok ? "#2E7D32" : "#999", color: "#fff" })}>Save</button>
+          <button type="button" onClick={function () { setOpen(false); }} style={Object.assign({}, bt, { border: "1px solid #999", background: "#fff", color: "#444" })}>Cancel</button>
+        </span>
+      ) : (
+        <span style={{ display: "inline-flex", gap: 5 }}>
+          <button type="button" onClick={function () { setV(String(Math.round((p.value || 0) * 100) / 100)); setOpen(true); }} style={Object.assign({}, bt, { border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" })}>Edit</button>
+          <button type="button" onClick={function () { if (window.confirm(p.label + " Rs " + rbMoney(p.value) + " delete (0) karein?")) p.onSave(0); }} style={Object.assign({}, bt, { border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" })}>Delete</button>
+        </span>
+      )}
+    </div>
+  );
+}
+
 function DayBookReport(p) {
   var all = p.all, r = p.range;
   function before(d) { return r.from ? String(d || "") < r.from : false; }
@@ -3609,6 +3634,14 @@ function DayBookReport(p) {
     if (mine(x.byName, x.by)) addOut(x.date, { date: x.date, title: x.detail || "-", part: "Kharcha" + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
   });
   (all.labourPayments || []).forEach(function (x) { if (x.type === "advCut" || x.noCash) return; if (mine(x.byName, x.by)) addOut(x.date, { date: x.date, title: labName[x.labourerId] || "-", part: (x.type === "advance" ? "Labour bara advance" : "Labour payment") + (x.note ? " (" + x.note + ")" : "") + (x.byName ? " - " + x.byName : ""), amt: num(x.amount), fix: <RbSupFix coll="labourPayments" item={x} label={"Labour payment - " + (labName[x.labourerId] || "")} /> }); });
+  /* Super Admin ke balance theek karne wali entries */
+  (all.cashAdjust || []).forEach(function (x) {
+    if (!mine(x.name, x.role)) return;
+    var fx = <RbSupFix coll="cashAdjust" item={x} label={"Balance theek - Rs " + rbMoney(x.amount)} />;
+    var nn = x.note || "Balance theek kiya (Super Admin)";
+    if (num(x.amount) > 0) addIn(x.date, { date: x.date, title: "Balance adjust", part: nn, vno: "", amt: num(x.amount), fix: fx });
+    else addOut(x.date, { date: x.date, title: "Balance adjust", part: nn, amt: -num(x.amount), fix: fx });
+  });
   /* naam wale cash transfer (dono store) */
   (all.transfers || []).forEach(function (x) {
     var nt = <RbSupFix coll="transfers" item={x} label={"Cash transfer " + x.fromName + " > " + x.toName} />;
@@ -3659,6 +3692,7 @@ function DayBookReport(p) {
           <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
           <span style={{ minWidth: 110, border: "1px solid " + DB_C.line, padding: "4px 8px", textAlign: "right", fontSize: 13, fontWeight: 700, color: DB_C.red }}>{rbMoney(opening)}</span>
         </div>
+        {p.onCashAdjust && r.from ? <RbBalFix label="Opening Balance" value={opening} onSave={function (v) { var x = new Date(r.from + "T00:00:00"); x.setDate(x.getDate() - 1); p.onCashAdjust(book, isoOf(x), v - opening, "Opening balance theek kiya (" + rbMoney(opening) + " se " + rbMoney(v) + ")"); }} /> : null}
 
         <DbSection title="Cash Received / Recovery" tag="RV" total={recT}
           cols={dCol.concat([{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "V.No", w: "14%" }, { label: "Amount", w: "22%", right: true }])}
@@ -3691,6 +3725,7 @@ function DayBookReport(p) {
             <DbSumRow label="Closing Balance" value={rbMoney(closing)} color={DB_C.red} />
           </tbody>
         </table>
+        {p.onCashAdjust ? <RbBalFix label="Closing Balance" value={closing} onSave={function (v) { p.onCashAdjust(book, r.to || rbToday(), v - closing, "Closing balance theek kiya (" + rbMoney(closing) + " se " + rbMoney(v) + ")"); }} /> : null}
       </div>
     </div>
   );
@@ -3903,7 +3938,7 @@ function ReportsTab(p) {
           </div>
         </div>
       ) : null}
-      {view === "book" ? <DayBookReport t={t} range={r} all={p} book={book} /> : rows.length === 0 ? (
+      {view === "book" ? <DayBookReport t={t} range={r} all={p} book={book} onCashAdjust={p.onCashAdjust} /> : rows.length === 0 ? (
         <EmptyState icon={<Ico name="grid" size={28} color={TC.concrete} />} text={t("noEntriesRange")} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -3927,7 +3962,7 @@ function ReportsTab(p) {
     </div>
   );
 }
-  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers", "parties", "party-log"];
+  var RB_CLEAR_KEYS = ["labourers", "labour-work", "labour-payments", "stock-log", "sales", "next-serial", "gate-passes", "wastage-log", "conversion-log", "activity-log", "suppliers", "purchases", "supplier-payments", "advances", "expenses", "returns", "site-wastage", "trash", "material-opening", "day-verify", "cash-transfers", "parties", "party-log", "cash-adjust"];
 function rbMakeBackup() { return rbMakeBackupFor(RB_STORE); }
 function rbMakeBackupFor(st) { var d = {}; RB_CLEAR_KEYS.forEach(function (k) { var v = localStorage.getItem(rbKeyFor(st, k)); if (v !== null) d[k] = v; }); return { app: "raees-builder", store: st, at: new Date().toISOString(), data: d }; }
 /* ---------- Super Admin: har store ka alag alag, jo hissa chunein sirf wohi saaf (phir wahin se naya shuru) ---------- */
@@ -3981,7 +4016,7 @@ function rbClearStoreParts(st, parts) {
   }
   if (on.labour) { put("labourers", []); put("labour-work", []); put("labour-payments", []); }
   if (on.daybook) {
-    put("expenses", []); put("day-verify", {});
+    put("expenses", []); put("day-verify", {}); put("cash-adjust", []);
     put("cash-transfers", get("cash-transfers", []).filter(function (x) { return stOf(x) !== st; }));
   }
   if (on.party) { put("parties", []); put("party-log", []); }
@@ -4504,6 +4539,7 @@ function rbPeopleLedgers(all) {
     }
     P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Kharcha - " + (x.detail || ""), b: Number(x.amount) || 0, fix: <RbSupFix coll="expenses" item={x} label={"Kharcha - " + (x.detail || "")} /> });
   });
+  (all.cashAdjust || []).forEach(function (x) { var am = Number(x.amount) || 0; var row = { date: x.date, detail: x.note || "Balance theek kiya (Super Admin)", fix: <RbSupFix coll="cashAdjust" item={x} /> }; if (am > 0) row.a = am; else row.b = -am; P(x.name, x.role || "admin").rows.push(row); });
   (all.transfers || []).forEach(function (x) {
     var nf = <RbSupFix coll="transfers" item={x} label={"Cash transfer " + x.fromName + " > " + x.toName} />;
     P(x.fromName, x.fromRole || "admin").rows.push({ date: x.date, detail: "Cash diya " + rbPersonTag({ name: x.toName, role: x.toRole }) + " (" + rbStoreOf(x.toStore) + ")" + (x.note ? " - " + x.note : ""), b: Number(x.amount) || 0, fix: nf });

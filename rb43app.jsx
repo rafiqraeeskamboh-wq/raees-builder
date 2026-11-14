@@ -1071,6 +1071,8 @@ function RaeesBuilderApp() {
   var spy = React.useState(function () { return rbGet("supplier-payments", []); }), supplierPayments = spy[0], setSupplierPayments = spy[1];
   var exz = React.useState(function () { return rbGet("expenses", []); }), expenses = exz[0], setExpenses = exz[1];
   var ctz = React.useState(function () { return rbGet("cash-transfers", []); }), transfers = ctz[0], setTransfers = ctz[1];
+  /* Super Admin: Day Book ka opening / closing balance theek karna (farq ki entry) */
+  var caz = React.useState(function () { return rbGet("cash-adjust", []); }), cashAdjust = caz[0], setCashAdjust = caz[1];
   var lbr = React.useState(function () { return rbGet("labourers", []); }), labourers = lbr[0], setLabourers = lbr[1];
   var lbw = React.useState(function () { return rbGet("labour-work", []); }), labourWork = lbw[0], setLabourWork = lbw[1];
   var lbp = React.useState(function () { return rbGet("labour-payments", []); }), labourPayments = lbp[0], setLabourPayments = lbp[1];
@@ -1189,6 +1191,7 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("supplier-payments", supplierPayments); }, [supplierPayments]);
   React.useEffect(function () { rbSet("expenses", expenses); }, [expenses]);
   React.useEffect(function () { rbSet("cash-transfers", transfers); }, [transfers]);
+  React.useEffect(function () { rbSet("cash-adjust", cashAdjust); }, [cashAdjust]);
   React.useEffect(function () { rbSet("labourers", labourers); }, [labourers]);
   React.useEffect(function () { rbSet("labour-work", labourWork); }, [labourWork]);
   React.useEffect(function () { rbSet("labour-payments", labourPayments); }, [labourPayments]);
@@ -1221,6 +1224,7 @@ function RaeesBuilderApp() {
     advances: { list: advances, set: setAdvances, label: "Advance" },
     expenses: { list: expenses, set: setExpenses, label: "Kharche (Expenses)" },
     transfers: { list: transfers, set: setTransfers, label: "Cash transfer" },
+    cashAdjust: { list: cashAdjust, set: setCashAdjust, label: "Day Book balance theek" },
     parties: { list: parties, set: setParties, label: "Dusri factory" },
     partyLog: { list: partyLog, set: setPartyLog, label: "Dusri factory len-den" },
     labourers: { list: labourers, set: setLabourers, label: "Labour (mazdoor)" },
@@ -1251,7 +1255,7 @@ function RaeesBuilderApp() {
       });
     });
     if (found.length) setTrash(function (tl) { return found.concat(tl || []).slice(0, 500); });
-  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, parties, partyLog, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
+  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, cashAdjust, parties, partyLog, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
   function superSaveRecord(coll, item) {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
     RB_COLLS[coll].set(function (l) { return l.map(function (x) { return x && x.id === item.id ? item : x; }); });
@@ -1672,6 +1676,15 @@ function RaeesBuilderApp() {
     logActivity("expense_added", entry.detail + " — Rs " + rbMoney(amt));
   }
 
+  function superCashAdjust(book, date, amount, note) {
+    if (role !== "admin" || !rbIsSuper() || !book) return;
+    var amt = Math.round((Number(amount) || 0) * 100) / 100;
+    if (!amt) return;
+    var entry = { id: rbUid(), name: book.name || "", role: book.role || "admin", date: date || rbToday(), amount: amt, note: String(note || "").trim(), by: "admin", byName: RB_SUPER_NAME, createdAt: new Date().toISOString() };
+    setCashAdjust(function (a) { return [entry].concat(a || []); });
+    showToast("Balance theek ho gaya");
+    logActivity("super_edit", "Day Book balance " + (book.name || "") + " Rs " + rbMoney(amt));
+  }
   function addParty(name, mobile) {
     if (rbSuperNoTx()) return;
     var nm = String(name || "").trim(); if (!nm) return;
@@ -2702,7 +2715,7 @@ function editStockEntry(id, qty, date) {
     setStockLog([]); setSales([]); setNextSerial(1); setGatePasses([]);
     setWastageLog([]); setConversionLog([]); /* size (custom variants) nahi mitate */ setActivityLog([]);
     trackMute.current = true; setTrash([]); setMaterialOpening({}); setDayVerify({});
-    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setTransfers([]); setParties([]); setPartyLog([]); setReturnLog([]); setSiteWaste([]);
+    setSuppliers([]); setPurchases([]); setSupplierPayments([]); setAdvances([]); setExpenses([]); setTransfers([]); setCashAdjust([]); setParties([]); setPartyLog([]); setReturnLog([]); setSiteWaste([]);
     showToast(t("clearData"));
   }
 
@@ -2743,7 +2756,7 @@ function editStockEntry(id, qty, date) {
     }} />;
   } else if (tab === "book") {
     body = can("reports") ? <ReportsTab t={t} advances={advances} sales={sales} purchases={storePurchases} supplierPayments={storeSupPays}
-      suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses} transfers={transfers} onPersonTransfer={rbIsSuper() ? null : addPersonTransfer}
+      suppliers={suppliers} stockLog={stockLog} wastageLog={wastageLog} expenses={expenses} transfers={transfers} cashAdjust={cashAdjust} onCashAdjust={rbIsSuper() ? superCashAdjust : null} onPersonTransfer={rbIsSuper() ? null : addPersonTransfer}
       labourers={labourers} labourWork={labourWork} labourPayments={labourPayments} returnLog={returnLog}
       canAddExpense={true} onAddExpense={addExpense} role={role} onCashTransfer={addCashTransfer}
       dayVerify={dayVerify} userDayItems={userDayItems} onVerifyUserDay={verifyUserDay} />
@@ -2751,7 +2764,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "ledger") {
     body = role === "admin" ? <RbLedgerTab t={t} parties={parties} partyLog={partyLog} remainingFor={remainingFor} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} sales={sales} suppliers={suppliers} supplierTotals={supplierTotals} labourers={labourers} labourTotals={labourTotals}
       variantsFor={variantsFor} stockLedgerRows={stockLedgerRows}
-      personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments, transfers: transfers }} />
+      personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments, transfers: transfers, cashAdjust: cashAdjust }} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
