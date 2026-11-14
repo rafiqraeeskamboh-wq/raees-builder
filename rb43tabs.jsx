@@ -116,12 +116,13 @@ function ItemPickerModal(p) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: 360, overflowY: "auto" }}>
             {variants.map(function (v) {
               var remaining = remainingFor(cat, v);
+              var bacha = rbIsBacha(cat, v); /* bacha slab alag rang mein - galti se na lag jaye */
               return (
                 <button key={v} onClick={function () { openPrompt(cat, v); }} style={{
-                  textAlign: "start", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #3A362C",
-                  background: TC.appBg2, cursor: "pointer"
+                  textAlign: "start", padding: "10px 12px", borderRadius: 8, border: bacha ? "2px solid #E08A1E" : "1.5px solid #3A362C",
+                  background: bacha ? "#4A2E0E" : TC.appBg2, cursor: "pointer"
                 }}>
-                  <div className="rb-mono" style={{ color: TC.cream, fontSize: 15, fontWeight: 700 }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? " " + variantCustomLabel(cat, v) : ""}</div>
+                  <div className="rb-mono" style={{ color: bacha ? "#FFC266" : TC.cream, fontSize: 15, fontWeight: 700 }}>{rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}{variantCustomLabel(cat, v) ? <span style={bacha ? { background: "#E08A1E", color: "#1C1A15", borderRadius: 4, padding: "0 5px", marginLeft: 5, fontSize: 12 } : null}>{bacha ? variantCustomLabel(cat, v) : " " + variantCustomLabel(cat, v)}</span> : null}</div>
                   <div style={{ fontSize: 10.5, color: remaining > 0 ? "#9FBE8A" : TC.stamp, marginTop: 2 }}>{remaining} {t("inStock")}</div>
                 </button>
               );
