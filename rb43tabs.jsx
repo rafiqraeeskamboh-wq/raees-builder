@@ -5123,10 +5123,12 @@ function RbUserDayVerify(p) {
 
 /* ---------- Ledger tab: har kisi ka ledger ek jagah ---------- */
 /* ---------- Ledger: bill wise income, neeche total, phir kharcha tafseel wise ---------- */
+var RB_INCOME_START = "2026-11-14"; /* Income / Kharcha ledger isi tareekh se shuru */
 function RbIncomeExpense(p) {
   var all = p.all || {};
   var a = React.useState({ preset: "30d" }), range = a[0], setRange = a[1];
-  var r = resolveRange(range);
+  var r0 = resolveRange(range);
+  var r = { from: (!r0.from || r0.from < RB_INCOME_START) ? RB_INCOME_START : r0.from, to: r0.to };
   /* kis ka: sab ikatha ya ek banda (Admin apna + Users, Super Admin sab) */
   var meN = rbNm(rbSessionName());
   var who = rbMakeBooks().filter(function (b) { return b.name && rbNm(b.name) !== rbNm(RB_SUPER_NAME); });
