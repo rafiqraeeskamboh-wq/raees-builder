@@ -2223,9 +2223,12 @@ function rbPartyFt(it) {
 }
 function rbR2(x) { return Math.round((Number(x) || 0) * 100) / 100; }
 function rbPartyTotals(log, partyId) {
-  var t = { gIn: 0, gOut: 0, sIn: 0, sOut: 0 };
-  log.forEach(function (x) { if (x.partyId !== partyId) return; (x.items || []).forEach(function (it) { var f = rbPartyFt(it); if (it.category === "garden") { if (x.dir === "in") t.gIn += f; else t.gOut += f; } else { if (x.dir === "in") t.sIn += f; else t.sOut += f; } }); });
+  var t = { gIn: 0, gOut: 0, sIn: 0, sOut: 0, gnIn: 0, gnOut: 0, snIn: 0, snOut: 0 };
+  log.forEach(function (x) { if (x.partyId !== partyId) return; (x.items || []).forEach(function (it) { var f = rbPartyFt(it), q = Number(it.qty) || 0, inn = x.dir === "in";
+    if (it.category === "garden") { if (inn) { t.gIn += f; t.gnIn += q; } else { t.gOut += f; t.gnOut += q; } }
+    else { if (inn) { t.sIn += f; t.snIn += q; } else { t.sOut += f; t.snOut += q; } } }); });
   t.g = rbR2(t.gOut - t.gIn); t.s = rbR2(t.sOut - t.sIn); /* + = unhon ne humein dena hai, - = hum ne dena hai */
+  t.gn = t.gnOut - t.gnIn; t.sn = t.snOut - t.snIn;
   return t;
 }
 function rbPartyBalTxt(v, unit) { if (!v) return "Barabar"; return rbMoney(Math.abs(v)) + " " + unit + (v > 0 ? " unhon ne dena hai" : " hum ne dena hai"); }
@@ -2253,8 +2256,8 @@ function RbPartyModal(p) {
         return (
           <button key={x.id} onClick={function () { setOpenId(x.id); setDir(null); }} style={{ width: "100%", textAlign: "left", padding: "11px 12px", marginBottom: 7, borderRadius: 8, border: "none", background: TC.paper, cursor: "pointer" }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: TC.ink }}>{x.name}<RbSupFix coll="parties" item={x} label={"Factory - " + x.name} /></div>
-            <div style={{ fontSize: 11, color: TC.inkSoft, marginTop: 3 }}>Garder: {rbPartyBalTxt(tt.g, "ft")}</div>
-            <div style={{ fontSize: 11, color: TC.inkSoft }}>Slab: {rbPartyBalTxt(tt.s, "fot")}</div>
+            <div style={{ fontSize: 11, color: TC.inkSoft, marginTop: 3 }}>Garder: {rbPartyBalTxt(tt.g, "ft")} ({Math.abs(tt.gn)} nagg)</div>
+            <div style={{ fontSize: 11, color: TC.inkSoft }}>Slab: {rbPartyBalTxt(tt.s, "fot")} ({Math.abs(tt.sn)} nagg)</div>
           </button>
         );
       })}
@@ -2272,7 +2275,6 @@ function RbPartyModal(p) {
   );
   var tt = rbPartyTotals(log, cur.id);
   var mine = log.filter(function (x) { return x.partyId === cur.id; }).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || String(m.createdAt || "").localeCompare(String(n.createdAt || "")); });
-  var bg = 0, bs = 0;
   var cell = { border: "1px solid #bbb", padding: "4px 4px", fontSize: 10.5, color: "#222", verticalAlign: "top" };
   var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700 });
   var entryG = 0, entryS = 0; rows.forEach(function (r) { var f2 = rbPartyFt(r); if (r.category === "garden") entryG += f2; else entryS += f2; });
@@ -2280,8 +2282,8 @@ function RbPartyModal(p) {
     <ModalShell onClose={p.onClose} title={cur.name}>
       <button onClick={function () { setOpenId(null); setDir(null); }} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; Sab factory</button>
       <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10, color: TC.ink }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700 }}><span>Garder</span><span className="rb-mono" style={{ color: tt.g > 0 ? TC.success : (tt.g < 0 ? TC.stamp : TC.ink) }}>{rbPartyBalTxt(tt.g, "ft")}</span></div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700, marginTop: 4 }}><span>Slab</span><span className="rb-mono" style={{ color: tt.s > 0 ? TC.success : (tt.s < 0 ? TC.stamp : TC.ink) }}>{rbPartyBalTxt(tt.s, "fot")}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700 }}><span>Garder</span><span className="rb-mono" style={{ color: tt.g > 0 ? TC.success : (tt.g < 0 ? TC.stamp : TC.ink), textAlign: "right" }}>{rbPartyBalTxt(tt.g, "ft")}<br /><span style={{ fontSize: 11 }}>{Math.abs(tt.gn)} nagg</span></span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700, marginTop: 4 }}><span>Slab</span><span className="rb-mono" style={{ color: tt.s > 0 ? TC.success : (tt.s < 0 ? TC.stamp : TC.ink), textAlign: "right" }}>{rbPartyBalTxt(tt.s, "fot")}<br /><span style={{ fontSize: 11 }}>{Math.abs(tt.sn)} nagg</span></span></div>
       </div>
       {p.onAddEntry && !dir ? (
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
@@ -2317,24 +2319,32 @@ function RbPartyModal(p) {
       <div style={{ background: "#fff", borderRadius: 6, padding: "8px 4px", overflowX: "auto" }}>
         <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Ledger - {cur.name}</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><th style={Object.assign({}, head, { width: "15%" })}>Tareekh</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { textAlign: "right" })}>Garder ft</th><th style={Object.assign({}, head, { textAlign: "right" })}>Slab fot</th><th style={Object.assign({}, head, { textAlign: "right" })}>Baqi</th></tr></thead>
+          <thead>
+            <tr><th rowSpan={2} style={Object.assign({}, head, { width: "14%" })}>Tareekh</th><th rowSpan={2} style={head}>Tafseel</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Garder</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Slab</th></tr>
+            <tr><th style={Object.assign({}, head, { textAlign: "right" })}>Nagg</th><th style={Object.assign({}, head, { textAlign: "right" })}>Ft</th><th style={Object.assign({}, head, { textAlign: "right" })}>Nagg</th><th style={Object.assign({}, head, { textAlign: "right" })}>Fot</th></tr>
+          </thead>
           <tbody>
-            {mine.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : mine.map(function (x) {
-              var g2 = 0, s2 = 0; (x.items || []).forEach(function (it) { var f3 = rbPartyFt(it); if (it.category === "garden") g2 += f3; else s2 += f3; });
-              var sg = x.dir === "in" ? -1 : 1; bg += sg * g2; bs += sg * s2;
+            {mine.length === 0 ? <tr><td colSpan={6} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : mine.map(function (x) {
+              var g2 = 0, s2 = 0, gq = 0, sq = 0; (x.items || []).forEach(function (it) { var f3 = rbPartyFt(it), q3 = Number(it.qty) || 0; if (it.category === "garden") { g2 += f3; gq += q3; } else { s2 += f3; sq += q3; } });
+              var sgn = x.dir === "in" ? "+" : "-";
+              function v(n, f) { return n ? sgn + rbR2(f) : ""; }
               return (
                 <tr key={x.id}>
                   <td style={cell}>{rbDate(x.date)}</td>
-                  <td style={Object.assign({}, cell, { wordBreak: "break-word" })}><b>{x.dir === "in" ? "Hum ne liya" : "Unhon ne liya"}</b>: {(x.items || []).map(function (it) { return it.qty + " x " + variantLabel(t, it.category, it.variant); }).join(", ")}{x.note ? " (" + x.note + ")" : ""}{x.byName ? <span style={{ color: "#777" }}>{" - " + x.byName}</span> : null}<RbSupFix coll="partyLog" item={x} noAdvanced={false} label={"Factory len-den " + rbDate(x.date)} /></td>
-                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{g2 ? (x.dir === "in" ? "+" : "-") + rbR2(g2) : ""}</td>
-                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{s2 ? (x.dir === "in" ? "+" : "-") + rbR2(s2) : ""}</td>
-                  <td style={Object.assign({}, cell, { textAlign: "right", whiteSpace: "nowrap" })}>G {rbR2(bg)}<br />S {rbR2(bs)}</td>
+                  <td style={Object.assign({}, cell, { wordBreak: "break-word" })}><b>{x.dir === "in" ? "Hum ne liya" : "Unhon ne liya"}</b>: {(x.items || []).map(function (it) { return it.qty + " x " + variantLabel(t, it.category, it.variant); }).join(", ")}{x.note ? " (" + x.note + ")" : ""}{x.byName ? <span style={{ color: "#777" }}>{" - " + x.byName}</span> : null}<RbSupFix coll="partyLog" item={x} label={"Factory len-den " + rbDate(x.date)} /></td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{v(gq, gq)}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{v(gq, g2)}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{v(sq, sq)}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "right" })}>{v(sq, s2)}</td>
                 </tr>
               );
             })}
+            <tr><td colSpan={2} style={Object.assign({}, head, { textAlign: "right" })}>Hum ne liya (aaya)</td><td style={Object.assign({}, head, { textAlign: "right" })}>{tt.gnIn}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{rbR2(tt.gIn)}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{tt.snIn}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{rbR2(tt.sIn)}</td></tr>
+            <tr><td colSpan={2} style={Object.assign({}, head, { textAlign: "right" })}>Unhon ne liya (gaya)</td><td style={Object.assign({}, head, { textAlign: "right" })}>{tt.gnOut}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{rbR2(tt.gOut)}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{tt.snOut}</td><td style={Object.assign({}, head, { textAlign: "right" })}>{rbR2(tt.sOut)}</td></tr>
+            <tr><td colSpan={2} style={Object.assign({}, head, { textAlign: "right", color: "#B0262B" })}>Baqi</td><td colSpan={2} style={Object.assign({}, head, { textAlign: "right", color: "#B0262B" })}>{rbPartyBalTxt(tt.g, "ft")}<br />{Math.abs(tt.gn)} nagg</td><td colSpan={2} style={Object.assign({}, head, { textAlign: "right", color: "#B0262B" })}>{rbPartyBalTxt(tt.s, "fot")}<br />{Math.abs(tt.sn)} nagg</td></tr>
           </tbody>
         </table>
-        <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>+ = hum ne liya, - = unhon ne liya. Baqi plus (+) mein ho to unhon ne humein dena hai, minus (-) mein ho to hum ne unhein dena hai.</div>
+        <div style={{ fontSize: 10.5, color: "#555", marginTop: 6 }}>+ = hum ne liya (stock mein jama), - = unhon ne liya (stock se kam). Hisaab fotwari se barabar hota hai, nagg sirf maloomat ke liye.</div>
       </div>
     </ModalShell>
   );
@@ -5107,7 +5117,7 @@ function RbLedgerTab(p) {
   if (qk) list = list.filter(function (x) { return String(x.name).toLowerCase().indexOf(qk) >= 0 || String(x.sub).indexOf(q.trim()) >= 0; });
   list.sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
   var cur = null; list.forEach(function (x) { if (x.key === openKey) cur = x; });
-  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["stock", "Stock"], ["income", "Income / Kharcha"]];
+  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["stock", "Stock"], ["income", "Income / Kharcha"], ["party", "Dusri factory"]];
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber, marginBottom: 10 }}>Ledger</div>
@@ -5115,6 +5125,7 @@ function RbLedgerTab(p) {
         {tabs.map(function (o) { var on = sec === o[0]; return <button key={o[0]} onClick={function () { pick(o[0]); }} style={{ flex: "1 1 30%", padding: "9px 6px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
       </div>
       {sec === "income" ? <RbIncomeExpense t={t} all={p.personAll} /> : null}
+      {sec === "party" ? <RbPartyModal t={t} parties={p.parties || []} partyLog={p.partyLog || []} variantsFor={p.variantsFor} remainingFor={p.remainingFor} onAddParty={p.onAddParty} onAddEntry={p.onAddPartyEntry} onClose={function () { pick("customer"); }} /> : null}
       {sec === "people" ? <RbPersonLedgerModal t={t} all={p.personAll} onClose={function () { pick("customer"); }} /> : null}
       {sec === "stock" ? (
         <div>

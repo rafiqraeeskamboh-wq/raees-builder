@@ -2680,7 +2680,7 @@ function editStockEntry(id, qty, date) {
       dayVerify={dayVerify} userDayItems={userDayItems} onVerifyUserDay={verifyUserDay} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
   } else if (tab === "ledger") {
-    body = role === "admin" ? <RbLedgerTab t={t} sales={sales} suppliers={suppliers} supplierTotals={supplierTotals} labourers={labourers} labourTotals={labourTotals}
+    body = role === "admin" ? <RbLedgerTab t={t} parties={parties} partyLog={partyLog} remainingFor={remainingFor} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} sales={sales} suppliers={suppliers} supplierTotals={supplierTotals} labourers={labourers} labourTotals={labourTotals}
       variantsFor={variantsFor} stockLedgerRows={stockLedgerRows}
       personAll={{ sales: sales, advances: advances, returnLog: returnLog, expenses: expenses, suppliers: suppliers, supplierPayments: storeSupPays, labourers: labourers, labourPayments: labourPayments }} />
       : <EmptyState icon={<Ico name="grid" size={30} color={TC.concrete} />} text={t("accountantNoStock")} />;
