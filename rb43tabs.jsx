@@ -22,6 +22,27 @@ function MiniField(p) {
   );
 }
 
+var RB_DESC_LIST = ["Room", "Baramda", "Kitchen", "Extra Garder", "Extra Slab", "Bathroom", "Drawing Room", "Lobby", "Store", "Garage", "Porch"];
+function rbDescList() { var x = rbGet("desc-list", null); return (Array.isArray(x) && x.length) ? x : RB_DESC_LIST; }
+function RbDescPick(p) {
+  var v = p.value || "";
+  var l = React.useState(rbDescList), list = l[0], setList = l[1];
+  var opts = (v && list.indexOf(v) < 0) ? list.concat([v]) : list;
+  function addNew() {
+    var n = (window.prompt("Naya naam likhein (jaise: Garage, Store)") || "").trim();
+    if (!n) return;
+    if (list.indexOf(n) < 0) { var nl = list.concat([n]); setList(nl); rbSet("desc-list", nl); }
+    p.onChange(n);
+  }
+  return (
+    <select value={v} onChange={function (e) { if (e.target.value === "__new") addNew(); else p.onChange(e.target.value); }} style={Object.assign({}, rbInput(), { padding: "5px 8px", fontSize: 12.5, width: 140 })}>
+      <option value="">{p.placeholder || "Description"}</option>
+      {opts.map(function (x) { return <option key={x} value={x}>{x}</option>; })}
+      <option value="__new">+ Add new</option>
+    </select>
+  );
+}
+
 function ItemRow(p) {
   var t = p.t, row = p.row, mode = p.mode, onChange = p.onChange;
   var isPiece = mode === "piece";
@@ -34,8 +55,7 @@ function ItemRow(p) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="rb-mono" style={{ fontSize: 11, color: TC.concrete }}>#{p.idx + 1}</span>
           {p.editable ? (
-            <input value={row.desc} onChange={function (e) { onChange({ desc: e.target.value }); }}
-              placeholder={t("description")} style={Object.assign({}, rbInput(), { padding: "5px 8px", fontSize: 12.5, width: 140 })} />
+            <RbDescPick value={row.desc} placeholder={t("description")} onChange={function (v) { onChange({ desc: v }); }} />
           ) : (
             <span style={{ fontSize: 12.5, fontWeight: 600, color: TC.ink }}>{(!isPiece && (row.category === "garden" || row.category === "slab")) ? rbExtraDesc(row) : row.desc}</span>
           )}
