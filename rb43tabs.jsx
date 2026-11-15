@@ -3708,8 +3708,8 @@ function DayBookReport(p) {
         {p.onCashAdjust && r.from ? <RbBalFix label="Opening Balance" value={opening} onSave={function (v, del) { var x = new Date(r.from + "T00:00:00"); x.setDate(x.getDate() - 1); p.onCashAdjust(book, isoOf(x), v - opening, del ? "Super Admin ne opening balance delete kiya: Rs " + rbMoney(opening) + " (0 kar diya)" : "Super Admin ne opening balance edit kiya: Rs " + rbMoney(opening) + " se Rs " + rbMoney(v)); }} /> : null}
 
         <DbSection title="Cash Received / Recovery" tag="RV" total={recT}
-          cols={dCol.concat([{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "V.No", w: "14%" }, { label: "Amount", w: "22%", right: true }])}
-          rows={rec.map(function (x) { return dCell(x).concat([x.title, <span>{x.part}{x.fix}</span>, x.vno ? "#" + x.vno : "-", rbMoney(x.amt)]); })} />
+          cols={[{ label: "V.No", w: "12%" }].concat(dCol, [{ label: "Title of Account", w: showDate ? "30%" : "34%" }, { label: "Particular" }, { label: "Amount", w: "22%", right: true }])}
+          rows={rec.map(function (x) { return [x.vno ? "#" + x.vno : "-"].concat(dCell(x), [x.title, <span>{x.part}{x.fix}</span>, rbMoney(x.amt)]); })} />
 
         <DbSection title="Payments / Expenses" tag="PV" total={outT}
           cols={dCol.concat([{ label: "Title of Account", w: showDate ? "34%" : "40%" }, { label: "Particular" }, { label: "Amount", w: "24%", right: true }])}
