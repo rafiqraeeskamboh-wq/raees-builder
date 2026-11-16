@@ -2598,6 +2598,13 @@ function editStockEntry(id, qty, date) {
           }), "cash");
         } else {
           var uu = updated;
+          /* pemaish bill edit: pehla gate pass sirf extra maal ka ho to naye extra se badal do */
+          var gp1 = null; gatePasses.forEach(function (g) { if (g.saleId === uu.id && !(Number(g.trip) > 1)) gp1 = g; });
+          var xNew = rbBillExtraGpItems(uu, t);
+          if ((gp1 && (gp1.items || []).length && (gp1.items || []).every(function (it) { return it.extra; })) || (!gp1 && xNew.length && !gatePasses.some(function (g) { return g.saleId === uu.id; }))) {
+            if (xNew.length) upsertGatePass(uu, xNew, "customized");
+            else setGatePasses(function (prev) { return prev.filter(function (g) { return g.id !== gp1.id; }); });
+          }
           setGatePasses(function (prev) {
             return prev.map(function (g2) {
               return g2.saleId === uu.id ? Object.assign({}, g2, { serial: uu.serial, customerName: uu.customerName, date: (Number(g2.trip) > 1 ? g2.date : uu.date), mobile: uu.mobile }) : g2;
@@ -2648,7 +2655,10 @@ function editStockEntry(id, qty, date) {
     showToast(t("saleSaved"));
     logActivity("sale_created", full.customerName + " — #" + full.serial);
     if (full.type === "customized") {
-      setGatePassBuilderFor(full);
+      /* extra garder / slab bill bante hi gate pass mein; room / kitchen ka gate pass baad mein "Make gate pass" se */
+      var xItems = rbBillExtraGpItems(full, t);
+      if (xItems.length) upsertGatePass(full, xItems, "customized");
+      setViewingBill(full);
     } else {
       var gpItems = full.items.map(function (it) {
         return { id: it.id, category: it.category, variant: it.variant, qty: it.qty, desc: it.desc };
@@ -2738,7 +2748,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { if (rbGpsFor(gatePasses, sale.id).length) setGpExtraFor(sale); else setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} parties={parties} partyLog={partyLog} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} onSetMaterialStock={rbIsSuper() ? superSetMaterialStock : null} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
