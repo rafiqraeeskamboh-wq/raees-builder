@@ -348,6 +348,8 @@ function NewSaleTab(p) {
   var hasZeroRate = rows.some(function (r) { return !(Number(r.rate) > 0); });
   /* Extra Garder / Extra Slab ka size chunna zaroori */
   var missingSize = rows.some(function (r) { return r.pick && (r.category === "garden" || r.category === "slab") && !r.variant; });
+  /* pemaish bill: har line ki description (Room, Baramda ...) chunna zaroori */
+  var missingDesc = mode === "area" && rows.some(function (r) { return r.category === "custom" && !String(r.desc || "").trim(); });
   var amountInvalid = rows.length > 0 && (hasZeroRate || !(totalBill > 0));
   var amountBlocked = amountInvalid && !canEditSerial; /* Rs 0 ka bill sirf Admin save kar sakta hai */
 
@@ -380,7 +382,7 @@ function NewSaleTab(p) {
     });
   }
   var stockBlocked = stockShortList.length > 0;
-  var canSave = customerName.trim() && rows.length > 0 && !amountBlocked && !stockBlocked && !missingSize && Number(effSerial) > 0 && !submitting;
+  var canSave = customerName.trim() && rows.length > 0 && !amountBlocked && !stockBlocked && !missingSize && !missingDesc && Number(effSerial) > 0 && !submitting;
 
   function handleSave() {
     if (!canSave) return;
@@ -509,6 +511,9 @@ function NewSaleTab(p) {
         </div>
       </div>
 
+      {missingDesc ? (
+        <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: "rgba(192,57,43,0.15)", border: "1px solid " + TC.stamp, color: TC.stamp, fontSize: 12, fontWeight: 600, textAlign: "center" }}>Har line ki Description chunein (Room, Baramda, Kitchen ...)</div>
+      ) : null}
       {missingSize ? (
         <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: "rgba(192,57,43,0.15)", border: "1px solid " + TC.stamp, color: TC.stamp, fontSize: 12, fontWeight: 600, textAlign: "center" }}>Extra Garder / Extra Slab ka size list se chunein</div>
       ) : null}
