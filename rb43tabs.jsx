@@ -51,6 +51,7 @@ function ItemRow(p) {
   var cols = isPiece || isNagg ? "1fr 1fr" : (isFt ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr");
   /* description mein Extra Garder / Extra Slab chunein to line garder / slab ki ban jati hai (size list se) */
   function pickDesc(v) {
+    if (v === "Extra Garder" && p.onGarderTable && !(row.pick === "Extra Garder")) { p.onGarderTable(row.id); return; }
     if (v === "Extra Garder") onChange({ pick: v, category: "garden", variant: "", desc: "Extra Garder", length: "", width: "" });
     else if (v === "Extra Slab") onChange({ pick: v, category: "slab", variant: "", desc: "Extra Slab", length: "", width: "" });
     else onChange({ pick: "", category: "custom", variant: "", desc: v });
@@ -125,6 +126,66 @@ function ItemRow(p) {
         <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Rs {rbMoney(amount)}</span>
       </div>
     </div>
+  );
+}
+
+/* Extra Garder: alag table - saare size, har size ki qty, fot khud, ek rate fi fot, kul total */
+function RbExtraGarderTable(p) {
+  var t = p.t;
+  var vl = (p.variantsFor ? p.variantsFor("garden") : []) || [];
+  var a = React.useState({}), qtys = a[0], setQtys = a[1];
+  var b = React.useState(""), rate = b[0], setRate = b[1];
+  function ftOf(v) { return (Number(qtys[v]) || 0) * (Number(v) || 0); }
+  var totFt = Math.round(vl.reduce(function (n, v) { return n + ftOf(v); }, 0) * 100) / 100;
+  var total = Math.round(totFt * (Number(rate) || 0));
+  var any = vl.some(function (v) { return Number(qtys[v]) > 0; });
+  var ok = any && Number(rate) > 0;
+  var cell = { padding: "6px 4px", fontSize: 13, color: TC.cream, borderBottom: "1px dashed #3A362C" };
+  var inp = Object.assign({}, rbInput(), { fontSize: 15, marginBottom: 0, padding: "6px 6px", textAlign: "center", width: 70 });
+  function save() {
+    if (!ok) return;
+    p.onSave(vl.filter(function (v) { return Number(qtys[v]) > 0; }).map(function (v) { return { variant: v, qty: String(Number(qtys[v])), rate: String(Number(rate)) }; }));
+  }
+  return (
+    <ModalShell noBackdropClose onClose={p.onClose} title="Extra Garder">
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
+        <thead>
+          <tr style={{ fontSize: 11, color: "#A39C8A" }}>
+            <th style={{ textAlign: "start", padding: "4px" }}>Size</th>
+            <th style={{ textAlign: "center", padding: "4px" }}>{t("inStock")}</th>
+            <th style={{ textAlign: "center", padding: "4px" }}>{t("qty")}</th>
+            <th style={{ textAlign: "end", padding: "4px" }}>Fot</th>
+          </tr>
+        </thead>
+        <tbody className="rb-mono">
+          {vl.map(function (v) {
+            var q = Number(qtys[v]) || 0, st = p.remainingFor ? p.remainingFor("garden", v) : 0;
+            return (
+              <tr key={v}>
+                <td style={Object.assign({}, cell, { fontWeight: 700, color: q > 0 ? "#E6C875" : TC.cream })}>{v} ft</td>
+                <td style={Object.assign({}, cell, { textAlign: "center", fontSize: 12, color: st > 0 ? "#9FBE8A" : TC.stamp })}>{st}</td>
+                <td style={Object.assign({}, cell, { textAlign: "center" })}>
+                  <input type="number" inputMode="numeric" value={qtys[v] || ""} placeholder="0" onChange={function (ev) { var n = Object.assign({}, qtys); n[v] = ev.target.value; setQtys(n); }} style={inp} />
+                </td>
+                <td style={Object.assign({}, cell, { textAlign: "end", fontWeight: 700 })}>{q > 0 ? Math.round(ftOf(v) * 100) / 100 : "-"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: TC.cream, fontWeight: 700, marginBottom: 8 }}><span>Kul Fot</span><span className="rb-mono">{totFt}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>
+          <span>Rate fi fot</span>
+          <input type="number" inputMode="decimal" value={rate} placeholder="0" onChange={function (ev) { setRate(ev.target.value); }} style={Object.assign({}, inp, { width: 100, border: "2px solid " + (Number(rate) > 0 ? "#3A362C" : TC.stamp) })} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, color: "#E6C875", fontWeight: 700 }}><span>Kul Total</span><span className="rb-mono">Rs {rbMoney(total)}</span></div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={p.onClose} style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("cancel")}</button>
+        <button disabled={!ok} onClick={save} style={{ flex: 1.4, padding: "12px", borderRadius: 8, border: "none", background: ok ? TC.garden : "#4A4638", color: TC.cream, fontSize: 13, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed" }}>Bill mein daalein</button>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -220,6 +281,7 @@ function NewSaleTab(p) {
   var d = React.useState(rbToday()), date = d[0], setDate = d[1];
   var e = rbUseDraft(dScope, "rows", []), rows = e[0], setRows = e[1];
   var f = React.useState(false), pickerOpen = f[0], setPickerOpen = f[1];
+  var gtf = React.useState(null), garderTableFor = gtf[0], setGarderTableFor = gtf[1];
   var g = rbUseDraft(dScope, "labourRate", ""), labourRate = g[0], setLabourRate = g[1];
   var h = rbUseDraft(dScope, "paidInFull", false), paidInFull = h[0], setPaidInFull = h[1];
   var i = rbUseDraft(dScope, "advanceInput", ""), advanceInput = i[0], setAdvanceInput = i[1];
@@ -391,7 +453,7 @@ function NewSaleTab(p) {
                 return <ItemRow key={row.id} t={t} idx={idx} row={row} mode={mode}
                   onChange={function (patch) { updateRow(row.id, patch); }}
                   onRemove={function () { removeRow(row.id); }}
-                  editable={row.category === "custom"} variantsFor={variantsFor} remainingFor={remainingFor} />;
+                  editable={row.category === "custom"} variantsFor={variantsFor} remainingFor={remainingFor} onGarderTable={setGarderTableFor} />;
               })}
             </div>
           )}
@@ -460,6 +522,22 @@ function NewSaleTab(p) {
         {isEditing ? t("updateBill") : t("saveSale")}
       </button>
 
+      {garderTableFor ? (
+        <RbExtraGarderTable t={t} variantsFor={variantsFor} remainingFor={remainingFor}
+          onClose={function () { setGarderTableFor(null); }}
+          onSave={function (list) {
+            var rid = garderTableFor;
+            setRows(function (r) {
+              var out = [];
+              r.forEach(function (row) {
+                if (row.id !== rid) { out.push(row); return; }
+                list.forEach(function (x) { out.push({ id: rbUid(), category: "garden", variant: x.variant, pick: "Extra Garder", desc: variantLabel(t, "garden", x.variant), qty: x.qty, length: x.variant, width: "", rate: x.rate }); });
+              });
+              return out;
+            });
+            setGarderTableFor(null);
+          }} />
+      ) : null}
       {pickerOpen ? (
         <ItemPickerModal t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor}
           pickedQty={function (c2, v2) { return mode === "piece" ? Math.max(0, rowsQtyFor(c2, v2) - backFromEdit(c2, v2)) : 0; }}
