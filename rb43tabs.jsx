@@ -72,7 +72,7 @@ function ItemRow(p) {
         <select value={row.variant || ""} onChange={function (e) { var vv = e.target.value; onChange({ variant: vv, ftOverride: "", length: xCat === "garden" ? vv : "", desc: vv ? variantLabel(t, xCat, vv) : (xCat === "garden" ? "Extra Garder" : "Extra Slab") }); }}
           style={Object.assign({}, rbInput(), { padding: "5px 4px", fontSize: 12, borderColor: row.variant ? TC.paperLine : TC.stamp })}>
           <option value="">Chunein</option>
-          {vlist.map(function (vv) { var st = p.remainingFor ? p.remainingFor(xCat, vv) : null; return <option key={vv} value={vv}>{xCat === "garden" ? vv + " ft" : rbVariantNum(xCat, vv)}{st !== null && st !== undefined ? " (" + st + ")" : ""}</option>; })}
+          {vlist.map(function (vv) { var st = p.remainingFor ? p.remainingFor(xCat, vv) : null; /* extra garder: jo size stock mein nahi (0) wo chuna na ja sake */ var off = xCat === "garden" && st !== null && st !== undefined && !(Number(st) > 0) && String(row.variant) !== String(vv); return <option key={vv} value={vv} disabled={off}>{xCat === "garden" ? vv + " ft" : rbVariantNum(xCat, vv)}{st !== null && st !== undefined ? " (" + st + ")" : ""}</option>; })}
         </select>
       </div>
     );

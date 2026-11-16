@@ -113,12 +113,13 @@ function BillModal(p) {
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 12 }}>
             <div>
               <div style={{ color: TC.inkSoft, fontSize: 10 }}>{t("customerName")}</div>
-              <div style={{ fontWeight: 700, color: TC.ink }}>{sale.customerName}</div>
+              {/* bill par customer ka naam bara aur khoobsurat */}
+              <div className="rb-display" style={{ fontWeight: 700, color: TC.ink, fontSize: 20, letterSpacing: 0.4, lineHeight: 1.2, marginTop: 1 }}>{sale.customerName}</div>
               {sale.mobile ? <div className="rb-mono" style={{ color: TC.inkSoft, fontSize: 10.5, marginTop: 2 }}>{sale.mobile}</div> : null}
             </div>
             <div style={{ textAlign: "end" }}>
               <div style={{ color: TC.inkSoft, fontSize: 10 }}>{t("billNo")}</div>
-              <div className="rb-mono" style={{ fontWeight: 700, color: TC.stamp }}>#{sale.serial}</div>
+              <div className="rb-display" style={{ fontWeight: 700, color: TC.stamp, fontSize: 22, letterSpacing: 0.6, lineHeight: 1.15, display: "inline-block", border: "2px solid " + TC.stamp, borderRadius: 7, padding: "1px 10px", marginTop: 2 }}>#{sale.serial}</div>
               <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate(sale.date)}</div>
             </div>
           </div>
