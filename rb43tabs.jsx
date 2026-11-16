@@ -3888,6 +3888,7 @@ function DayBookReport(p) {
   return (
     <div>
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
+      <RbShotBtn targetId="rb-daybook" name="day-book" wrapStyle={{ display: "flex", width: "100%", marginBottom: 8 }} style={{ width: "100%" }} />
       <div id="rb-daybook" style={{ background: "#fff", color: DB_C.ink, borderRadius: 6, padding: "14px 10px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: DB_C.red }}>{p.t("appName")} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={13} />
@@ -4760,6 +4761,17 @@ function rbPeopleLedgers(all) {
 }
 
 /* ek jaisa ledger safha - tareekh, tafseel, do khane, aur har line ke baad baqi */
+/* ledger / day book ki tasveer save karne ka button */
+function RbShotBtn(p) {
+  var a = React.useState(""), msg = a[0], setMsg = a[1];
+  function go() { var el = document.getElementById(p.targetId); if (!el) return; rbSaveNode(el, (p.name || "ledger") + ".png", function (k) { setMsg(k === "busy" ? "Tasveer ban rahi hai..." : (k === "saved" ? "Tasveer save ho gayi" : "Tasveer nahi bani - dobara try karein")); setTimeout(function () { setMsg(""); }, 3000); }); }
+  return (
+    <span style={Object.assign({ display: "inline-flex", flexDirection: "column", alignItems: "stretch" }, p.wrapStyle || {})}>
+      <button onClick={go} style={Object.assign({ padding: "8px 12px", borderRadius: 7, border: "1.5px solid " + TC.amber, background: "transparent", color: TC.amber, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }, p.style || {})}>Tasveer save karein</button>
+      {msg ? <span style={{ fontSize: 11, color: TC.cream, textAlign: "center", marginTop: 3 }}>{msg}</span> : null}
+    </span>
+  );
+}
 function RbLedgerModal(p) {
   rbUseBack(true, p.onClose);
   var a = React.useState({ preset: "all" }), range = a[0], setRange = a[1];
@@ -4785,11 +4797,11 @@ function RbLedgerModal(p) {
       <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
-          <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+          <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name="ledger" /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
         </div>
         {p.top || null}
         <RangeFilter t={p.t} range={range} onChange={setRange} />
-        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")}</div>
           <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Ledger - {p.title}</div>
@@ -5040,10 +5052,10 @@ function RbLabourDayLedger(p) {
       <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
-          <button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+          <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name="ledger" /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
         </div>
         <RangeFilter t={t} range={range} onChange={setRange} />
-        <div id={idRef.current} style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{t("appName")}</div>
           <RbTagline color="#9A6A12" size={12} />
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Labour Ledger - {lb.name}</div>
@@ -5370,6 +5382,7 @@ function RbIncomeExpense(p) {
         </div>
       ) : null}
       <button onClick={printIt} style={{ width: "100%", marginBottom: 8, padding: "9px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Print / PDF</button>
+      <RbShotBtn targetId="rb-incexp" name="ledger" wrapStyle={{ display: "flex", width: "100%", marginBottom: 8 }} style={{ width: "100%" }} />
       <div id="rb-incexp" style={{ background: "#fff", borderRadius: 6, padding: "12px 6px", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t("appName")} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={12} />

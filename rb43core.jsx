@@ -672,7 +672,7 @@ function rbShareNode(node, filename, text, phone, onNote, onlySave, saveToo) {
   if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
   if (onNote) onNote("busy");
   /* Urdu (اعتماد) tasveer mein huroof alag na hon - letter-spacing 0 */
-  window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false, onclone: function (doc) { try { Array.prototype.forEach.call(doc.querySelectorAll(".rb-urdu, [dir=rtl]"), function (el) { el.style.letterSpacing = "0px"; el.style.wordSpacing = "normal"; }); } catch (e) {} } }).then(function (canvas) {
+  window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false, onclone: function (doc) { try { Array.prototype.forEach.call(doc.querySelectorAll(".rb-urdu, [dir=rtl]"), function (el) { el.style.letterSpacing = "0px"; el.style.wordSpacing = "normal"; }); Array.prototype.forEach.call(doc.querySelectorAll("[data-supfix]"), function (el) { el.parentNode.removeChild(el); }); Array.prototype.forEach.call(doc.querySelectorAll("[data-shot]"), function (el) { el.style.overflow = "visible"; }); } catch (e) {} } }).then(function (canvas) {
     canvas.toBlob(function (blob) {
       if (!blob) { if (onNote) onNote("fail"); return; }
       var file = null;

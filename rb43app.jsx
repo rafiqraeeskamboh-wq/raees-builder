@@ -48,7 +48,7 @@ function BillModal(p) {
     + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
     + (sabqa > 0 ? NL + "Sabqa baqaya: Rs " + rbMoney(sabqa) + NL + "Grand total: Rs " + rbMoney((Number(sale.totalBill) || 0) + sabqa) : "")
     + NL + t("advance") + ": Rs " + rbMoney(shownAdvance)
-    + (advInfo && advInfo.left > 0 ? NL + "Advance baqi (jama): Rs " + rbMoney(advInfo.left) : NL + (sabqa > 0 ? "Kul baqaya" : t("dues")) + ": Rs " + rbMoney((Number(sale.dues) || 0) + sabqa));
+    + (advInfo && advInfo.left > 0 ? NL + "Advance baqi (jama): Rs " + rbMoney(advInfo.left) : NL + (sabqa > 0 ? "Total Baqaya" : t("dues")) + ": Rs " + rbMoney((Number(sale.dues) || 0) + sabqa));
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9080, overflowY: "auto" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
@@ -179,7 +179,7 @@ function BillModal(p) {
             <TotalRow label={t("advance")} value={rbMoney(shownAdvance)} />
             {(advInfo && advInfo.left > 0)
               ? <TotalRow label="Advance baqi (jama)" value={rbMoney(advInfo.left)} accent={TC.success} />
-              : <TotalRow label={sabqa > 0 ? "Kul baqaya" : t("dues")} value={rbMoney((Number(sale.dues) || 0) + sabqa)} accent={((Number(sale.dues) || 0) + sabqa) > 0 ? TC.stamp : TC.success} />}
+              : <TotalRow label={sabqa > 0 ? "Total Baqaya" : t("dues")} value={rbMoney((Number(sale.dues) || 0) + sabqa)} accent={((Number(sale.dues) || 0) + sabqa) > 0 ? TC.stamp : TC.success} />}
             {advInfo ? <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{"Advance" + (advInfo.nos ? " receipt " + advInfo.nos : "") + " se Rs " + rbMoney(advInfo.used) + " is bill mein laga"}</div> : null}
           </div>
 
