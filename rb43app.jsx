@@ -30,7 +30,7 @@ function BillModal(p) {
     return { shown: shown, used: used, left: Math.max(0, shown - (Number(sale.totalBill) || 0)), nos: nos.join(", ") };
   })();
   var shownAdvance = advInfo ? advInfo.shown : sale.advance;
-  var waText = t("appName") + NL + (isCash ? t("billNo") : t("gatePassNo")) + ": #" + sale.serial
+  var waText = t("appName") + NL + t("billNo") + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName
     + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
     + NL + t("advance") + ": Rs " + rbMoney(shownAdvance)
@@ -117,7 +117,7 @@ function BillModal(p) {
               {sale.mobile ? <div className="rb-mono" style={{ color: TC.inkSoft, fontSize: 10.5, marginTop: 2 }}>{sale.mobile}</div> : null}
             </div>
             <div style={{ textAlign: "end" }}>
-              <div style={{ color: TC.inkSoft, fontSize: 10 }}>{isCash ? t("billNo") : t("gatePassNo")}</div>
+              <div style={{ color: TC.inkSoft, fontSize: 10 }}>{t("billNo")}</div>
               <div className="rb-mono" style={{ fontWeight: 700, color: TC.stamp }}>#{sale.serial}</div>
               <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate(sale.date)}</div>
             </div>
@@ -549,7 +549,7 @@ function PaymentReceiptModal(p) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <ReceiptLine label={t("customerName")} value={sale.customerName} />
-            <ReceiptLine label={sale.isOpening ? t("openingBalance") : (sale.type === "cash" ? t("billNo") : t("gatePassNo"))} value={sale.isOpening ? t("openingTag") : ("#" + sale.serial)} />
+            <ReceiptLine label={sale.isOpening ? t("openingBalance") : t("billNo")} value={sale.isOpening ? t("openingTag") : ("#" + sale.serial)} />
             <ReceiptLine label={t("date")} value={rbDate(date)} />
             <ReceiptLine label={t("rcTotalBaqaya")} value={"Rs " + rbMoney((Number(sale.dues) || 0) + (Number(amount) || 0) + (Number(data.discount) || 0))} />
             <ReceiptLine label={t("rcWasooli")} value={"Rs " + rbMoney(amount)} big color={TC.success} />

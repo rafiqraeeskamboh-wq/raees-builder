@@ -442,7 +442,7 @@ function NewSaleTab(p) {
 
       <div style={{ background: TC.paper, borderRadius: 10, padding: 16, boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, borderBottom: "2px dashed " + TC.paperLine, paddingBottom: 10 }}>
-          <div className="rb-display" style={{ color: TC.ink, fontSize: 15, fontWeight: 600 }}>{saleType === "cash" ? t("billNo") : t("gatePassNo")}</div>
+          <div className="rb-display" style={{ color: TC.ink, fontSize: 15, fontWeight: 600 }}>{t("billNo")}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}><span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>#</span>{canEditSerial ? ( <input type="number" inputMode="numeric" value={effSerial} onChange={function (ev) { setSerialEdit(ev.target.value); }} className="rb-mono" style={{ width: 74, padding: "4px 6px", borderRadius: 6, border: "1.5px solid " + TC.paperLine, background: "transparent", color: TC.stamp, fontSize: 14, fontWeight: 700, textAlign: "center" }} /> ) : ( <span className="rb-mono" style={{ color: TC.stamp, fontSize: 14, fontWeight: 700 }}>{effSerial}</span> )}</div>
         </div>
 
@@ -4669,7 +4669,7 @@ function rbCustomerLedgerRows(name) {
       }
       var payDisc = (s.payments || []).reduce(function (n, pay) { return n + (Number(pay.discount) || 0); }, 0);
       var orig = (Number(s.totalBill) || 0) + (Number(s.returnedTotal) || 0) + payDisc;
-      rows.push({ date: s.date, detail: tag + "Bill #" + s.serial + " (" + (s.type === "cash" ? "Cash" : "Pemaishi") + ")", a: orig });
+      rows.push({ date: s.date, detail: tag + "Bill #" + s.serial + " (" + (s.type === "cash" ? "Cash" : "Pemaishe") + ")", a: orig });
       (s.payments || []).forEach(function (pay) {
         var amt = Number(pay.amount) || 0;
         if (pay.fromAdvance && mineAdv[pay.fromAdvance]) { /* advance pehle hi jama ho chuka */ }
