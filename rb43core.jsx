@@ -671,8 +671,12 @@ function rbShareNode(node, filename, text, phone, onNote, onlySave, saveToo) {
   if (!node) return;
   if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
   if (onNote) onNote("busy");
+  /* tasveer mein alfaaz neeche na khiskein: website ka "img {display:block}" html2canvas ki font naap bigaar deta hai - tasveer bante waqt band */
+  var fixSt = document.createElement("style"); fixSt.textContent = "img{display:inline !important}"; document.head.appendChild(fixSt);
+  function unfix() { try { if (fixSt.parentNode) fixSt.parentNode.removeChild(fixSt); } catch (e) {} }
   /* Urdu (اعتماد) tasveer mein huroof alag na hon - letter-spacing 0 */
   window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false, onclone: function (doc) { try { Array.prototype.forEach.call(doc.querySelectorAll(".rb-urdu, [dir=rtl]"), function (el) { el.style.letterSpacing = "0px"; el.style.wordSpacing = "normal"; }); Array.prototype.forEach.call(doc.querySelectorAll("[data-supfix]"), function (el) { el.parentNode.removeChild(el); }); Array.prototype.forEach.call(doc.querySelectorAll("[data-shot]"), function (el) { el.style.overflow = "visible"; }); } catch (e) {} } }).then(function (canvas) {
+    unfix();
     canvas.toBlob(function (blob) {
       if (!blob) { if (onNote) onNote("fail"); return; }
       var file = null;
@@ -690,7 +694,7 @@ function rbShareNode(node, filename, text, phone, onNote, onlySave, saveToo) {
       if (onNote) onNote("saved");
       if (!onlySave) window.open(rbWa(phone, text), "_blank");
     }, "image/png");
-  }).catch(function () { if (onNote) onNote("fail"); });
+  }).catch(function () { unfix(); if (onNote) onNote("fail"); });
 }
 
 /* sirf tasveer save karni ho (WhatsApp khole baghair) */
