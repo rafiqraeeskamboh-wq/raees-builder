@@ -1146,7 +1146,16 @@ function RaeesBuilderApp() {
       list.forEach(function (x, i) { if (idx < 0 && x.auto && x.src === "sale" && x.srcId === sl.id && x.kind === "fitting") idx = i; });
       if (idx >= 0) {
         var x = list[idx];
-        if (x.edited) return; /* Admin ne khate mein hath se badla - khud na badlo */
+        if (x.edited) {
+          /* Admin ne fotwari hath se badli - wohi rahe; lekin gate pass mein izafa / kami ho to utna hi labour mein bhi */
+          if (x.baseFt === undefined || x.baseFt === null) { next = list.slice(); next[idx] = Object.assign({}, x, { baseFt: lf.ft, baseExtra: lf.extraAmt }); return; }
+          var dF = lf.ft - (Number(x.baseFt) || 0), dE = (Number(lf.extraAmt) || 0) - (Number(x.baseExtra) || 0);
+          if (Math.abs(dF) > 0.001 || dE !== 0) {
+            var nq = Math.max(0, Math.round(((Number(x.qty) || 0) + dF) * 100) / 100), ne = Math.max(0, (Number(x.extra) || 0) + dE);
+            next = list.slice(); next[idx] = Object.assign({}, x, { qty: nq, extra: ne, amount: labourEntryAmount(nq, x.rate, ne, 0), baseFt: lf.ft, baseExtra: lf.extraAmt });
+          }
+          return;
+        }
         if (Math.abs((Number(x.qty) || 0) - lf.ft) > 0.001 || (Number(x.extra) || 0) !== lf.extraAmt) {
           next = list.slice(); next[idx] = Object.assign({}, x, { qty: lf.ft, extra: lf.extraAmt, amount: labourEntryAmount(lf.ft, x.rate, lf.extraAmt, 0), note: note });
         }
