@@ -61,7 +61,7 @@ function ItemRow(p) {
     var vlist = (p.variantsFor ? p.variantsFor(xCat) : []) || [];
     var vSel = (
       <div>
-        <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>{xCat === "garden" ? "Garder (size)" : "Slab (size)"}</div>
+        <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>{xCat === "garden" ? t("length") : "Slab (size)"}</div>
         <select value={row.variant || ""} onChange={function (e) { var vv = e.target.value; onChange({ variant: vv, length: xCat === "garden" ? vv : "", desc: vv ? variantLabel(t, xCat, vv) : (xCat === "garden" ? "Extra Garder" : "Extra Slab") }); }}
           style={Object.assign({}, rbInput(), { padding: "5px 4px", fontSize: 12, borderColor: row.variant ? TC.paperLine : TC.stamp })}>
           <option value="">Chunein</option>
@@ -453,7 +453,7 @@ function NewSaleTab(p) {
                 return <ItemRow key={row.id} t={t} idx={idx} row={row} mode={mode}
                   onChange={function (patch) { updateRow(row.id, patch); }}
                   onRemove={function () { removeRow(row.id); }}
-                  editable={row.category === "custom"} variantsFor={variantsFor} remainingFor={remainingFor} onGarderTable={setGarderTableFor} />;
+                  editable={row.category === "custom"} variantsFor={variantsFor} remainingFor={remainingFor} />;
               })}
             </div>
           )}
