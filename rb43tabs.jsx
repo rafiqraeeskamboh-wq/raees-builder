@@ -69,7 +69,7 @@ function ItemRow(p) {
     var vSel = (
       <div>
         <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>{xCat === "garden" ? t("length") : "Slab (size)"}</div>
-        <select value={row.variant || ""} onChange={function (e) { var vv = e.target.value; onChange({ variant: vv, length: xCat === "garden" ? vv : "", desc: vv ? variantLabel(t, xCat, vv) : (xCat === "garden" ? "Extra Garder" : "Extra Slab") }); }}
+        <select value={row.variant || ""} onChange={function (e) { var vv = e.target.value; onChange({ variant: vv, ftOverride: "", length: xCat === "garden" ? vv : "", desc: vv ? variantLabel(t, xCat, vv) : (xCat === "garden" ? "Extra Garder" : "Extra Slab") }); }}
           style={Object.assign({}, rbInput(), { padding: "5px 4px", fontSize: 12, borderColor: row.variant ? TC.paperLine : TC.stamp })}>
           <option value="">Chunein</option>
           {vlist.map(function (vv) { var st = p.remainingFor ? p.remainingFor(xCat, vv) : null; return <option key={vv} value={vv}>{xCat === "garden" ? vv + " ft" : rbVariantNum(xCat, vv)}{st !== null && st !== undefined ? " (" + st + ")" : ""}</option>; })}
@@ -88,18 +88,20 @@ function ItemRow(p) {
           </button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: xCat === "garden" ? "0.8fr 1.4fr 0.9fr 1fr" : "0.8fr 1.4fr 1fr", gap: 6 }}>
-          <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} />
+          <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v, ftOverride: "" }); }} />
           {vSel}
           {xCat === "garden" ? (
             <div>
               <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>Fot</div>
-              <div className="rb-mono" style={{ padding: "6px 4px", fontSize: 12.5, fontWeight: 700, color: TC.ink, border: "1px dashed " + TC.paperLine, borderRadius: 6, textAlign: "center" }}>{Math.round(calc.units * 100) / 100}</div>
+              <input type="number" inputMode="decimal" value={(row.ftOverride !== undefined && String(row.ftOverride) !== "") ? row.ftOverride : String(Math.round(calc.units * 100) / 100)}
+                onChange={function (e) { onChange({ ftOverride: e.target.value }); }}
+                className="rb-mono" style={Object.assign({}, rbInput(), { padding: "5px 4px", fontSize: 12.5, fontWeight: 700, textAlign: "center", borderColor: (row.ftOverride !== undefined && String(row.ftOverride) !== "") ? TC.amber : TC.paperLine })} />
             </div>
           ) : null}
           <MiniField label={xCat === "garden" ? t("ratePerFt") : t("ratePerNagg")} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, paddingTop: 7, borderTop: "1px dashed " + TC.paperLine }}>
-          <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{xCat === "garden" ? (row.qty || 0) + " × " + (row.variant || 0) + " ft = " + (Math.round(calc.units * 100) / 100) + " fot" : (t("unitNagg") + ": " + calc.units)}</span>
+          <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{xCat === "garden" ? ((row.ftOverride !== undefined && String(row.ftOverride) !== "") ? ("Fot badla hua: " + (Math.round(calc.units * 100) / 100) + " fot (gate pass: " + (row.variant || 0) + " ft)") : ((row.qty || 0) + " × " + (row.variant || 0) + " ft = " + (Math.round(calc.units * 100) / 100) + " fot")) : (t("unitNagg") + ": " + calc.units)}</span>
           <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Total: Rs {rbMoney(amount)}</span>
         </div>
       </div>

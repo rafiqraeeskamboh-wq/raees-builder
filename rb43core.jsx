@@ -205,7 +205,8 @@ function rbGpPending(sale, list) { var bill = {}, sent = {}, vv = {}; (sale.item
 function rbRowCalc(row, mode) {
   var q = Number(row.qty) || 0, r = Number(row.rate) || 0;
   if (mode === "piece") return { kind: "piece", units: q, sqft: 0, amount: q * r };
-  if (row.category === "garden") { var ft = q * (Number(row.length) || Number(row.variant) || 0); return { kind: "ft", units: ft, sqft: 0, amount: ft * r }; }
+  /* extra garder: fot hath se badla ho (jaise 10 ft diya, paise 9.5 ft ke) to wohi fot */
+  if (row.category === "garden") { var ftO = row.ftOverride; var ft = (ftO !== undefined && ftO !== null && String(ftO).trim() !== "" && !isNaN(Number(ftO))) ? Number(ftO) : q * (Number(row.length) || Number(row.variant) || 0); return { kind: "ft", units: ft, sqft: 0, amount: ft * r }; }
   if (row.category === "slab") return { kind: "nagg", units: q, sqft: 0, amount: q * r };
   var sq = q * (Number(row.length) || 0) * (Number(row.width) || 0);
   return { kind: "sqft", units: sq, sqft: sq, amount: sq * r };
