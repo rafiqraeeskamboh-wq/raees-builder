@@ -46,6 +46,7 @@ function RbDescPick(p) {
 function ItemRow(p) {
   var t = p.t, row = p.row, mode = p.mode, onChange = p.onChange;
   var isPiece = mode === "piece";
+  var gridRef = React.useRef(null);
   var calc = rbRowCalc(row, mode), amount = calc.amount, sqft = calc.sqft;
   var isFt = calc.kind === "ft", isNagg = calc.kind === "nagg";
   var cols = isPiece || isNagg ? "1fr 1fr" : (isFt ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr");
@@ -54,7 +55,11 @@ function ItemRow(p) {
     if (v === "Extra Garder" && p.onGarderTable && !(row.pick === "Extra Garder")) { p.onGarderTable(row.id); return; }
     if (v === "Extra Garder") onChange({ pick: v, category: "garden", variant: "", desc: "Extra Garder", length: "", width: "" });
     else if (v === "Extra Slab") onChange({ pick: v, category: "slab", variant: "", desc: "Extra Slab", length: "", width: "" });
-    else onChange({ pick: "", category: "custom", variant: "", desc: v });
+    else {
+      onChange({ pick: "", category: "custom", variant: "", desc: v });
+      /* Room / Baramda waghera chunte hi Length khul jaye (likhne ke liye tayyar) */
+      if (v) setTimeout(function () { var el = gridRef.current; var ins = el ? el.querySelectorAll("input") : []; if (ins[1]) { ins[1].focus(); try { ins[1].select(); } catch (e) {} } }, 80);
+    }
   }
   var xCat = (!isPiece && row.pick && (row.category === "garden" || row.category === "slab")) ? row.category : "";
   if (xCat) {
@@ -113,7 +118,7 @@ function ItemRow(p) {
           <Ico name="trash" size={15} />
         </button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: cols, gap: 6 }}>
+      <div ref={gridRef} style={{ display: "grid", gridTemplateColumns: cols, gap: 6 }}>
         <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} />
         {(!isPiece && !isNagg) ? <MiniField label={isFt ? t("length") + " (ft)" : t("length")} value={row.length} onChange={function (v) { onChange({ length: v }); }} disabled={row.category !== "custom"} /> : null}
         {(!isPiece && !isFt && !isNagg) ? <MiniField label={t("width")} value={row.width} onChange={function (v) { onChange({ width: v }); }} /> : null}
