@@ -239,7 +239,11 @@ function rbLabourFit(sale, gpList, returnLog, siteWaste, garderRate) {
   return { ft: ft, garders: garders, gRate: gRate, extraAmt: garders * gRate };
 }
 /* pemaish bill: extra garder / slab bill bante hi gate pass mein - ye un ki gate pass lines */
-function rbBillExtraGpItems(sale, t) { return (sale.items || []).filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; }).map(function (it) { return { id: rbUid(), category: it.category, variant: it.variant, qty: Number(it.qty) || 0, desc: "Extra " + variantLabel(t, it.category, it.variant), extra: true }; }); }
+function rbBillExtraGpItems(sale, t) {
+  /* bill mein room / kitchen na hon (sirf slab / garder) to "Extra" nahi - apna naam */
+  var rooms = (sale.items || []).some(function (it) { return it.category === "custom"; });
+  return (sale.items || []).filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; }).map(function (it) { return { id: rbUid(), category: it.category, variant: it.variant, qty: Number(it.qty) || 0, desc: (rooms ? "Extra " : "") + variantLabel(t, it.category, it.variant), extra: rooms }; });
+}
 /* pemaish bill mein room / kitchen ho aur un ka (chhat ka) gate pass abhi nahi bana */
 function rbChhatGpPending(sale, gpList) {
   if (!sale || sale.isOpening || sale.type === "cash") return false;

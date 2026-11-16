@@ -7,6 +7,19 @@ function BillModal(p) {
   var shotRef = React.useRef(null);
   var isPaid = (sale.dues || 0) <= 0;
   var isCash = sale.type === "cash";
+  /* pemaish bill mein room / kitchen hon to garder / slab "Extra" - warna slab / garder ka apna naam */
+  var hasRooms = (sale.items || []).some(function (it) { return it.category === "custom"; });
+  /* sabqa baqaya: is customer ke pichhle bills / purana baqi jo abhi baqi hai */
+  var sabqa = (function () {
+    if (sale.isOpening || !p.allSales || typeof rbCustKey !== "function") return 0;
+    var ck = rbCustKey(sale.customerName); if (!ck) return 0;
+    var me = String(sale.createdAt || ""), mySn = Number(sale.serial) || 0;
+    return p.allSales.reduce(function (n, x) {
+      if (x.id === sale.id || rbCustKey(x.customerName) !== ck) return n;
+      var before = x.isOpening || (x.createdAt && me ? String(x.createdAt) < me : (Number(x.serial) || 0) < mySn);
+      return before ? n + Math.max(0, Number(x.dues) || 0) : n;
+    }, 0);
+  })();
   var canEdit = hasPerm(role, permissions, "editSale"); /* cash bill bhi edit ho sakta hai (Admin) */
   var headers = isCash
     ? [t("sr"), t("description"), t("qty"), t("rate"), t("amount")]
@@ -33,8 +46,9 @@ function BillModal(p) {
   var waText = t("appName") + NL + t("billNo") + ": #" + sale.serial
     + NL + t("customerName") + ": " + sale.customerName
     + NL + t("totalBill") + ": Rs " + rbMoney(sale.totalBill)
+    + (sabqa > 0 ? NL + "Sabqa baqaya: Rs " + rbMoney(sabqa) + NL + "Grand total: Rs " + rbMoney((Number(sale.totalBill) || 0) + sabqa) : "")
     + NL + t("advance") + ": Rs " + rbMoney(shownAdvance)
-    + (advInfo && advInfo.left > 0 ? NL + "Advance baqi (jama): Rs " + rbMoney(advInfo.left) : NL + t("dues") + ": Rs " + rbMoney(sale.dues));
+    + (advInfo && advInfo.left > 0 ? NL + "Advance baqi (jama): Rs " + rbMoney(advInfo.left) : NL + (sabqa > 0 ? "Kul baqaya" : t("dues")) + ": Rs " + rbMoney((Number(sale.dues) || 0) + sabqa));
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9080, overflowY: "auto" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
@@ -137,7 +151,7 @@ function BillModal(p) {
                 return (
                   <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td style={{ padding: "5px 3px" }}>{i + 1}</td>
-                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{isCash ? it.desc : (it.category === "garden" ? "Extra Garder" : (it.category === "slab" ? "Extra Slab" : it.desc))}</td>
+                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{(isCash || !hasRooms) ? (hasRooms || isCash ? it.desc : (it.category === "garden" || it.category === "slab" ? variantLabel(t, it.category, it.variant) : it.desc)) : (it.category === "garden" ? "Extra Garder" : (it.category === "slab" ? "Extra Slab" : it.desc))}</td>
                     <td style={{ padding: "5px 3px" }}>{it.qty}</td>
                     {!isCash ? <td style={{ padding: "5px 3px" }}>{it.category === "slab" ? rbVariantNum("slab", it.variant) + " ft" : (it.category === "garden" ? ((it.ftOverride !== undefined && String(it.ftOverride) !== "" && Number(it.qty) > 0) ? Math.round(Number(it.ftOverride) / Number(it.qty) * 100) / 100 : (it.length || it.variant)) : it.length)}</td> : null}
                     {!isCash ? <td style={{ padding: "5px 3px" }}>{(it.category === "slab" || it.category === "garden") ? "-" : it.width}</td> : null}
@@ -160,10 +174,12 @@ function BillModal(p) {
           <div style={{ marginTop: 14, borderTop: "2px solid " + TC.ink, paddingTop: 10 }}>
             {sale.discount > 0 ? (<TotalRow label={t("discount")} value={rbMoney(sale.discount)} />) : null}
             <TotalRow label={t("totalBill")} value={rbMoney(sale.totalBill)} bold />
+            {sabqa > 0 ? <TotalRow label="Sabqa baqaya" value={rbMoney(sabqa)} accent={TC.stamp} /> : null}
+            {sabqa > 0 ? <div style={{ borderTop: "1.5px solid " + TC.ink, marginTop: 2 }}><TotalRow label="Grand total" value={rbMoney((Number(sale.totalBill) || 0) + sabqa)} bold /></div> : null}
             <TotalRow label={t("advance")} value={rbMoney(shownAdvance)} />
             {(advInfo && advInfo.left > 0)
               ? <TotalRow label="Advance baqi (jama)" value={rbMoney(advInfo.left)} accent={TC.success} />
-              : <TotalRow label={t("dues")} value={rbMoney(sale.dues)} accent={sale.dues > 0 ? TC.stamp : TC.success} />}
+              : <TotalRow label={sabqa > 0 ? "Kul baqaya" : t("dues")} value={rbMoney((Number(sale.dues) || 0) + sabqa)} accent={((Number(sale.dues) || 0) + sabqa) > 0 ? TC.stamp : TC.success} />}
             {advInfo ? <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{"Advance" + (advInfo.nos ? " receipt " + advInfo.nos : "") + " se Rs " + rbMoney(advInfo.used) + " is bill mein laga"}</div> : null}
           </div>
 
@@ -2620,7 +2636,8 @@ function editStockEntry(id, qty, date) {
           /* pemaish bill edit: pehla gate pass sirf extra maal ka ho to naye extra se badal do */
           var gp1 = null; gatePasses.forEach(function (g) { if (g.saleId === uu.id && !(Number(g.trip) > 1)) gp1 = g; });
           var xNew = rbBillExtraGpItems(uu, t);
-          if ((gp1 && (gp1.items || []).length && (gp1.items || []).every(function (it) { return it.extra; })) || (!gp1 && xNew.length && !gatePasses.some(function (g) { return g.saleId === uu.id; }))) {
+          var uuRooms = (uu.items || []).some(function (it) { return it.category === "custom"; });
+          if ((gp1 && (gp1.items || []).length && (!uuRooms && rbGpsFor(gatePasses, uu.id).length === 1 || (gp1.items || []).every(function (it) { return it.extra; }))) || (!gp1 && xNew.length && !gatePasses.some(function (g) { return g.saleId === uu.id; }))) {
             if (xNew.length) upsertGatePass(uu, xNew, "customized");
             else setGatePasses(function (prev) { return prev.filter(function (g) { return g.id !== gp1.id; }); });
           }
@@ -2850,7 +2867,7 @@ function editStockEntry(id, qty, date) {
       ) : null}
 
       {viewingBill ? (
-        <BillModal showToast={showToast} t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} onClose={function () { setViewingBill(null); }}
+        <BillModal showToast={showToast} t={t} lang={lang} role={role} permissions={permissions} sale={viewingBill} allSales={sales} onClose={function () { setViewingBill(null); }}
           onEdit={startEditSale}
           onDelete={(role === "admin" && rbIsSuper()) ? superDeleteBill : null}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
