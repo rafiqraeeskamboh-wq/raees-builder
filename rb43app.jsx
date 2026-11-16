@@ -4,6 +4,8 @@ function BillModal(p) {
   rbUseBack(true, p.onClose);
   var showToast = p.showToast || function () {};
   var t = p.t, role = p.role, permissions = p.permissions, sale = p.sale, onClose = p.onClose, onEdit = p.onEdit, onViewGatePass = p.onViewGatePass, gatePassEntry = p.gatePassEntry;
+  /* gate pass tareekh-wise: ek hi din ke chakkar ikathe, alag din alag */
+  var gpDays = []; (p.gatePassList || []).forEach(function (g, gi) { var d = (gi === 0 ? (g.date || sale.date) : g.date) || sale.date; var last = gpDays[gpDays.length - 1]; if (last && last.date === d) { last.items = last.items.concat(g.items || []); if (gi > 0) last.nos.push(rbGpNo(g, sale.serial)); } else gpDays.push({ date: d, items: (g.items || []).slice(), nos: gi > 0 ? [rbGpNo(g, sale.serial)] : [] }); });
   var shotRef = React.useRef(null);
   var isPaid = (sale.dues || 0) <= 0;
   var isCash = sale.type === "cash";
@@ -246,7 +248,7 @@ function BillModal(p) {
               <div style={{ textAlign: "end" }}>
                 <div style={{ color: TC.inkSoft, fontSize: 10 }}>{t("gatePassNo")}</div>
                 <div className="rb-mono" style={{ fontWeight: 700, color: TC.slab }}>#{gatePassEntry.serial || sale.serial}</div>
-                <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate(gatePassEntry.date || sale.date)}</div>
+                <div style={{ color: TC.inkSoft, fontSize: 10, marginTop: 3 }}>{rbDate((gpDays.length ? gpDays[0].date : gatePassEntry.date) || sale.date)}</div>
               </div>
             </div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -258,15 +260,29 @@ function BillModal(p) {
                 </tr>
               </thead>
               <tbody className="rb-mono">
-                {rbGpGroup(gatePassEntry.items).map(function (it, i) {
-                  return (
-                    <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
-                      <td style={{ padding: "7px 4px" }}>{i + 1}</td>
-                      <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: it.extra ? 700 : 400 }}>{it.desc || "—"}</td>
-                      <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qtyText}</td>
-                    </tr>
-                  );
-                })}
+                {(function () {
+                  /* pehli tareekh ka maal upar; baad ki tareekh (jaise bill edit se nayi extra slab) neeche alag apni date ke sath */
+                  var days = gpDays.length ? gpDays : [{ date: gatePassEntry.date, items: gatePassEntry.items, nos: [] }];
+                  var sr = 0, rows = [];
+                  days.forEach(function (d, di) {
+                    if (di > 0) rows.push(
+                      <tr key={"d" + di} style={{ borderBottom: "1px solid " + TC.ink, borderTop: "1.5px solid " + TC.ink }}>
+                        <td colSpan={3} style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: 700, color: TC.slab }}>{rbDate(d.date)}{d.nos.length ? " · #" + d.nos.join(", #") : ""}</td>
+                      </tr>
+                    );
+                    rbGpGroup(d.items).forEach(function (it, i) {
+                      sr++;
+                      rows.push(
+                        <tr key={(it.id || i) + "-" + di} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
+                          <td style={{ padding: "7px 4px" }}>{sr}</td>
+                          <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: it.extra ? 700 : 400 }}>{it.desc || "—"}</td>
+                          <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qtyText}</td>
+                        </tr>
+                      );
+                    });
+                  });
+                  return rows;
+                })()}
               </tbody>
             </table>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 40 }}>
@@ -2635,27 +2651,76 @@ function editStockEntry(id, qty, date) {
           }), "cash");
         } else {
           var uu = updated;
-          /* pemaish bill edit: pehla gate pass sirf extra maal ka ho to naye extra se badal do */
-          var gp1 = null; gatePasses.forEach(function (g) { if (g.saleId === uu.id && !(Number(g.trip) > 1)) gp1 = g; });
+          /* pemaish bill edit: extra garder / slab ka gate pass bill ke mutabiq */
+          var gList = rbGpsFor(gatePasses, uu.id);
+          var gp1 = gList.length ? gList[0] : null;
           var xNew = rbBillExtraGpItems(uu, t);
           var uuRooms = (uu.items || []).some(function (it) { return it.category === "custom"; });
-          if ((gp1 && (gp1.items || []).length && (!uuRooms && rbGpsFor(gatePasses, uu.id).length === 1 || (gp1.items || []).every(function (it) { return it.extra; }))) || (!gp1 && xNew.length && !gatePasses.some(function (g) { return g.saleId === uu.id; }))) {
+          if (!gList.length) {
             if (xNew.length) upsertGatePass(uu, xNew, "customized");
-            else setGatePasses(function (prev) { return prev.filter(function (g) { return g.id !== gp1.id; }); });
-          } else if (gp1 && uuRooms) {
-            /* gate pass mein chhat ka maal bhi hai: chhat wala maal wesa hi rahe, sirf extra garder / slab bill ke mutabiq ho jaye
-               (edit mein nayi extra slab / garder add ki to gate pass mein bhi jama ho aur stock se nikle) */
+          } else if (!uuRooms) {
+            /* room / kitchen nahi (sirf slab / garder ka bill): akela gate pass ho to bill ke mutabiq badal do */
+            if (gList.length === 1 && (gp1.items || []).length) {
+              if (xNew.length) upsertGatePass(uu, xNew, "customized");
+              else setGatePasses(function (prev) { return prev.filter(function (g) { return g.id !== gp1.id; }); });
+            }
+          } else {
+            /* chhat wala maal wesa hi rahe. bill mein extra barha to farq naye gate pass mein aaj ki tareekh ke sath (neeche alag);
+               usi din pehle gate pass mein. extra kam hua to akhri gate pass se kam. extra slab labour mein nahi judti. */
             var isXit = function (it) { return !!it.extra || /^extra/i.test(String(it.desc || "")); };
-            var otherX = {};
-            rbGpsFor(gatePasses, uu.id).forEach(function (g) { if (g.id === gp1.id) return; (g.items || []).forEach(function (it) { if (!isXit(it)) return; var k = it.category + "|" + it.variant; otherX[k] = (otherX[k] || 0) + (Number(it.qty) || 0); }); });
-            var needX = [];
-            xNew.forEach(function (it) { var k = it.category + "|" + it.variant; var q = it.qty - (otherX[k] || 0); otherX[k] = Math.max(0, (otherX[k] || 0) - it.qty); if (q > 0) needX.push(Object.assign({}, it, { qty: q })); });
-            var oldX = (gp1.items || []).filter(isXit).map(function (it) { return it.category + "|" + it.variant + "|" + it.qty; }).sort().join(",");
-            var newX = needX.map(function (it) { return it.category + "|" + it.variant + "|" + it.qty; }).sort().join(",");
-            if (oldX !== newX) {
-              var keepC = (gp1.items || []).filter(function (it) { return !isXit(it); });
-              var gp1Id = gp1.id;
-              setGatePasses(function (prev) { return prev.map(function (g) { return g.id === gp1Id ? Object.assign({}, g, { items: needX.concat(keepC), verified: false, verifiedBy: null, verifiedAt: null }) : g; }); });
+            var want = {}, have = {}, proto = {};
+            xNew.forEach(function (it) { var k = it.category + "|" + it.variant; want[k] = (want[k] || 0) + it.qty; if (!proto[k]) proto[k] = it; });
+            gList.forEach(function (g) { (g.items || []).forEach(function (it) { if (!isXit(it)) return; var k = it.category + "|" + it.variant; have[k] = (have[k] || 0) + (Number(it.qty) || 0); }); });
+            var addX = [], cutX = {}, anyCut = false;
+            Object.keys(want).forEach(function (k) { var d = want[k] - (have[k] || 0); if (d > 0) addX.push(Object.assign({}, proto[k], { id: rbUid(), qty: d, extra: true, desc: "Extra " + String(proto[k].desc || "").replace(/^extra\s+/i, "") })); });
+            Object.keys(have).forEach(function (k) { var d = have[k] - (want[k] || 0); if (d > 0) { cutX[k] = d; anyCut = true; } });
+            if (addX.length || anyCut) {
+              var today = rbToday();
+              var lastG = gList[gList.length - 1];
+              var maxTrip = gList.reduce(function (m, g) { return Math.max(m, Number(g.trip) || 1); }, 0);
+              /* aaj ka gate pass pehle se ho (pehla, ya edit wala) to usi mein; warna naya chakkar aaj ki date ka */
+              var target = null;
+              gList.forEach(function (g) { var gd = (g === gp1) ? uu.date : g.date; if (gd === today && (g === gp1 || g.fromEdit)) target = g; });
+              var newG = null;
+              if (addX.length && !target) {
+                newG = { id: rbUid(), saleId: uu.id, serial: uu.serial, trip: maxTrip + 1, customerName: uu.customerName, date: today, items: addX, type: gp1.type || "customized", mobile: uu.mobile, fromEdit: true, createdBy: role, createdByName: rbSessionName(), createdAt: new Date().toISOString() };
+              }
+              var targetId = target ? target.id : null;
+              var order = gList.map(function (g) { return g.id; }).reverse();
+              setGatePasses(function (prev) {
+                var byId = {}; prev.forEach(function (g) { byId[g.id] = g; });
+                var cut = Object.assign({}, cutX);
+                /* kami: akhri gate pass se shuru */
+                order.forEach(function (id) {
+                  var g = byId[id]; if (!g) return;
+                  var ch = false;
+                  var its = (g.items || []).map(function (it) {
+                    if (!isXit(it)) return it; var k = it.category + "|" + it.variant; var c = cut[k] || 0; if (!c) return it;
+                    var q = Number(it.qty) || 0, take = Math.min(q, c); cut[k] = c - take; ch = true;
+                    return Object.assign({}, it, { qty: q - take });
+                  }).filter(function (it) { return !(isXit(it) && !(Number(it.qty) > 0)); });
+                  if (ch) byId[id] = Object.assign({}, g, { items: its });
+                });
+                if (targetId && byId[targetId]) {
+                  var tg = byId[targetId], its2 = (tg.items || []).slice();
+                  addX.forEach(function (a) {
+                    var hit = -1; its2.forEach(function (it, i) { if (hit < 0 && isXit(it) && it.category === a.category && it.variant === a.variant) hit = i; });
+                    if (hit >= 0) its2[hit] = Object.assign({}, its2[hit], { qty: (Number(its2[hit].qty) || 0) + a.qty }); else its2.unshift(a);
+                  });
+                  byId[targetId] = Object.assign({}, tg, { items: its2 });
+                }
+                var out = [];
+                if (newG) out.push(newG);
+                prev.forEach(function (g) {
+                  var g2 = byId[g.id];
+                  if (g2.saleId === uu.id) {
+                    if (!(g2.items || []).length) return;
+                    g2 = Object.assign({}, g2, { verified: false, verifiedBy: null, verifiedAt: null });
+                  }
+                  out.push(g2);
+                });
+                return out;
+              });
             }
           }
           setGatePasses(function (prev) {
@@ -2889,6 +2954,7 @@ function editStockEntry(id, qty, date) {
           onDelete={(role === "admin" && rbIsSuper()) ? superDeleteBill : null}
           onReturn={function (x) { setViewingBill(null); setReturnFor(x); }}
           gatePassEntry={rbGpCombined(rbGpsFor(gatePasses, viewingBill.id))}
+          gatePassList={rbGpsFor(gatePasses, viewingBill.id)}
           onViewGatePass={function (sale) {
             var found = null;
             gatePasses.forEach(function (g) { if (g.saleId === sale.id) found = g; });
