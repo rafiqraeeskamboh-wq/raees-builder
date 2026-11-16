@@ -22,8 +22,8 @@ function MiniField(p) {
   );
 }
 
-var RB_DESC_LIST = ["Room", "Baramda", "Kitchen", "Extra Garder", "Extra Slab", "Bathroom", "Drawing Room", "Lobby", "Store", "Garage", "Porch"];
-function rbDescList() { var x = rbGet("desc-list", null); return (Array.isArray(x) && x.length) ? x : RB_DESC_LIST; }
+var RB_DESC_LIST = ["Room", "Baramda", "Kitchen", "Bath", "Extra Garder", "Extra Slab"]; var RB_DESC_OLD = ["Room", "Baramda", "Kitchen", "Extra Garder", "Extra Slab", "Bathroom", "Drawing Room", "Lobby", "Store", "Garage", "Porch"];
+function rbDescList() { var x = rbGet("desc-list", null); var extra = (Array.isArray(x) ? x : []).filter(function (n) { return RB_DESC_LIST.indexOf(n) < 0 && RB_DESC_OLD.indexOf(n) < 0; }); return RB_DESC_LIST.concat(extra); }
 function RbDescPick(p) {
   var v = p.value || "";
   var l = React.useState(rbDescList), list = l[0], setList = l[1];
