@@ -307,6 +307,17 @@ function NewSaleTab(p) {
     setSerialEdit(!editingSale && p.presetSerial ? String(p.presetSerial) : null);
   }, [editingSale]);
 
+  /* purane form / draft mein "Extra Garder" / "Extra Slab" sirf naam ki tarah likha ho to us line ko garder / slab wali line bana do */
+  React.useEffect(function () {
+    if (mode !== "area") return;
+    var need = rows.some(function (r) { return r.category === "custom" && (r.desc === "Extra Garder" || r.desc === "Extra Slab"); });
+    if (!need) return;
+    setRows(function (rr) { return rr.map(function (r) {
+      if (r.category !== "custom" || (r.desc !== "Extra Garder" && r.desc !== "Extra Slab")) return r;
+      return Object.assign({}, r, { pick: r.desc, category: r.desc === "Extra Garder" ? "garden" : "slab", variant: "", length: "", width: "" });
+    }); });
+  }, [rows, mode]);
+
   var itemsTotal = rows.reduce(function (sum, r) { return sum + rbRowCalc(r, mode).amount; }, 0);
   var labourTotal = saleType === "cash" ? (Number(labourRate) || 0) : 0;
   var discount = Math.max(0, Math.min(itemsTotal + labourTotal, Number(discountInput) || 0));
