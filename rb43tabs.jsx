@@ -492,7 +492,6 @@ function NewSaleTab(p) {
         )}
 
         <div style={{ marginTop: 16, borderTop: "2px dashed " + TC.paperLine, paddingTop: 12 }}>
-          {saleType !== "cash" ? <RbAreaSubtotals items={rows} /> : null}
           <Field label={t("discount")}>
             <input type="number" inputMode="decimal" value={discountInput} onChange={function (ev) { setDiscountInput(ev.target.value); }} placeholder="0" style={rbInput()} />
           </Field>
