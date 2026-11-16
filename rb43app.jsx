@@ -157,6 +157,7 @@ function BillModal(p) {
           ) : null}
 
           <div style={{ marginTop: 14, borderTop: "2px solid " + TC.ink, paddingTop: 10 }}>
+            {!isCash ? <RbAreaSubtotals items={sale.items} /> : null}
             {sale.discount > 0 ? (<TotalRow label={t("discount")} value={rbMoney(sale.discount)} />) : null}
             <TotalRow label={t("totalBill")} value={rbMoney(sale.totalBill)} bold />
             <TotalRow label={t("advance")} value={rbMoney(shownAdvance)} />
@@ -239,12 +240,12 @@ function BillModal(p) {
                 </tr>
               </thead>
               <tbody className="rb-mono">
-                {(gatePassEntry.items || []).map(function (it, i) {
+                {rbGpGroup(gatePassEntry.items).map(function (it, i) {
                   return (
                     <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                       <td style={{ padding: "7px 4px" }}>{i + 1}</td>
-                      <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif" }}>{it.desc || "—"}</td>
-                      <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qty}</td>
+                      <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: it.extra ? 700 : 400 }}>{it.desc || "—"}</td>
+                      <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qtyText}</td>
                     </tr>
                   );
                 })}
@@ -463,12 +464,12 @@ function GatePassModal(p) {
               </tr>
             </thead>
             <tbody className="rb-mono">
-              {items.map(function (it, i) {
+              {rbGpGroup(items).map(function (it, i) {
                 return (
                   <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td style={{ padding: "7px 4px" }}>{i + 1}</td>
                     <td style={{ padding: "7px 4px", fontFamily: "Inter, sans-serif", fontWeight: it.extra ? 700 : 400 }}>{it.desc || "—"}</td>
-                    <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qty}</td>
+                    <td style={{ padding: "7px 4px", fontWeight: 700 }}>{it.qtyText}</td>
                   </tr>
                 );
               })}
@@ -922,7 +923,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
       )}
       {rows.length ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12, color: "#D8CDA9" }}>
-          {rows.map(function (r) { var bacha = rbIsBacha(r.category, r.variant); return <div key={key(r.category, r.variant)} style={{ color: bacha ? RB_BACHA_COLOR : "#D8CDA9" }}>{variantLabel(t, r.category, r.variant)} — {r.qty}</div>; })}
+          {rows.map(function (r) { var bacha = rbIsBacha(r.category, r.variant), xq = extraQ(r.category, r.variant), cq = r.qty - xq; return <div key={key(r.category, r.variant)} style={{ color: bacha ? RB_BACHA_COLOR : "#D8CDA9" }}>{variantLabel(t, r.category, r.variant)} — {xq && cq ? "Extra " + xq + " + Chhat " + cq + " = " + r.qty : (xq ? "Extra " + xq : r.qty)}</div>; })}
           <div style={{ marginTop: 6, fontWeight: 700, color: TC.cream }}>{t("selected")}: {totalPieces} {t("pieces")}</div>
         </div>
       ) : null}

@@ -237,6 +237,47 @@ function rbLabourFit(sale, gpList, returnLog, siteWaste, garderRate) {
   var ft = Math.max(0, Math.round((sent - extras - ret - sw) * 100) / 100);
   return { ft: ft, garders: garders, gRate: gRate, extraAmt: garders * gRate };
 }
+/* gate pass: ek hi size extra + chhat dono mein ho to ek line - "Extra 2 + Chhat 10 = 12" */
+function rbGpGroup(items) {
+  var out = [], idx = {};
+  (items || []).forEach(function (it) {
+    if (it.category !== "garden" && it.category !== "slab") { out.push({ id: it.id, desc: it.desc, qtyText: String(it.qty), extra: false }); return; }
+    var k = it.category + "|" + it.variant, isX = !!it.extra || /^extra/i.test(String(it.desc || ""));
+    var g = idx[k];
+    if (!g) { g = { id: it.id, base: String(it.desc || "").replace(/^extra\s+/i, ""), x: 0, c: 0, grp: 1 }; idx[k] = g; out.push(g); }
+    if (isX) g.x += Number(it.qty) || 0; else g.c += Number(it.qty) || 0;
+  });
+  return out.map(function (g) {
+    if (!g.grp) return g;
+    var tot = g.x + g.c;
+    if (g.x && g.c) return { id: g.id, desc: g.base, qtyText: "Extra " + g.x + " + Chhat " + g.c + " = " + tot, extra: true };
+    if (g.x) return { id: g.id, desc: "Extra " + g.base, qtyText: String(g.x), extra: true };
+    return { id: g.id, desc: g.base, qtyText: String(g.c), extra: false };
+  });
+}
+/* pemaish bill: chhat (rooms), extra garder aur extra slab ke alag alag total */
+function rbAreaSubtotals(items) {
+  var s = { room: 0, garder: 0, garderFt: 0, slab: 0, slabNagg: 0, hasX: false };
+  (items || []).forEach(function (it) {
+    var c = rbRowCalc(it, "area");
+    if (it.category === "garden") { s.garder += c.amount; s.garderFt += c.units; s.hasX = true; }
+    else if (it.category === "slab") { s.slab += c.amount; s.slabNagg += c.units; s.hasX = true; }
+    else s.room += c.amount;
+  });
+  s.garderFt = Math.round(s.garderFt * 100) / 100;
+  return s;
+}
+function RbAreaSubtotals(p) {
+  var s = rbAreaSubtotals(p.items);
+  if (!s.hasX) return null;
+  return (
+    <div style={{ borderBottom: "1px dashed " + TC.paperLine, marginBottom: 6, paddingBottom: 4 }}>
+      <TotalRow label="Chhat (pemaish) total" value={rbMoney(s.room)} />
+      {s.garder || s.garderFt ? <TotalRow label={"Extra Garder total (" + s.garderFt + " fot)"} value={rbMoney(s.garder)} /> : null}
+      {s.slab || s.slabNagg ? <TotalRow label={"Extra Slab total (" + s.slabNagg + " nagg)"} value={rbMoney(s.slab)} /> : null}
+    </div>
+  );
+}
 function rbExtraDesc(it) { var d = String((it && it.desc) || ""); if (it && (it.category === "garden" || it.category === "slab") && !/^extra/i.test(d)) return "Extra " + d; return d; }
 function rbGet(key, def) {
   try {

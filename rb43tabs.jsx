@@ -49,13 +49,61 @@ function ItemRow(p) {
   var calc = rbRowCalc(row, mode), amount = calc.amount, sqft = calc.sqft;
   var isFt = calc.kind === "ft", isNagg = calc.kind === "nagg";
   var cols = isPiece || isNagg ? "1fr 1fr" : (isFt ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr");
+  /* description mein Extra Garder / Extra Slab chunein to line garder / slab ki ban jati hai (size list se) */
+  function pickDesc(v) {
+    if (v === "Extra Garder") onChange({ pick: v, category: "garden", variant: "", desc: "Extra Garder", length: "", width: "" });
+    else if (v === "Extra Slab") onChange({ pick: v, category: "slab", variant: "", desc: "Extra Slab", length: "", width: "" });
+    else onChange({ pick: "", category: "custom", variant: "", desc: v });
+  }
+  var xCat = (!isPiece && row.pick && (row.category === "garden" || row.category === "slab")) ? row.category : "";
+  if (xCat) {
+    var vlist = (p.variantsFor ? p.variantsFor(xCat) : []) || [];
+    var vSel = (
+      <div>
+        <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>{xCat === "garden" ? "Garder (size)" : "Slab (size)"}</div>
+        <select value={row.variant || ""} onChange={function (e) { var vv = e.target.value; onChange({ variant: vv, length: xCat === "garden" ? vv : "", desc: vv ? variantLabel(t, xCat, vv) : (xCat === "garden" ? "Extra Garder" : "Extra Slab") }); }}
+          style={Object.assign({}, rbInput(), { padding: "5px 4px", fontSize: 12, borderColor: row.variant ? TC.paperLine : TC.stamp })}>
+          <option value="">Chunein</option>
+          {vlist.map(function (vv) { var st = p.remainingFor ? p.remainingFor(xCat, vv) : null; return <option key={vv} value={vv}>{xCat === "garden" ? vv + " ft" : rbVariantNum(xCat, vv)}{st !== null && st !== undefined ? " (" + st + ")" : ""}</option>; })}
+        </select>
+      </div>
+    );
+    return (
+      <div style={{ background: TC.cream, borderRadius: 8, padding: 10, border: "1px solid " + TC.paperLine }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="rb-mono" style={{ fontSize: 11, color: TC.concrete }}>#{p.idx + 1}</span>
+            <RbDescPick value={row.pick} placeholder={t("description")} onChange={pickDesc} />
+          </div>
+          <button onClick={p.onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: TC.stamp, padding: 0 }}>
+            <Ico name="trash" size={15} />
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: xCat === "garden" ? "0.8fr 1.4fr 0.9fr 1fr" : "0.8fr 1.4fr 1fr", gap: 6 }}>
+          <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} />
+          {vSel}
+          {xCat === "garden" ? (
+            <div>
+              <div style={{ fontSize: 9.5, color: TC.concrete, marginBottom: 2 }}>Fot</div>
+              <div className="rb-mono" style={{ padding: "6px 4px", fontSize: 12.5, fontWeight: 700, color: TC.ink, border: "1px dashed " + TC.paperLine, borderRadius: 6, textAlign: "center" }}>{Math.round(calc.units * 100) / 100}</div>
+            </div>
+          ) : null}
+          <MiniField label={xCat === "garden" ? t("ratePerFt") : t("ratePerNagg")} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, paddingTop: 7, borderTop: "1px dashed " + TC.paperLine }}>
+          <span className="rb-mono" style={{ fontSize: 11, color: TC.inkSoft }}>{xCat === "garden" ? (row.qty || 0) + " × " + (row.variant || 0) + " ft = " + (Math.round(calc.units * 100) / 100) + " fot" : (t("unitNagg") + ": " + calc.units)}</span>
+          <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: TC.ink }}>Total: Rs {rbMoney(amount)}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ background: TC.cream, borderRadius: 8, padding: 10, border: "1px solid " + TC.paperLine }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="rb-mono" style={{ fontSize: 11, color: TC.concrete }}>#{p.idx + 1}</span>
-          {p.editable ? (
-            <RbDescPick value={row.desc} placeholder={t("description")} onChange={function (v) { onChange({ desc: v }); }} />
+          {(p.editable || row.pick) ? (
+            <RbDescPick value={row.pick || row.desc} placeholder={t("description")} onChange={pickDesc} />
           ) : (
             <span style={{ fontSize: 12.5, fontWeight: 600, color: TC.ink }}>{(!isPiece && (row.category === "garden" || row.category === "slab")) ? rbExtraDesc(row) : row.desc}</span>
           )}
@@ -225,6 +273,8 @@ function NewSaleTab(p) {
   }
   /* Rs 0 ka bill save nahi hona chahiye - har item ka rate zaroori hai */
   var hasZeroRate = rows.some(function (r) { return !(Number(r.rate) > 0); });
+  /* Extra Garder / Extra Slab ka size chunna zaroori */
+  var missingSize = rows.some(function (r) { return r.pick && (r.category === "garden" || r.category === "slab") && !r.variant; });
   var amountInvalid = rows.length > 0 && (hasZeroRate || !(totalBill > 0));
   var amountBlocked = amountInvalid && !canEditSerial; /* Rs 0 ka bill sirf Admin save kar sakta hai */
 
@@ -257,7 +307,7 @@ function NewSaleTab(p) {
     });
   }
   var stockBlocked = stockShortList.length > 0;
-  var canSave = customerName.trim() && rows.length > 0 && !amountBlocked && !stockBlocked && Number(effSerial) > 0 && !submitting;
+  var canSave = customerName.trim() && rows.length > 0 && !amountBlocked && !stockBlocked && !missingSize && Number(effSerial) > 0 && !submitting;
 
   function handleSave() {
     if (!canSave) return;
@@ -341,7 +391,7 @@ function NewSaleTab(p) {
                 return <ItemRow key={row.id} t={t} idx={idx} row={row} mode={mode}
                   onChange={function (patch) { updateRow(row.id, patch); }}
                   onRemove={function () { removeRow(row.id); }}
-                  editable={row.category === "custom"} />;
+                  editable={row.category === "custom"} variantsFor={variantsFor} remainingFor={remainingFor} />;
               })}
             </div>
           )}
@@ -369,6 +419,7 @@ function NewSaleTab(p) {
         )}
 
         <div style={{ marginTop: 16, borderTop: "2px dashed " + TC.paperLine, paddingTop: 12 }}>
+          {saleType !== "cash" ? <RbAreaSubtotals items={rows} /> : null}
           <Field label={t("discount")}>
             <input type="number" inputMode="decimal" value={discountInput} onChange={function (ev) { setDiscountInput(ev.target.value); }} placeholder="0" style={rbInput()} />
           </Field>
@@ -386,6 +437,9 @@ function NewSaleTab(p) {
         </div>
       </div>
 
+      {missingSize ? (
+        <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: "rgba(192,57,43,0.15)", border: "1px solid " + TC.stamp, color: TC.stamp, fontSize: 12, fontWeight: 600, textAlign: "center" }}>Extra Garder / Extra Slab ka size list se chunein</div>
+      ) : null}
       {amountInvalid ? (
         <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: "rgba(192,57,43,0.15)", border: "1px solid " + TC.stamp, color: TC.stamp, fontSize: 12, fontWeight: 600, textAlign: "center" }}>{t("rateRequired")}</div>
       ) : null}
