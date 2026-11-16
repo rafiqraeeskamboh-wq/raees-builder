@@ -136,11 +136,11 @@ function BillModal(p) {
                 return (
                   <tr key={it.id || i} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td style={{ padding: "5px 3px" }}>{i + 1}</td>
-                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{isCash ? it.desc : rbExtraDesc(it)}</td>
+                    <td style={{ padding: "5px 3px", fontFamily: "Inter, sans-serif" }}>{isCash ? it.desc : (it.category === "garden" ? "Extra Garder" : (it.category === "slab" ? "Extra Slab" : it.desc))}</td>
                     <td style={{ padding: "5px 3px" }}>{it.qty}</td>
-                    {!isCash ? <td style={{ padding: "5px 3px" }}>{it.category === "slab" ? "-" : it.length}</td> : null}
+                    {!isCash ? <td style={{ padding: "5px 3px" }}>{it.category === "slab" ? rbVariantNum("slab", it.variant) : (it.category === "garden" ? (it.length || it.variant) : it.length)}</td> : null}
                     {!isCash ? <td style={{ padding: "5px 3px" }}>{(it.category === "slab" || it.category === "garden") ? "-" : it.width}</td> : null}
-                    {!isCash ? <td style={{ padding: "5px 3px" }}>{(function () { var cc = rbRowCalc(it, "area"); return cc.kind === "ft" ? (Math.round(cc.units * 100) / 100) + " ft" : (cc.kind === "nagg" ? cc.units + " " + t("unitNagg") : (Number(it.sqft) || 0).toFixed(1)); })()}</td> : null}
+                    {!isCash ? <td style={{ padding: "5px 3px" }}>{(function () { var cc = rbRowCalc(it, "area"); return cc.kind === "ft" ? (Math.round(cc.units * 100) / 100) + " ft" : (cc.kind === "nagg" ? "00" : (Number(it.sqft) || 0).toFixed(1)); })()}</td> : null}
                     <td style={{ padding: "5px 3px" }}>{rbMoney(it.rate)}</td>
                     <td style={{ padding: "5px 3px", fontWeight: 700 }}>{rbMoney(it.amount)}</td>
                   </tr>
