@@ -666,7 +666,8 @@ function rbShareNode(node, filename, text, phone, onNote, onlySave, saveToo) {
   if (!node) return;
   if (!window.html2canvas) { if (onNote) onNote("fail"); return; }
   if (onNote) onNote("busy");
-  window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false }).then(function (canvas) {
+  /* Urdu (اعتماد) tasveer mein huroof alag na hon - letter-spacing 0 */
+  window.html2canvas(node, { backgroundColor: "#F4EFDE", scale: 2, useCORS: true, logging: false, onclone: function (doc) { try { Array.prototype.forEach.call(doc.querySelectorAll(".rb-urdu, [dir=rtl]"), function (el) { el.style.letterSpacing = "0px"; el.style.wordSpacing = "normal"; }); } catch (e) {} } }).then(function (canvas) {
     canvas.toBlob(function (blob) {
       if (!blob) { if (onNote) onNote("fail"); return; }
       var file = null;
@@ -879,7 +880,7 @@ function RbTagline(p) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: p.mt == null ? 0 : p.mt }}>
       {line(true)}<span style={{ color: c, fontSize: sz * 0.6 }}>&#10022;</span>
-      <span className="rb-urdu" dir="rtl" style={{ color: c, fontSize: sz, fontWeight: 700, lineHeight: 2.1, whiteSpace: "nowrap", fontFamily: "'Noto Nastaliq Urdu', serif", letterSpacing: 0.3 }}>{"جو نام ہے اعتماد کا"}</span>
+      <span className="rb-urdu" dir="rtl" style={{ color: c, fontSize: sz, fontWeight: 700, lineHeight: 2.1, whiteSpace: "nowrap", fontFamily: "'Noto Nastaliq Urdu', serif", letterSpacing: 0 }}>{"جو نام ہے اعتماد کا"}</span>
       <span style={{ color: c, fontSize: sz * 0.6 }}>&#10022;</span>{line(false)}
     </div>
   );
