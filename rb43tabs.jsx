@@ -3480,6 +3480,9 @@ function GatePassTab(p) {
   var filtered = gatePasses.filter(function (g) {
     return !query || String(g.customerName).toLowerCase().indexOf(query.toLowerCase()) >= 0;
   });
+  /* gate pass S/No (bill number) ki tarteeb mein - bara number upar, aik bill ke gate pass (-2, -3) saath saath */
+  var gpSn = function (g) { var n = parseInt(String(g.serial == null ? "" : g.serial).replace(/[^0-9]/g, ""), 10); return isNaN(n) ? -1 : n; };
+  filtered = filtered.slice().sort(function (m, n) { return (gpSn(n) - gpSn(m)) || ((Number(m.trip) || 1) - (Number(n.trip) || 1)) || String(n.date || "").localeCompare(String(m.date || "")); });
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <GatePassSummaryCard t={t} gatePasses={gatePasses} />
