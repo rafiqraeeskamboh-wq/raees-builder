@@ -1149,7 +1149,8 @@ function RaeesBuilderApp() {
         var x = list[idx];
         if (x.edited) {
           /* Admin ne fotwari hath se badli - wohi rahe; lekin gate pass mein izafa / kami ho to utna hi labour mein bhi */
-          if (x.baseFt === undefined || x.baseFt === null) { next = list.slice(); next[idx] = Object.assign({}, x, { baseFt: lf.ft, baseExtra: lf.extraAmt }); return; }
+          /* base edit karte waqt likha jata hai (editLabourWork) - yahan app khulte hi kuch na likho, warna reload ka chakkar */
+          if (x.baseFt === undefined || x.baseFt === null) return;
           var dF = lf.ft - (Number(x.baseFt) || 0), dE = (Number(lf.extraAmt) || 0) - (Number(x.baseExtra) || 0);
           if (Math.abs(dF) > 0.001 || dE !== 0) {
             var nq = Math.max(0, Math.round(((Number(x.qty) || 0) + dF) * 100) / 100), ne = Math.max(0, (Number(x.extra) || 0) + dE);
@@ -2108,7 +2109,14 @@ function RaeesBuilderApp() {
         var r = patch.rate !== undefined ? Number(patch.rate) || 0 : Number(x.rate) || 0;
         var ex = patch.extra !== undefined ? Number(patch.extra) || 0 : Number(x.extra) || 0;
         var direct = patch.amount !== undefined ? Number(patch.amount) || 0 : 0;
-        return Object.assign({}, x, {
+        /* chhat fitting: edit ke waqt gate pass wali fotwari yaad rakho - baad mein gate pass ka izafa isi se jure */
+        var baseP = {};
+        if (x.kind === "fitting" && x.src === "sale" && (x.baseFt === undefined || x.baseFt === null)) {
+          var bs = null; sales.forEach(function (s0) { if (s0.id === x.srcId) bs = s0; });
+          var bgl = bs ? rbGpsFor(gatePasses, bs.id) : [];
+          if (bs && bgl.length) { var blf = rbLabourFit(bs, bgl, returnLog, siteWaste, extraGarderRate()); baseP = { baseFt: blf.ft, baseExtra: blf.extraAmt }; }
+        }
+        return Object.assign({}, x, baseP, {
           kind: patch.kind || x.kind, qty: q, rate: r, extra: ex,
           amount: labourEntryAmount(q, r, ex, direct),
           labourerId: patch.labourerId || x.labourerId,
