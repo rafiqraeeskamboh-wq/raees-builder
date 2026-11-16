@@ -1717,7 +1717,7 @@ function LabourKhataModal(p) {
   var wRows = [], wIdx = {};
   tot.works.forEach(function (x) {
     var gk = x.date + "|" + x.kind + "|" + (Number(x.rate) || 0) + (x.kind === "fitting" ? "|" + x.id : ""); /* chhat fitting: har customer alag */
-    if (wIdx[gk] == null) { wIdx[gk] = wRows.length; wRows.push({ k: "work", id: x.id, date: x.date, kind: x.kind, qty: 0, rate: x.rate, extra: 0, note: x.note, amount: 0, n: 0 }); }
+    if (wIdx[gk] == null) { wIdx[gk] = wRows.length; wRows.push({ k: "work", id: x.id, raw: x, date: x.date, kind: x.kind, qty: 0, rate: x.rate, extra: 0, note: x.note, amount: 0, n: 0 }); }
     var g = wRows[wIdx[gk]];
     g.qty = Math.round((g.qty + (Number(x.qty) || 0)) * 100) / 100; g.extra += Number(x.extra) || 0; g.amount += Number(x.amount) || 0; g.n++;
     if (g.n > 1) g.note = "";
@@ -1792,7 +1792,19 @@ function LabourKhataModal(p) {
                 return (
                   <tr key={r.k + r.id} style={{ borderBottom: "1px dashed " + TC.paperLine }}>
                     <td className="rb-mono" style={{ padding: "5px 3px", color: TC.inkSoft, whiteSpace: "nowrap" }}>{rbDate(r.date)}</td>
-                    <td style={{ padding: "5px 3px", color: TC.ink }}>{detail}{r.note ? " · " + r.note : ""}</td>
+                    <td style={{ padding: "5px 3px", color: TC.ink }}>{(function () {
+                      /* chhat fitting: bill S/No aur naam bare font mein, har bill ke saath edit */
+                      var parts = (r.k === "work" && r.kind === "fitting") ? String(r.note || "").split(" · ") : null;
+                      var hasBill = parts && parts.length >= 2 && /^#/.test(parts[1]);
+                      var edBtn = (p.onEdit && r.k === "work" && r.n === 1 && r.raw) ? <button data-html2canvas-ignore="true" className="no-print" onClick={function () { p.onEdit(r.raw); }} style={{ marginInlineStart: 6, background: "none", border: "1px solid " + TC.paperLine, borderRadius: 5, cursor: "pointer", color: TC.inkSoft, padding: "1px 5px", verticalAlign: "middle" }}><Ico name="pencil" size={12} /></button> : null;
+                      if (hasBill) return (
+                        <div>
+                          <div style={{ fontSize: 14.5, fontWeight: 800, color: TC.ink }}>{parts[1]} · {parts[0]}{edBtn}</div>
+                          <div>{detail}{parts.length > 2 ? " · " + parts.slice(2).join(" · ") : ""}</div>
+                        </div>
+                      );
+                      return <span>{detail}{r.note ? " · " + r.note : ""}{edBtn}</span>;
+                    })()}</td>
                     <td className="rb-mono" style={{ padding: "5px 3px", textAlign: "end", fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "work" ? "" : "-"}{rbMoney(r.amount)}</td>
                   </tr>
                 );
@@ -2212,6 +2224,7 @@ function LabourTab(p) {
               return (
                 <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div style={{ minWidth: 0 }}>
+                    {(function () { var pr = (r.k === "work" && r.kind === "fitting") ? String(r.note || "").split(" · ") : null; return (pr && pr.length >= 2 && /^#/.test(pr[1])) ? <div style={{ fontSize: 15, fontWeight: 800, color: TC.ink, marginBottom: 2 }}>{pr[1]} · {pr[0]}</div> : null; })()}
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                       <span>{r.k === "work" ? t(kk.labelKey) : t("labourAdvance")}</span>
                       {r.k === "work" && r.auto ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.garden, borderRadius: 20, padding: "1px 6px" }}>{r.src === "sale" ? t("labourFromSale") : t("labourFromStock")}</span> : null}
@@ -2320,7 +2333,7 @@ function LabourTab(p) {
           </div>
         ) : null}
         {khataOpen ? (
-          <LabourKhataModal t={t} labourer={current} totals={tot} showToast={p.showToast} onClose={function () { setKhataOpen(false); }} />
+          <LabourKhataModal t={t} labourer={current} totals={tot} showToast={p.showToast} onEdit={p.isAdmin ? function (w) { setEditEntry(w); } : null} onClose={function () { setKhataOpen(false); }} />
         ) : null}
         {editEntry ? (
           <LabourWorkEditModal t={t} entry={editEntry} labourers={labourers} onSave={p.onEditWork} onClose={function () { setEditEntry(null); }} />

@@ -1146,6 +1146,7 @@ function RaeesBuilderApp() {
       list.forEach(function (x, i) { if (idx < 0 && x.auto && x.src === "sale" && x.srcId === sl.id && x.kind === "fitting") idx = i; });
       if (idx >= 0) {
         var x = list[idx];
+        if (x.edited) return; /* Admin ne khate mein hath se badla - khud na badlo */
         if (Math.abs((Number(x.qty) || 0) - lf.ft) > 0.001 || (Number(x.extra) || 0) !== lf.extraAmt) {
           next = list.slice(); next[idx] = Object.assign({}, x, { qty: lf.ft, extra: lf.extraAmt, amount: labourEntryAmount(lf.ft, x.rate, lf.extraAmt, 0), note: note });
         }
