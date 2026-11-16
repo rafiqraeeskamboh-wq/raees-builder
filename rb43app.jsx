@@ -157,7 +157,6 @@ function BillModal(p) {
           ) : null}
 
           <div style={{ marginTop: 14, borderTop: "2px solid " + TC.ink, paddingTop: 10 }}>
-            {!isCash ? <RbAreaSubtotals items={sale.items} /> : null}
             {sale.discount > 0 ? (<TotalRow label={t("discount")} value={rbMoney(sale.discount)} />) : null}
             <TotalRow label={t("totalBill")} value={rbMoney(sale.totalBill)} bold />
             <TotalRow label={t("advance")} value={rbMoney(shownAdvance)} />
