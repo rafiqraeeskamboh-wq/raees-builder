@@ -2642,6 +2642,21 @@ function editStockEntry(id, qty, date) {
           if ((gp1 && (gp1.items || []).length && (!uuRooms && rbGpsFor(gatePasses, uu.id).length === 1 || (gp1.items || []).every(function (it) { return it.extra; }))) || (!gp1 && xNew.length && !gatePasses.some(function (g) { return g.saleId === uu.id; }))) {
             if (xNew.length) upsertGatePass(uu, xNew, "customized");
             else setGatePasses(function (prev) { return prev.filter(function (g) { return g.id !== gp1.id; }); });
+          } else if (gp1 && uuRooms) {
+            /* gate pass mein chhat ka maal bhi hai: chhat wala maal wesa hi rahe, sirf extra garder / slab bill ke mutabiq ho jaye
+               (edit mein nayi extra slab / garder add ki to gate pass mein bhi jama ho aur stock se nikle) */
+            var isXit = function (it) { return !!it.extra || /^extra/i.test(String(it.desc || "")); };
+            var otherX = {};
+            rbGpsFor(gatePasses, uu.id).forEach(function (g) { if (g.id === gp1.id) return; (g.items || []).forEach(function (it) { if (!isXit(it)) return; var k = it.category + "|" + it.variant; otherX[k] = (otherX[k] || 0) + (Number(it.qty) || 0); }); });
+            var needX = [];
+            xNew.forEach(function (it) { var k = it.category + "|" + it.variant; var q = it.qty - (otherX[k] || 0); otherX[k] = Math.max(0, (otherX[k] || 0) - it.qty); if (q > 0) needX.push(Object.assign({}, it, { qty: q })); });
+            var oldX = (gp1.items || []).filter(isXit).map(function (it) { return it.category + "|" + it.variant + "|" + it.qty; }).sort().join(",");
+            var newX = needX.map(function (it) { return it.category + "|" + it.variant + "|" + it.qty; }).sort().join(",");
+            if (oldX !== newX) {
+              var keepC = (gp1.items || []).filter(function (it) { return !isXit(it); });
+              var gp1Id = gp1.id;
+              setGatePasses(function (prev) { return prev.map(function (g) { return g.id === gp1Id ? Object.assign({}, g, { items: needX.concat(keepC), verified: false, verifiedBy: null, verifiedAt: null }) : g; }); });
+            }
           }
           setGatePasses(function (prev) {
             return prev.map(function (g2) {
