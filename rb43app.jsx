@@ -138,7 +138,9 @@ function BillModal(p) {
             </div>
           </div>
 
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10.5 }}>
+          {/* bill ke khanon (Qty, Length, Width ...) ke darmiyan halki dotted lakeer */}
+          <style>{".rb-billtbl th, .rb-billtbl td { border-right: 1px dotted #B7AA86; } .rb-billtbl th:last-child, .rb-billtbl td:last-child { border-right: none; }"}</style>
+          <table className="rb-billtbl" style={{ width: "100%", borderCollapse: "collapse", fontSize: 10.5 }}>
             <thead>
               <tr style={{ borderBottom: "1.5px solid " + TC.ink, borderTop: "1.5px solid " + TC.ink }}>
                 {headers.map(function (h) {
