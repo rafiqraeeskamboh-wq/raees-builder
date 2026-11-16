@@ -47,6 +47,8 @@ function ItemRow(p) {
   var t = p.t, row = p.row, mode = p.mode, onChange = p.onChange;
   var isPiece = mode === "piece";
   var gridRef = React.useRef(null);
+  /* pemaish bill: Description (Room waghera) chune baghair Qty / Length / Width / Rate band */
+  var noDesc = !isPiece && p.editable && row.category === "custom" && !String(row.desc || "").trim();
   var calc = rbRowCalc(row, mode), amount = calc.amount, sqft = calc.sqft;
   var isFt = calc.kind === "ft", isNagg = calc.kind === "nagg";
   var cols = isPiece || isNagg ? "1fr 1fr" : (isFt ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr");
@@ -118,11 +120,12 @@ function ItemRow(p) {
           <Ico name="trash" size={15} />
         </button>
       </div>
+      {noDesc ? <div style={{ fontSize: 11, color: TC.stamp, fontWeight: 700, marginBottom: 5 }}>Pehle Description chunein</div> : null}
       <div ref={gridRef} style={{ display: "grid", gridTemplateColumns: cols, gap: 6 }}>
-        <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} />
-        {(!isPiece && !isNagg) ? <MiniField label={isFt ? t("length") + " (ft)" : t("length")} value={row.length} onChange={function (v) { onChange({ length: v }); }} disabled={row.category !== "custom"} /> : null}
-        {(!isPiece && !isFt && !isNagg) ? <MiniField label={t("width")} value={row.width} onChange={function (v) { onChange({ width: v }); }} /> : null}
-        <MiniField label={isFt ? t("ratePerFt") : (isNagg ? t("ratePerNagg") : t("rate"))} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight />
+        <MiniField label={t("qty")} value={row.qty} onChange={function (v) { onChange({ qty: v }); }} disabled={noDesc} />
+        {(!isPiece && !isNagg) ? <MiniField label={isFt ? t("length") + " (ft)" : t("length")} value={row.length} onChange={function (v) { onChange({ length: v }); }} disabled={noDesc || row.category !== "custom"} /> : null}
+        {(!isPiece && !isFt && !isNagg) ? <MiniField label={t("width")} value={row.width} onChange={function (v) { onChange({ width: v }); }} disabled={noDesc} /> : null}
+        <MiniField label={isFt ? t("ratePerFt") : (isNagg ? t("ratePerNagg") : t("rate"))} value={row.rate} onChange={function (v) { onChange({ rate: v }); }} highlight disabled={noDesc} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, paddingTop: 7, borderTop: "1px dashed " + TC.paperLine }}>
         {!isPiece
