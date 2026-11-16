@@ -1,5 +1,24 @@
 /* Raees Builders App v2 - bill / gate pass / receipt modals + app shell */
 
+/* gate pass ke neeche: garder ka total, slab ka total aur kul total (nagg) */
+function RbGpTotals(p) {
+  var g = 0, sl = 0;
+  (p.items || []).forEach(function (it) { var q = Number(it.qty) || 0; if (it.category === "garden") g += q; else if (it.category === "slab") sl += q; });
+  if (!g && !sl) return null;
+  var row = function (label, v, big) { return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 4px", fontSize: big ? 13 : 12, fontWeight: big ? 800 : 700, color: TC.ink, borderTop: big ? "1.5px solid " + TC.ink : "none" }}>
+      <span style={{ fontFamily: "Inter, sans-serif" }}>{label}</span><span className="rb-mono">{v} nagg</span>
+    </div>
+  ); };
+  return (
+    <div style={{ marginTop: 8, borderTop: "1.5px solid " + TC.ink, paddingTop: 4 }}>
+      {row("Garder total", g)}
+      {row("Slab total", sl)}
+      {row("Kul total", g + sl, true)}
+    </div>
+  );
+}
+
 function BillModal(p) {
   rbUseBack(true, p.onClose);
   var showToast = p.showToast || function () {};
@@ -285,6 +304,7 @@ function BillModal(p) {
                 })()}
               </tbody>
             </table>
+            <RbGpTotals items={gatePassEntry.items} />
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 40 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 10.5, color: TC.ink, fontWeight: 700, marginBottom: 3 }}>{t("preparedBy")}: {gatePassEntry.createdBy ? rbMadeBy(t, gatePassEntry.createdBy, gatePassEntry.createdByName) : rbMadeBy(t, sale.createdBy, sale.createdByName)}</div>
@@ -509,6 +529,7 @@ function GatePassModal(p) {
               })}
             </tbody>
           </table>
+          <RbGpTotals items={items} />
           {(function () {
             if (!sale || sale.type === "cash" || !sale.items || items.some(function (it) { return it.extra; })) return null;
             var ex = sale.items.filter(function (it) { return (it.category === "garden" || it.category === "slab") && Number(it.qty) > 0; });
