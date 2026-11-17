@@ -897,7 +897,8 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   function key(c, v) { return c + "|" + v; }
   var gScope = "gp:" + (p.isEdit ? "e:" : "") + (p.extraTrip ? "t" + p.extraTrip + ":" : "") + (autoExtras.length ? "x2:" : "") + (sale.id || sale.serial || "x");
   /* is bill ka jo extra garder / slab pehle kisi gate pass mein ja chuka hai */
-  var sentX = []; if (!autoExtras.length) (p.prevGps || []).forEach(function (g) { (g.items || []).forEach(function (it) { if ((it.category === "garden" || it.category === "slab") && (it.extra || /^extra/i.test(String(it.desc || "")))) sentX.push({ desc: /^extra/i.test(String(it.desc || "")) ? it.desc : "Extra " + variantLabel(t, it.category, it.variant), qty: Number(it.qty) || 0, gp: "#" + (g.serial || "") + ((Number(g.trip) || 1) > 1 ? "-" + g.trip : ""), date: g.date }); }); });
+  var sentX = []; if (!autoExtras.length) (p.prevGps || []).forEach(function (g) { (g.items || []).forEach(function (it) { if ((it.category === "garden" || it.category === "slab") && (it.extra || /^extra/i.test(String(it.desc || "")))) sentX.push({ category: it.category, variant: it.variant, desc: /^extra/i.test(String(it.desc || "")) ? it.desc : "Extra " + variantLabel(t, it.category, it.variant), qty: Number(it.qty) || 0, gp: "#" + (g.serial || "") + ((Number(g.trip) || 1) > 1 ? "-" + g.trip : ""), date: g.date }); }); });
+  function prevXQ(cc, v) { return sentX.reduce(function (n, x) { return (x.category === cc && String(x.variant) === String(v)) ? n + x.qty : n; }, 0); }
   function extraQ(cc, v) { return autoExtras.reduce(function (n, it) { return (it.category === cc && String(it.variant) === String(v)) ? n + (Number(it.qty) || 0) : n; }, 0); }
   var a = rbUseDraft(gScope, "cat", function () {
     var c0 = "garden"; init.forEach(function (it) { if (it.category === "garden") c0 = "garden"; }); if (!init.some(function (it) { return it.category === "garden"; }) && init.some(function (it) { return it.category === "slab"; })) c0 = "slab"; return c0;
@@ -908,7 +909,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   var e = React.useState(""), cDesc = e[0], setCDesc = e[1];
   var f = React.useState(""), cQty = f[0], setCQty = f[1];
   /* list: saare size + bill ka koi aisa size jo ab list mein na ho */
-  function listFor(cc) { var l = rbBachaLast(cc, variantsFor(cc)).slice(), seen = {}; l.forEach(function (v) { seen[String(v)] = 1; }); Object.keys(qtys).forEach(function (k) { var pr = k.split("|"); if (pr[0] === cc && !seen[pr[1]]) { seen[pr[1]] = 1; l.push(pr[1]); } }); return l; }
+  function listFor(cc) { var l = rbBachaLast(cc, variantsFor(cc)).slice(), seen = {}; l.forEach(function (v) { seen[String(v)] = 1; }); Object.keys(qtys).forEach(function (k) { var pr = k.split("|"); if (pr[0] === cc && !seen[pr[1]]) { seen[pr[1]] = 1; l.push(pr[1]); } }); autoExtras.concat(sentX).forEach(function (x) { if (x.category === cc && x.variant != null && !seen[String(x.variant)]) { seen[String(x.variant)] = 1; l.push(String(x.variant)); } }); return l; }
   function avail(cc, v) { return Math.max(0, (remainingFor(cc, v) || 0) + (p.backQty ? p.backQty(cc, v) : 0)); }
   var rows = [], over = [];
   var seenR = {};
@@ -938,13 +939,6 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
           <div style={{ fontSize: 10.5, color: "#A9BE96", marginTop: 4 }}>Neeche sirf chhat (room) ka maal likhein.</div>
         </div>
       ) : null}
-      {sentX.length ? (
-        <div style={{ background: "#2F3A26", border: "1.5px solid " + TC.garden, borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
-          <div style={{ fontSize: 11.5, color: "#CFE3B8", fontWeight: 700, marginBottom: 4 }}>Is bill ka extra maal pehle aa chuka hai:</div>
-          {sentX.map(function (x, i) { return <div key={i} className="rb-mono" style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700 }}>{x.desc} × {x.qty} <span style={{ fontSize: 10.5, color: "#A9BE96", fontWeight: 600 }}>— Gate pass {x.gp}{x.date ? " (" + rbDate(x.date) + ")" : ""}</span></div>; })}
-          <div style={{ fontSize: 10.5, color: "#A9BE96", marginTop: 4 }}>Neeche sirf chhat (room) ka maal likhein.</div>
-        </div>
-      ) : null}
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[["garden", TC.garden, "sprout"], ["slab", TC.slab, "grid"]].map(function (o) {
           var on = cat === o[0], n = catCount(o[0]);
@@ -959,7 +953,7 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
           var k = key(cat, v), q = Number(qtys[k]) || 0, av = avail(cat, v), bad = q > av, bacha = rbIsBacha(cat, v);
           return (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderBottom: "1px dashed #3A362C", background: bacha ? RB_BACHA_BG : "transparent", borderRadius: bacha ? 6 : 0 }}>
-              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: bacha ? RB_BACHA_COLOR : (q > 0 ? "#E6C875" : TC.cream) }}>{variantLabel(t, cat, v)}</div>
+              <div className="rb-mono" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: bacha ? RB_BACHA_COLOR : (q > 0 ? "#E6C875" : TC.cream) }}>{variantLabel(t, cat, v)}{(extraQ(cat, v) + prevXQ(cat, v)) > 0 ? <span style={{ display: "inline-block", marginLeft: 6, padding: "1px 6px", borderRadius: 5, background: "#2F3A26", border: "1px solid " + TC.garden, color: "#CFE3B8", fontSize: 10.5, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>Extra {extraQ(cat, v) + prevXQ(cat, v)} (pehle se)</span> : null}</div>
               <div style={{ width: 60, textAlign: "center", fontSize: 12, color: av > 0 ? "#9FBE8A" : TC.stamp }}>{av}</div>
               <input type="number" inputMode="numeric" value={qtys[k] || ""} onChange={function (ev) { setQ(k, ev.target.value); }} placeholder="0" style={Object.assign({}, small, bad ? { border: "2px solid " + TC.stamp } : {})} />
             </div>
