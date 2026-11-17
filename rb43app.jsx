@@ -896,6 +896,8 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
   var init = autoExtras.length ? [] : (p.initialItems || (p.isEdit ? [] : saleItemsToGateItems(p.sale)));
   function key(c, v) { return c + "|" + v; }
   var gScope = "gp:" + (p.isEdit ? "e:" : "") + (p.extraTrip ? "t" + p.extraTrip + ":" : "") + (autoExtras.length ? "x2:" : "") + (sale.id || sale.serial || "x");
+  /* is bill ka jo extra garder / slab pehle kisi gate pass mein ja chuka hai */
+  var sentX = []; if (!autoExtras.length) (p.prevGps || []).forEach(function (g) { (g.items || []).forEach(function (it) { if ((it.category === "garden" || it.category === "slab") && (it.extra || /^extra/i.test(String(it.desc || "")))) sentX.push({ desc: /^extra/i.test(String(it.desc || "")) ? it.desc : "Extra " + variantLabel(t, it.category, it.variant), qty: Number(it.qty) || 0, gp: "#" + (g.serial || "") + ((Number(g.trip) || 1) > 1 ? "-" + g.trip : ""), date: g.date }); }); });
   function extraQ(cc, v) { return autoExtras.reduce(function (n, it) { return (it.category === cc && String(it.variant) === String(v)) ? n + (Number(it.qty) || 0) : n; }, 0); }
   var a = rbUseDraft(gScope, "cat", function () {
     var c0 = "garden"; init.forEach(function (it) { if (it.category === "garden") c0 = "garden"; }); if (!init.some(function (it) { return it.category === "garden"; }) && init.some(function (it) { return it.category === "slab"; })) c0 = "slab"; return c0;
@@ -933,6 +935,13 @@ function saleItemsToGateItems(sale) { return (sale.items || []).filter(function 
         <div style={{ background: "#2F3A26", border: "1.5px solid " + TC.garden, borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
           <div style={{ fontSize: 11.5, color: "#CFE3B8", fontWeight: 700, marginBottom: 4 }}>Bill ka extra maal — gate pass mein khud jama ho jayega:</div>
           {autoExtras.map(function (it, i) { return <div key={i} className="rb-mono" style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700 }}>{variantLabel(t, it.category, it.variant)} × {it.qty}</div>; })}
+          <div style={{ fontSize: 10.5, color: "#A9BE96", marginTop: 4 }}>Neeche sirf chhat (room) ka maal likhein.</div>
+        </div>
+      ) : null}
+      {sentX.length ? (
+        <div style={{ background: "#2F3A26", border: "1.5px solid " + TC.garden, borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, color: "#CFE3B8", fontWeight: 700, marginBottom: 4 }}>Is bill ka extra maal pehle aa chuka hai:</div>
+          {sentX.map(function (x, i) { return <div key={i} className="rb-mono" style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700 }}>{x.desc} × {x.qty} <span style={{ fontSize: 10.5, color: "#A9BE96", fontWeight: 600 }}>— Gate pass {x.gp}{x.date ? " (" + rbDate(x.date) + ")" : ""}</span></div>; })}
           <div style={{ fontSize: 10.5, color: "#A9BE96", marginTop: 4 }}>Neeche sirf chhat (room) ka maal likhein.</div>
         </div>
       ) : null}
@@ -3005,13 +3014,13 @@ function editStockEntry(id, qty, date) {
       ) : null}
 
       {gatePassBuilderFor ? (
-        <GatePassBuilderModal t={t} lang={lang} sale={gatePassBuilderFor} remainingFor={remainingFor} variantsFor={variantsFor}
+        <GatePassBuilderModal t={t} lang={lang} sale={gatePassBuilderFor} remainingFor={remainingFor} variantsFor={variantsFor} prevGps={rbGpsFor(gatePasses, gatePassBuilderFor.id)}
           onClose={function () { setGatePassBuilderFor(null); }}
           onCreate={function (items) { createGatePassFromBuilder(gatePassBuilderFor, items); }} />
       ) : null}
 
       {gpExtraFor ? (
-        <GatePassBuilderModal t={t} lang={lang} sale={gpExtraFor} remainingFor={remainingFor} variantsFor={variantsFor}
+        <GatePassBuilderModal t={t} lang={lang} sale={gpExtraFor} remainingFor={remainingFor} variantsFor={variantsFor} prevGps={rbGpsFor(gatePasses, gpExtraFor.id)}
           extraTrip={rbGpsFor(gatePasses, gpExtraFor.id).reduce(function (m, g) { return Math.max(m, Number(g.trip) || 1); }, 0) + 1}
           initialItems={rbGpPending(gpExtraFor, rbGpsFor(gatePasses, gpExtraFor.id))}
           onClose={function () { setGpExtraFor(null); }}
