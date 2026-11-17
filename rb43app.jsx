@@ -1692,7 +1692,7 @@ function RaeesBuilderApp() {
 
   /* maal list se hatayein (Cement nahi hat sakta) */
   function deleteMaterial(mid) {
-    if (!mid || mid === "cement") return;
+    if (!mid || (mid === "cement" && !rbIsSuper())) return;
     var mm = null; materials.forEach(function (x) { if (x.id === mid) mm = x; });
     setMaterials(function (a) { return a.filter(function (x) { return x.id !== mid; }); });
     showToast("Raw material delete ho gaya: " + (mm ? mm.name : mid));
