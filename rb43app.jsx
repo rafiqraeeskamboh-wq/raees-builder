@@ -1653,7 +1653,7 @@ function RaeesBuilderApp() {
     if (role !== "admin" || !rbIsSuper()) return;
     var next = {}; Object.keys(map || {}).forEach(function (k) { var q = Number(map[k]) || 0; if (q !== 0) next[k] = { qty: q, date: date || rbToday() }; });
     setMaterialOpening(next);
-    showToast("Maal ka purana stock save ho gaya");
+    showToast("Raw material ka purana stock save ho gaya");
     logActivity("material_opening", Object.keys(next).length + " maal");
   }
   /* Super Admin: maal (cement waghera) ka maujood seedha set karna - farq purane stock (opening) mein */
@@ -1686,7 +1686,7 @@ function RaeesBuilderApp() {
     var un = String(unit || "").trim() || "-";
     setMaterials(function (a) { return a.map(function (x) { return x.id === mid ? Object.assign({}, x, { name: nm, unit: un }) : x; }); });
     setPurchases(function (a) { return a.map(function (x) { return (x.material || "cement") === mid ? Object.assign({}, x, { materialName: nm, unit: un }) : x; }); });
-    showToast("Maal update ho gaya: " + nm);
+    showToast("Raw material update ho gaya: " + nm);
     logActivity("material_edited", mid + " -> " + nm + " (" + un + ")");
   }
 
@@ -1695,7 +1695,7 @@ function RaeesBuilderApp() {
     if (!mid || mid === "cement") return;
     var mm = null; materials.forEach(function (x) { if (x.id === mid) mm = x; });
     setMaterials(function (a) { return a.filter(function (x) { return x.id !== mid; }); });
-    showToast("Maal hata diya: " + (mm ? mm.name : mid));
+    showToast("Raw material delete ho gaya: " + (mm ? mm.name : mid));
     logActivity("material_deleted", mm ? mm.name : mid);
   }
 

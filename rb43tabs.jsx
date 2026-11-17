@@ -2016,7 +2016,7 @@ function RbMatEditRow(p) {
   var inp = { minWidth: 0, padding: "7px 9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "#fff", color: TC.ink, fontSize: 13.5 };
   return (
     <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-      <input value={v.name || ""} autoFocus placeholder="Maal ka naam (jaise Ret)" onChange={function (e) { p.onChange(Object.assign({}, v, { name: e.target.value })); }} style={Object.assign({}, inp, { flex: 2 })} />
+      <input value={v.name || ""} autoFocus placeholder="Raw material ka naam (jaise Ret)" onChange={function (e) { p.onChange(Object.assign({}, v, { name: e.target.value })); }} style={Object.assign({}, inp, { flex: 2 })} />
       <input value={v.unit || ""} placeholder="Unit (Bag / Trolley)" onChange={function (e) { p.onChange(Object.assign({}, v, { unit: e.target.value })); }} style={Object.assign({}, inp, { flex: 1 })} />
       <div style={{ width: "100%", display: "flex", gap: 6 }}>
         <button type="button" disabled={!ok} onClick={p.onSave} style={{ flex: 1, padding: "8px", borderRadius: 7, border: "none", background: ok ? TC.garden : "#999", color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed" }}>Save</button>
@@ -2664,8 +2664,8 @@ function StockTab(p) {
               </div>
               {p.onEditMaterial && !(matEdit && matEdit.id === m.id) ? (
                 <div style={{ width: "100%", display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                  <button type="button" onClick={function () { setMatEdit({ id: m.id, name: m.name, unit: m.unit === "-" ? "" : m.unit }); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" }}>Naam / unit edit</button>
-                  {p.onDeleteMaterial && m.id !== "cement" ? <button type="button" onClick={function () { if (window.confirm(m.name + " ko maal ki list se hata dein?" + ((mt.added || mt.used) ? "\n(Is ki purani kharid ka hisab supplier mein rahega)" : ""))) p.onDeleteMaterial(m.id); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" }}>Maal hatayein</button> : null}
+                  <button type="button" onClick={function () { setMatEdit({ id: m.id, name: m.name, unit: m.unit === "-" ? "" : m.unit }); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" }}>Edit</button>
+                  {p.onDeleteMaterial && m.id !== "cement" ? <button type="button" onClick={function () { if (window.confirm(m.name + " ko raw material ki list se delete kar dein?" + ((mt.added || mt.used) ? "\n(Is ki purani kharid ka hisab supplier mein rahega)" : ""))) p.onDeleteMaterial(m.id); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" }}>Delete</button> : null}
                 </div>
               ) : null}
               {matEdit && matEdit.id === m.id ? <RbMatEditRow value={matEdit} onChange={setMatEdit} onCancel={function () { setMatEdit(null); }} onSave={function () { p.onEditMaterial(m.id, matEdit.name, matEdit.unit); setMatEdit(null); }} /> : null}
@@ -2676,7 +2676,7 @@ function StockTab(p) {
         {p.onEditMaterial && p.onAddMaterial ? (matEdit && matEdit.id === "__new" ? (
           <div style={{ marginTop: 8 }}><RbMatEditRow value={matEdit} onChange={setMatEdit} onCancel={function () { setMatEdit(null); }} onSave={function () { p.onAddMaterial(matEdit.name, matEdit.unit); setMatEdit(null); }} /></div>
         ) : (
-          <button type="button" onClick={function () { setMatEdit({ id: "__new", name: "", unit: "" }); }} style={{ width: "100%", marginTop: 8, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.garden, background: "transparent", color: TC.garden, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+ Naya maal add karein</button>
+          <button type="button" onClick={function () { setMatEdit({ id: "__new", name: "", unit: "" }); }} style={{ width: "100%", marginTop: 8, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.garden, background: "transparent", color: TC.garden, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+ Naya raw material add karein</button>
         )) : null}
       </div>
       ) : null}
