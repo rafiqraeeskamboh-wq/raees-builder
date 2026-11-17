@@ -2010,6 +2010,22 @@ function RbLabourWeekCard(p) {
   );
 }
 /* labour khate mein baqi / advance baqi ka Edit aur Delete (0) */
+/* maal ka naam + unit likhne ki line (edit ya naya maal) */
+function RbMatEditRow(p) {
+  var v = p.value || {}, ok = String(v.name || "").trim().length > 0;
+  var inp = { minWidth: 0, padding: "7px 9px", borderRadius: 7, border: "1.5px solid " + TC.paperLine, background: "#fff", color: TC.ink, fontSize: 13.5 };
+  return (
+    <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+      <input value={v.name || ""} autoFocus placeholder="Maal ka naam (jaise Ret)" onChange={function (e) { p.onChange(Object.assign({}, v, { name: e.target.value })); }} style={Object.assign({}, inp, { flex: 2 })} />
+      <input value={v.unit || ""} placeholder="Unit (Bag / Trolley)" onChange={function (e) { p.onChange(Object.assign({}, v, { unit: e.target.value })); }} style={Object.assign({}, inp, { flex: 1 })} />
+      <div style={{ width: "100%", display: "flex", gap: 6 }}>
+        <button type="button" disabled={!ok} onClick={p.onSave} style={{ flex: 1, padding: "8px", borderRadius: 7, border: "none", background: ok ? TC.garden : "#999", color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed" }}>Save</button>
+        <button type="button" onClick={p.onCancel} style={{ flex: 1, padding: "8px", borderRadius: 7, border: "1px solid " + TC.paperLine, background: "transparent", color: TC.inkSoft, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function RbLabBalEdit(p) {
   var a = React.useState(false), open = a[0], setOpen = a[1];
   var b = React.useState(""), v = b[0], setV = b[1];
@@ -2591,6 +2607,7 @@ function StockTab(p) {
   var bk = React.useState(function () { return !!rbUiGet("open:bulkstock", false); }), bulkOpen = bk[0], setBulkOpen = bk[1];
   var osk = React.useState(false), openStockOpen = osk[0], setOpenStockOpen = osk[1];
   var mok = React.useState(false), matOpenOpen = mok[0], setMatOpenOpen = mok[1];
+  var mte = React.useState(null), matEdit = mte[0], setMatEdit = mte[1]; /* {id, name, unit} ya {id:"__new"} */
   var sld = React.useState(false), stockLedger = sld[0], setStockLedger = sld[1];
   var svw = React.useState(function () { return rbUiGet("stockView", "list") || "list"; }), stockView = svw[0], setStockView = svw[1];
   var isSuperAdm = canEdit && rbIsSuper() && !!p.onAddOpeningStock;
@@ -2645,10 +2662,22 @@ function StockTab(p) {
                 <StatBlock label={t("bagsUsed")} value={mt.used} />
                 <StatBlock label={t("bagsLeft")} value={mt.remaining} bold color={mt.remaining > 0 ? TC.success : (mt.remaining < 0 ? TC.stamp : TC.inkSoft)} />
               </div>
+              {p.onEditMaterial && !(matEdit && matEdit.id === m.id) ? (
+                <div style={{ width: "100%", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <button type="button" onClick={function () { setMatEdit({ id: m.id, name: m.name, unit: m.unit === "-" ? "" : m.unit }); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #2A4FC9", background: "#E8EEFF", color: "#2A4FC9" }}>Naam / unit edit</button>
+                  {p.onDeleteMaterial && m.id !== "cement" ? <button type="button" onClick={function () { if (window.confirm(m.name + " ko maal ki list se hata dein?" + ((mt.added || mt.used) ? "\n(Is ki purani kharid ka hisab supplier mein rahega)" : ""))) p.onDeleteMaterial(m.id); }} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid #C0262D", background: "#FFECEC", color: "#C0262D" }}>Maal hatayein</button> : null}
+                </div>
+              ) : null}
+              {matEdit && matEdit.id === m.id ? <RbMatEditRow value={matEdit} onChange={setMatEdit} onCancel={function () { setMatEdit(null); }} onSave={function () { p.onEditMaterial(m.id, matEdit.name, matEdit.unit); setMatEdit(null); }} /> : null}
               {p.onSetMaterialStock ? <div style={{ width: "100%" }}><RbLabBalEdit label={m.name + " maujood (" + m.unit + ")"} value={mt.remaining} money={false} onSave={function (v) { p.onSetMaterialStock(m.id, v); }} /></div> : null}
             </div>
           );
         })}
+        {p.onEditMaterial && p.onAddMaterial ? (matEdit && matEdit.id === "__new" ? (
+          <div style={{ marginTop: 8 }}><RbMatEditRow value={matEdit} onChange={setMatEdit} onCancel={function () { setMatEdit(null); }} onSave={function () { p.onAddMaterial(matEdit.name, matEdit.unit); setMatEdit(null); }} /></div>
+        ) : (
+          <button type="button" onClick={function () { setMatEdit({ id: "__new", name: "", unit: "" }); }} style={{ width: "100%", marginTop: 8, padding: "9px", borderRadius: 8, border: "1.5px dashed " + TC.garden, background: "transparent", color: TC.garden, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+ Naya maal add karein</button>
+        )) : null}
       </div>
       ) : null}
 
