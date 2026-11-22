@@ -2734,7 +2734,7 @@ function LabourTab(p) {
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div style={{ fontSize: 9.5, color: TC.inkSoft, fontWeight: 700 }}>BAQI</div>
                   <div className="rb-mono" style={{ fontSize: 15, fontWeight: 900, color: tt.dues > 0 ? TC.stamp : TC.success }}>Rs {rbMoney(tt.dues)}</div>
-                  <div style={{ fontSize: 11, color: TC.slab, fontWeight: 800 }}>Ledger \u203a</div>
+                  <div style={{ fontSize: 11, color: TC.slab, fontWeight: 800 }}>Ledger {"\u203a"}</div>
                 </div>
               </div>
             );
