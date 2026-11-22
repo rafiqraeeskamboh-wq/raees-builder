@@ -1378,6 +1378,26 @@ function RaeesBuilderApp() {
         return Object.assign({}, x, { itemsTotal: Number(x.itemsTotal || 0) + amt, totalBill: nt, advance: na, dues: Math.max(0, nt - na), returnedTotal: Math.max(0, Number(x.returnedTotal || 0) - amt) });
       }); });
     }
+    if (coll === "gatePasses" && item && item.saleId) {
+      /* bill ka aakhri gate pass delete: us ki maal wapsi bhi hat jaye (warna stock do dafa jama), bill ki raqam pehle jaisi */
+      var others = gatePasses.filter(function (g) { return g && g.id !== id && g.saleId === item.saleId; });
+      if (!others.length) {
+        var rets = returnLog.filter(function (r) { return r && r.saleId === item.saleId; });
+        if (rets.length) {
+          setSales(function (l) { return l.map(function (x) {
+            if (!x || x.id !== item.saleId) return x;
+            var nx = x;
+            rets.forEach(function (r) { var amt = Number(r.amount) || 0, rf = Number(r.refund) || 0; var nt = Number(nx.totalBill || 0) + amt, na = Math.min(nt, Number(nx.advance || 0) + rf); nx = Object.assign({}, nx, { itemsTotal: Number(nx.itemsTotal || 0) + amt, totalBill: nt, advance: na, dues: Math.max(0, nt - na), returnedTotal: Math.max(0, Number(nx.returnedTotal || 0) - amt) }); });
+            return nx;
+          }); });
+          setReturnLog(function (l) { return l.filter(function (r) { return !(r && r.saleId === item.saleId); }); });
+        }
+        setSiteWaste(function (l) { return l.filter(function (w) { return !(w && w.saleId === item.saleId); }); });
+      }
+      RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
+      showToast("Gate pass delete - maal wapas stock mein jama"); logActivity("super_delete", RB_COLLS[coll].label);
+      return;
+    }
     if (coll === "advances" && item) {
       /* advance receipt delete: jin billon mein ye advance laga tha un se bhi hat jaye (baqaya wapas) */
       setSales(function (l) { return l.map(function (x) {

@@ -5045,8 +5045,16 @@ function RbSupFixModal(p) {
   var a = React.useState(s0), vals = a[0], setVals = a[1];
   var b = React.useState(false), adv = b[0], setAdv = b[1];
   var c = React.useState(""), err = c[0], setErr = c[1];
+  /* gate pass / factory len-den: har size ki tadaad edit (stock khud theek ho jata hai) */
+  var itemsOk = Array.isArray(item.items) && item.items.length > 0 && item.items.every(function (it) { return it && it.qty != null && it.amount == null && (it.category === "garden" || it.category === "slab"); });
+  var dq = React.useState(itemsOk ? item.items.map(function (it) { return String(it.qty); }) : []), iq = dq[0], setIq = dq[1];
   function save() {
     var out = Object.assign({}, item);
+    if (itemsOk) {
+      var ni = [];
+      for (var j = 0; j < item.items.length; j++) { var qn = Number(iq[j]); if (iq[j] === "" || isNaN(qn) || qn < 0) { setErr("Tadaad: sahi number likhein"); return; } if (qn > 0) ni.push(Object.assign({}, item.items[j], { qty: qn })); }
+      out.items = ni;
+    }
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i], v = vals[f[0]];
       if (f[2] === "num") { var n = Number(v); if (v === "" || isNaN(n) || n < 0) { setErr(f[1] + ": sahi number likhein"); return; } out[f[0]] = n; }
@@ -5062,7 +5070,16 @@ function RbSupFixModal(p) {
         <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 10 }}>{p.label || rbRecSummary(item)}{item.byName ? " · " + item.byName : ""}</div>
         {adv ? <RbRecordEditor item={item} onCancel={function () { setAdv(false); }} onSave={p.onSave} /> : (
           <div>
-            {fields.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 8 }}>Is entry mein seedhe fields nahi - "Poori entry" se edit karein.</div> : null}
+            {fields.length === 0 && !itemsOk ? <div style={{ fontSize: 12, color: "#A39C8A", marginBottom: 8 }}>Is entry mein seedhe fields nahi - "Poori entry" se edit karein.</div> : null}
+            {itemsOk ? <div style={{ fontSize: 11, color: "#E6C875", fontWeight: 700, margin: "2px 0 4px" }}>Maal (tadaad badlein - 0 = hata dein; stock khud theek ho jaye ga)</div> : null}
+            {itemsOk ? item.items.map(function (it, j) {
+              return (
+                <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, fontSize: 12, color: TC.cream }}>{(it.category === "garden" ? "Garder " + it.variant + " ft" : "Slab " + it.variant) + (it.extra ? " (Extra)" : "")}</div>
+                  <input inputMode="decimal" value={iq[j]} onChange={function (e) { var n = iq.slice(); n[j] = e.target.value; setIq(n); }} style={Object.assign({}, rbSupIn, { width: 90 })} />
+                </div>
+              );
+            }) : null}
             {fields.map(function (f) {
               return (
                 <div key={f[0]}>
@@ -5089,7 +5106,7 @@ function RbSupFix(p) {
   if (!api || !p.item) return null;
   function doSave(n) { if (p.onSave) p.onSave(n); else api.save(p.coll, n); setOpen(false); }
   function doDel() {
-    if (!p.noConfirm && !window.confirm("Ye entry delete karein?\n" + (p.label || rbRecSummary(p.item)) + "\n(Recycle Bin se wapas la sakte hain)")) return;
+    if (!p.noConfirm && !window.confirm("Ye entry delete karein?\n" + (p.label || rbRecSummary(p.item)) + "\n(Is ka asar bhi wapas: maal stock mein / raqam khate mein. Recycle Bin se wapas la sakte hain)")) return;
     if (p.onDel) p.onDel(); else api.del(p.coll, p.item.id);
   }
   var btn = { padding: "2px 7px", borderRadius: 5, fontSize: 10.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.4, fontFamily: "Arial, sans-serif" };
