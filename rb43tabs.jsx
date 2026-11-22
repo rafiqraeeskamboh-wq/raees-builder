@@ -4897,6 +4897,11 @@ function SettingsTab(p) {
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
   return (
     <div style={{ padding: "14px 14px 4px", display: "flex", flexDirection: "column", gap: 18 }}>
+      {role === "admin" && rbIsSuper() && p.superData ? (
+        <button onClick={function () { window.dispatchEvent(new Event("rb-open-trash")); setTimeout(function () { var el = document.getElementById("rb-trash"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); }} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: "#B0262B", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Ico name="trash" size={16} color="#fff" /> Recycle Bin ({(p.superData.trash || []).length}) - Wapas layein / Reback
+        </button>
+      ) : null}
       {role === "admin" && onSetNextSerial ? (
         <SettingsBlock icon={<Ico name="receipt" size={16} color={TC.cream} />} title={t("nextBillNo")}>
           <NextSerialSetter t={t} nextSerial={nextSerial} onSet={onSetNextSerial} />
@@ -5198,9 +5203,10 @@ function RbSuperTrash(p) {
   var d = p.d, colls = d.colls, trash = d.trash || [];
   var a = React.useState(false), open = a[0], setOpen = a[1];
   var b = React.useState(30), lim = b[0], setLim = b[1];
+  React.useEffect(function () { function h() { setOpen(true); } window.addEventListener("rb-open-trash", h); return function () { window.removeEventListener("rb-open-trash", h); }; }, []);
   function when(s) { try { var dt = new Date(s); return rbDate(String(s).slice(0, 10)) + " " + dt.toTimeString().slice(0, 5); } catch (e) { return ""; } }
   return (
-    <div style={rbSupBox}>
+    <div id="rb-trash" style={rbSupBox}>
       <div onClick={function () { setOpen(!open); }} style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, cursor: "pointer" }}>{open ? "▾" : "▸"} Recycle Bin - Wapas layein / Reback ({trash.length})</div>
       {open ? (
         <div style={{ marginTop: 10 }}>
