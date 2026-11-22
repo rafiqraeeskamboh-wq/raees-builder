@@ -2252,7 +2252,17 @@ function RbLabourSimple(p) {
     .concat((tot.payments || []).map(function (x) { return { k: "pay", x: x, date: x.date, at: x.createdAt || "" }; }))
     .sort(function (m, n) { var c1 = String(m.date || "").localeCompare(String(n.date || "")); return c1 !== 0 ? c1 : String(m.at).localeCompare(String(n.at)); });
   var bal = Number(tot.opening) || 0;
-  var rows = ents.map(function (r) { var v = Number(r.x.amount) || 0; bal += r.k === "work" ? v : -v; return Object.assign({}, r, { bal: bal }); });
+  var rows0 = ents.map(function (r) { var v = Number(r.x.amount) || 0; bal += r.k === "work" ? v : -v; return Object.assign({}, r, { bal: bal }); });
+  /* hafta war: har hafte (Jumma - Jumeraat) ke baad us ka total, phir ledger neeche jari */
+  var rows = [], wkCur = null, wkW = 0, wkP = 0, wkBal = 0;
+  function closeWk() { if (wkCur) rows.push({ week: true, from: wkCur.from, to: wkCur.to, w: wkW, p: wkP, bal: wkBal }); }
+  rows0.forEach(function (r) {
+    var w = rbWeekOf(r.date || rbToday());
+    if (!wkCur || w.from !== wkCur.from) { closeWk(); wkCur = w; wkW = 0; wkP = 0; }
+    var v = Number(r.x.amount) || 0; if (r.k === "work") wkW += v; else wkP += v; wkBal = r.bal;
+    rows.push(r);
+  });
+  closeWk();
   function workText(x) {
     var kk = labourKind(x.kind);
     if (x.kind === "custom") return x.note || t(kk.labelKey);
@@ -2328,6 +2338,14 @@ function RbLabourSimple(p) {
           <tbody>
             <tr><td style={c0}>{tot.openingDate ? rbDate(tot.openingDate) : "-"}</td><td style={Object.assign({}, c0, { fontWeight: 700, color: TC.inkSoft })}>Purana baqi</td><td style={cr}></td><td style={cr}></td><td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800 })}>{rbMoney(Number(tot.opening) || 0)}</td></tr>
             {rows.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, c0, { textAlign: "center", color: TC.inkSoft })}>Abhi koi entry nahi</td></tr> : rows.map(function (r, i) {
+              if (r.week) return (
+                <tr key={"wk" + r.from} style={{ background: "#FFF1CF" }}>
+                  <td colSpan={2} style={Object.assign({}, c0, { fontWeight: 900, color: "#7A4E12", borderBottom: "2px solid #E2C98A" })}>Hafta total <span style={{ fontSize: 10, fontWeight: 700 }}>({rbDate(r.from)} - {rbDate(r.to)})</span></td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.w)}</td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, color: TC.success, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.p)}</td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, color: r.bal > 0 ? TC.stamp : TC.success, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.bal)}</td>
+                </tr>
+              );
               var x = r.x, w = r.k === "work";
               return (
                 <tr key={r.k + x.id} style={{ background: i % 2 ? "#F6F0DE" : "transparent" }}>
