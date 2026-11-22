@@ -1286,6 +1286,7 @@ function RaeesBuilderApp() {
   }, [gatePasses, editAlerts]);
   /* har chhat (pemaishe bill) ki fotwari User / Admin khud set kare - labour ki mazdoori usi par; User set kare to Admin ko alert */
   function setChhatFot(saleId, value) {
+    if (role !== "admin") return; /* sirf Admin (Ledger se) */
     var s0 = sales.filter(function (x) { return x.id === saleId; })[0]; if (!s0) return;
     var clear = value === "" || value === null;
     var v = clear ? null : Math.round((Number(value) || 0) * 100) / 100;
@@ -1296,11 +1297,6 @@ function RaeesBuilderApp() {
     setSales(function (prev) { return prev.map(function (x) { return x.id === saleId ? Object.assign({}, x, { chhatFot: clear ? null : v, chhatFotBy: who, chhatFotRole: role, chhatFotAt: new Date().toISOString() }) : x; }); });
     logActivity("chhat_fot", (s0.customerName || "") + " #" + s0.serial + " - " + (clear ? "gate pass wali" : v + " sq ft"));
     showToast("Chhat fotwari save ho gayi");
-    if (role !== "admin") {
-      var afterFt = clear ? rbLabourFit(Object.assign({}, s0, { chhatFot: null }), gl, returnLog, siteWaste, extraGarderRate()).ft : v;
-      var al = { id: rbUid(), kind: "fot", saleId: s0.id, serial: s0.serial, customerName: s0.customerName, by: role, byName: rbSessionName() || "User", at: new Date().toISOString(), beforeFt: beforeFt, afterFt: afterFt, billFt: (rbFotCheck(s0, gl.length ? gl : [{ items: [] }], returnLog, siteWaste) || {}).bill || null, seen: false };
-      setEditAlerts(function (prev) { return [al].concat(prev || []).slice(0, 300); });
-    }
   }
   function seenEditAlert(id) {
     if (role !== "admin") return;
