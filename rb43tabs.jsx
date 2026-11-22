@@ -4164,7 +4164,7 @@ function DayBookReport(p) {
   }
 
   var dCol = showDate ? [{ label: "Date", w: "16%" }] : [];
-  function dCell(x) { return showDate ? [rbDate(x.date)] : []; }
+  function dCell(x) { return showDate ? [rbDateDin(x.date)] : []; }
 
   return (
     <div>
@@ -5195,6 +5195,10 @@ function RbSuperTrash(p) {
 /* ================= LEDGER: har customer, supplier, labour aur har banda (User/Admin) =================
    rows: { date, detail, a (baqi mein izafa), b (baqi mein kami) }  -> har line ke baad chalta hua baqi */
 function rbLsList(st, key) { try { var v = localStorage.getItem(rbKeyFor(st, key)); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+/* ledger mein tareekh ke saath din (Urdu mein) */
+var RB_DIN_UR = ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"];
+function rbDinUr(d) { var m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ""; var dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])); return RB_DIN_UR[dt.getDay()] || ""; }
+function rbDateDin(d) { var dn = rbDinUr(d); return <span>{rbDate(d)}{dn ? <span style={{ display: "block", fontSize: "1.05em", color: "#1F3F8A", fontWeight: 700, direction: "rtl", textAlign: "left", fontFamily: "'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif", lineHeight: 1.6 }}>{dn}</span> : null}</span>; }
 function rbLedgerSort(rows) { return rows.map(function (r, i) { r._i = i; return r; }).sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || (m._i - n._i); }); }
 
 /* customer: dono store ke bill, wasooli, advance, purana baqi, maal wapsi */
@@ -5348,12 +5352,12 @@ function RbLedgerModal(p) {
             </tr></thead>
             <tbody>
               {r.from ? (
-                <tr><td style={cell}>{rbDate(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700, whiteSpace: "normal" })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
+                <tr><td style={cell}>{rbDateDin(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700, whiteSpace: "normal" })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
               ) : null}
               {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 return (
                   <tr key={i}>
-                    <td style={cell}>{l.x.date ? rbDate(l.x.date) : "-"}</td>
+                    <td style={cell}>{l.x.date ? rbDateDin(l.x.date) : "-"}</td>
                     <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{l.x.detail}{l.x.fix || null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.a ? rbMoney(l.x.a) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.b ? rbMoney(l.x.b) : ""}</td>
@@ -5640,7 +5644,7 @@ function RbLabourDayLedger(p) {
               <th style={Object.assign({}, head, { width: "13%", textAlign: "right" })}>Balance</th>
             </tr></thead>
             <tbody>
-              {carry ? <tr><td style={cell}>{r.from ? rbDate(r.from) : (lb.openingDate ? rbDate(lb.openingDate) : "-")}</td><td style={cell}>-</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>{r.from ? "Pichla baqi" : "Purana baqi"}</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{bt(carry)}</td></tr> : null}
+              {carry ? <tr><td style={cell}>{r.from ? rbDateDin(r.from) : (lb.openingDate ? rbDate(lb.openingDate) : "-")}</td><td style={cell}>-</td><td style={Object.assign({}, cell, { fontWeight: 700 })}>{r.from ? "Pichla baqi" : "Purana baqi"}</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{bt(carry)}</td></tr> : null}
               {lines.length === 0 ? <tr><td colSpan={6} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 if (l.week) return (
                   <tr key={i}>
@@ -5652,7 +5656,7 @@ function RbLabourDayLedger(p) {
                 );
                 return (
                   <tr key={i}>
-                    <td style={cell}>{l.date ? rbDate(l.date) : "-"}</td>
+                    <td style={cell}>{l.date ? rbDateDin(l.date) : "-"}</td>
                     <td style={Object.assign({}, cell, { whiteSpace: "normal", fontWeight: l.cust !== "-" ? 700 : 400, color: l.cust !== "-" ? "#1F3F8A" : "#888" })}>{l.cust}</td>
                     <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}{xi === 0 && l.saleId ? <RbChhatFotEdit inline={true} allowUser={inl} saleId={l.saleId} /> : null}</div>; })}{edBtns(l.xs)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{m(l.work)}</td>
@@ -5695,7 +5699,7 @@ function RbLabourDayLedger(p) {
                       ab += given - cut;
                       return (
                         <tr key={i}>
-                          <td style={cell}>{rbDate(x.date)}</td>
+                          <td style={cell}>{rbDateDin(x.date)}</td>
                           <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : (x.type === "advAdj" ? "Advance theek kiya" : "Mazdoori se kata")) + (x.note ? " - " + x.note : "")}{edBtns([{ k: "pay", x: x, noEdit: x.type === "advAdj" }])}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{given ? rbMoney(given) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{cut ? rbMoney(cut) : ""}</td>
@@ -5963,7 +5967,7 @@ function RbIncomeExpense(p) {
           <thead><tr><th style={Object.assign({}, head, { width: "16%" })}>Bill</th><th style={head}>Naam</th><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%", textAlign: "right" })}>Income</th></tr></thead>
           <tbody>
             {bills.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi bill nahi</td></tr> : bills.map(function (s) {
-              return <tr key={s.id}><td style={cell}>Bill {s.serial}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{s.customerName || "-"}</td><td style={cell}>{rbDate(s.date)}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(s.totalBill)}</td></tr>;
+              return <tr key={s.id}><td style={cell}>Bill {s.serial}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{s.customerName || "-"}</td><td style={cell}>{rbDateDin(s.date)}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(s.totalBill)}</td></tr>;
             })}
             <tr><td colSpan={3} style={Object.assign({}, tot, { textAlign: "right", color: "#1F3F8A" })}>Total Income ({bills.length} bill)</td><td style={Object.assign({}, tot, { textAlign: "right", color: "#1F3F8A" })}>{rbMoney(incT)}</td></tr>
           </tbody>
@@ -5973,7 +5977,7 @@ function RbIncomeExpense(p) {
           <thead><tr><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%" })}>Qism</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { width: "22%", textAlign: "right" })}>Raqam</th></tr></thead>
           <tbody>
             {exp.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharcha nahi</td></tr> : exp.map(function (x, i) {
-              return <tr key={i}><td style={cell}>{rbDate(x.date)}</td><td style={cell}>{x.kind}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{x.detail}{x.by ? <span style={{ color: "#777" }}>{" - " + x.by}</span> : null}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(x.amt)}</td></tr>;
+              return <tr key={i}><td style={cell}>{rbDateDin(x.date)}</td><td style={cell}>{x.kind}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{x.detail}{x.by ? <span style={{ color: "#777" }}>{" - " + x.by}</span> : null}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(x.amt)}</td></tr>;
             })}
             <tr><td colSpan={3} style={Object.assign({}, tot, { textAlign: "right", color: "#B0262B" })}>Total Expense</td><td style={Object.assign({}, tot, { textAlign: "right", color: "#B0262B" })}>{rbMoney(expT)}</td></tr>
           </tbody>
