@@ -1963,6 +1963,7 @@ function RaeesBuilderApp() {
   function addLabourer(name, mobile, opening, openingDir, openingDate, kinds) {
     var nm = String(name || "").trim();
     if (!nm) return;
+    if (!(role === "admin" && rbIsSuper())) { showToast("Naya banda sirf Super Admin bana sakta hai"); return; }
     var entry = { id: rbUid(), name: nm, mobile: String(mobile || "").trim(), kinds: kinds || [],
       opening: Math.max(0, Number(opening) || 0), openingDir: openingDir === "adv" ? "adv" : "due",
       openingDate: openingDate || rbToday(), createdAt: new Date().toISOString() };
@@ -2073,7 +2074,7 @@ function RaeesBuilderApp() {
   }, [labourers, labourConfig, labourWork]);
 
   function saveLabourConfig(kind, labourerId, rate) {
-    if (role !== "admin") return;
+    if (!(role === "admin" && rbIsSuper())) { showToast("Labour rate sirf Super Admin badal sakta hai"); return; }
     var rt = Math.max(0, Number(rate) || 0);
     setLabourConfig(function (c) {
       var n = Object.assign({}, c || {});
@@ -2103,13 +2104,14 @@ function RaeesBuilderApp() {
   }
   function renameLabourer(labourerId, name, mobile) {
     var nm = String(name || "").trim();
-    if (!labourerId || !nm || role !== "admin") return;
+    if (!labourerId || !nm || !(role === "admin" && rbIsSuper())) return;
     setLabourers(function (a) { return a.map(function (x) { return x.id === labourerId ? Object.assign({}, x, { name: nm, mobile: String(mobile || "").trim() }) : x; }); });
     showToast("Naam save ho gaya");
     logActivity("labourer_edit", nm);
   }
 
   function setLabourerKinds(labourerId, kinds) {
+    if (!(role === "admin" && rbIsSuper())) return;
     setLabourers(function (a) {
       return a.map(function (x) { return x.id === labourerId ? Object.assign({}, x, { kinds: kinds || [] }) : x; });
     });
@@ -3033,7 +3035,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
-    body = <SettingsTab labourSettings={{ labourers: labourers, labourConfig: labourConfig, onSaveConfig: saveLabourConfig, onAddLabourer: addLabourer }} catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
+    body = <SettingsTab labourSettings={{ labourers: labourers, labourConfig: labourConfig, onSaveConfig: saveLabourConfig, onAddLabourer: addLabourer, onRename: renameLabourer, onSetKinds: setLabourerKinds }} catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} superData={{ colls: RB_COLLS, trash: trash, onSave: superSaveRecord, onDelete: superDeleteRecord, onRestore: superRestore, onForget: superForget }} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
   }
 

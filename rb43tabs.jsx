@@ -4806,7 +4806,48 @@ function RbLabourSettings(p) {
       ) : (
         <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addLabourer")}</button>
       )}
+      {(p.labourers || []).length && p.onRename && p.onSetKinds ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>Bande ka naam / kaam tabdeel karein</div>
+          {(p.labourers || []).map(function (lb) { return <RbLabourEditRow key={lb.id} t={t} lb={lb} onRename={p.onRename} onSetKinds={p.onSetKinds} />; })}
+        </div>
+      ) : null}
       <LabourConfigCard t={t} labourers={p.labourers || []} config={p.labourConfig} onSave={p.onSaveConfig} />
+    </div>
+  );
+}
+/* Super Admin: har bande ka naam, mobile aur kaam (Garder bharai, Slab bharai, Ring bandai, Chhat fitting) badlein */
+function RbLabourEditRow(p) {
+  var t = p.t, lb = p.lb;
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var b = React.useState(lb.name || ""), nm = b[0], setNm = b[1];
+  var c = React.useState(lb.mobile || ""), mob = c[0], setMob = c[1];
+  var d = React.useState(labourKindsOf(lb)), ks = d[0], setKs = d[1];
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, marginBottom: 6 };
+  function start() { setNm(lb.name || ""); setMob(lb.mobile || ""); setKs(labourKindsOf(lb)); setOpen(true); }
+  function save() { if (!nm.trim()) return; p.onRename(lb.id, nm.trim(), mob); p.onSetKinds(lb.id, ks); setOpen(false); }
+  var cur = labourKindsOf(lb);
+  return (
+    <div style={{ borderTop: "1px solid #3A362C", padding: "8px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: TC.cream }}>{lb.name}</div>
+          <div style={{ fontSize: 10.5, color: "#A39C8A" }}>Kaam: {cur.length ? cur.map(function (k) { return t(labourKind(k).labelKey); }).join(", ") : "-"}</div>
+        </div>
+        {open ? null : <button onClick={start} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Tabdeel</button>}
+      </div>
+      {open ? (
+        <div style={{ marginTop: 8 }}>
+          <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("labourerName")} style={inp} />
+          <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={inp} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("labourPickKinds")}</div>
+          <div style={{ marginBottom: 8 }}><LabourKindChips t={t} value={ks} onChange={setKs} /></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={save} disabled={!nm.trim()} style={{ flex: 2, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.success : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Save</button>
+            <button onClick={function () { setOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Cancel</button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -4868,9 +4909,9 @@ function SettingsTab(p) {
       </SettingsBlock>
       )}
 
-      {role === "admin" && p.labourSettings ? (
-        <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Labour (naya banda aur rate)">
-          <RbLabourSettings t={t} labourers={p.labourSettings.labourers} labourConfig={p.labourSettings.labourConfig} onSaveConfig={p.labourSettings.onSaveConfig} onAddLabourer={p.labourSettings.onAddLabourer} />
+      {role === "admin" && rbIsSuper() && p.labourSettings ? (
+        <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Labour (naya banda, kaam aur rate) - Super Admin">
+          <RbLabourSettings t={t} labourers={p.labourSettings.labourers} labourConfig={p.labourSettings.labourConfig} onSaveConfig={p.labourSettings.onSaveConfig} onAddLabourer={p.labourSettings.onAddLabourer} onRename={p.labourSettings.onRename} onSetKinds={p.labourSettings.onSetKinds} />
         </SettingsBlock>
       ) : null}
       {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanTabSale")} checked={permissions.tabSale !== false} onChange={function (v) { onTogglePermission("tabSale", v); }} /> <PermissionCheckRow label={t("userCanTabBills")} checked={permissions.tabBills !== false} onChange={function (v) { onTogglePermission("tabBills", v); }} /> <PermissionCheckRow label={t("userCanTabGatePass")} checked={permissions.tabGatePass !== false} onChange={function (v) { onTogglePermission("tabGatePass", v); }} /> <PermissionCheckRow label={t("userCanTabDues")} checked={permissions.tabDues !== false} onChange={function (v) { onTogglePermission("tabDues", v); }} /> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
