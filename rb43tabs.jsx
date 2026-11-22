@@ -5486,6 +5486,34 @@ function rbLabourQty(x) {
   return Number(x.qty) || 0;
 }
 function rbLabourUnitWord(t, kind) { return kind === "garder" ? "garder" : (kind === "slab" ? "slab" : (kind === "ring" ? "ring" : (kind === "fitting" ? "sq ft" : ""))); }
+/* labour ledger line: ek line, ek Edit / Delete; kai size hon to "Edit" se size-wise list khulti hai */
+function RbLedEdBtns(p) {
+  var a = React.useState(false), open = a[0], setOpen = a[1];
+  var xs = p.xs.filter(function (o) { return o && o.x; }), eb = p.eb;
+  if (!xs.length) return null;
+  var many = xs.length > 1;
+  function lbl(x) { return (x.variant ? x.variant + " · " : "") + (Math.round((Number(x.qty) || 0) * 100) / 100) + (x.rate ? " × " + x.rate : "") + " = " + rbMoney(x.amount); }
+  function delAll() {
+    var tot = xs.reduce(function (n, o) { return n + (Number(o.x.amount) || 0); }, 0);
+    if (!window.confirm((many ? "Is din ki poori line (" + xs.length + " entries)" : (xs[0].k === "work" ? "Ye kaam" : "Ye entry")) + " delete karein? Rs " + rbMoney(tot) + " (" + rbDate(xs[0].x.date) + ")")) return;
+    xs.forEach(function (o) { p.onDel(o.k, o.x); });
+  }
+  return (
+    <div className="no-print" data-html2canvas-ignore="true" style={{ marginTop: 3 }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {xs[0].noEdit && !many ? null : <button type="button" onClick={function () { if (many) setOpen(!open); else p.onEdit(xs[0].k, xs[0].x); }} style={Object.assign({}, eb, { border: "1px solid #1F3F8A", color: "#1F3F8A" })}>{many ? (open ? "Band" : "Edit") : "Edit"}</button>}
+        <button type="button" onClick={delAll} style={Object.assign({}, eb, { border: "1px solid #B0262B", color: "#B0262B" })}>Delete</button>
+      </div>
+      {many && open ? xs.map(function (o, oi) { return (
+        <div key={o.x.id || oi} style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 3 }}>
+          <span style={{ fontSize: 9.5, color: "#555" }}>{lbl(o.x)}</span>
+          <button type="button" onClick={function () { p.onEdit(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #1F3F8A", color: "#1F3F8A" })}>Edit</button>
+          <button type="button" onClick={function () { if (window.confirm("Ye entry delete karein? Rs " + rbMoney(o.x.amount))) p.onDel(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #B0262B", color: "#B0262B" })}>Delete</button>
+        </div>
+      ); }) : null}
+    </div>
+  );
+}
 function RbLabourDayLedger(p) {
   rbUseBack(!p.inline, p.onClose);
   var t = p.t, lb = p.lb, tot = p.tot;
@@ -5545,17 +5573,7 @@ function RbLabourDayLedger(p) {
   var eb = { padding: "0 6px", borderRadius: 4, background: "#fff", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 };
   function edBtns(xs) {
     if (!canEd || !xs || !xs.length) return null;
-    return (
-      <div className="no-print" data-html2canvas-ignore="true" style={{ marginTop: 3 }}>
-        {xs.map(function (o, oi) { if (!o || !o.x) return null; return (
-          <div key={o.x.id || oi} style={{ display: "flex", gap: 4, alignItems: "center", marginTop: oi ? 2 : 0 }}>
-            {xs.length > 1 ? <span style={{ fontSize: 9, color: "#777" }}>{rbMoney(o.x.amount)}</span> : null}
-            {o.noEdit ? null : <button type="button" onClick={function () { p.onEditEntry(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #1F3F8A", color: "#1F3F8A" })}>Edit</button>}
-            <button type="button" onClick={function () { if (window.confirm((o.k === "work" ? "Ye kaam" : "Ye entry") + " delete karein? Rs " + rbMoney(o.x.amount) + " (" + rbDate(o.x.date) + ")")) p.onDelEntry(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #B0262B", color: "#B0262B" })}>Delete</button>
-          </div>
-        ); })}
-      </div>
-    );
+    return <RbLedEdBtns xs={xs} eb={eb} onEdit={p.onEditEntry} onDel={p.onDelEntry} />;
   }
   var inl = !!p.inline;
   return (

@@ -2043,8 +2043,8 @@ function RaeesBuilderApp() {
   }
   function deleteLabourEntry(kind, id) {
     if (role !== "admin") return;
-    if (kind === "work") setLabourWork(labourWork.filter(function (x) { return x.id !== id; }));
-    else setLabourPayments(labourPayments.filter(function (x) { return x.id !== id; }));
+    if (kind === "work") setLabourWork(function (l) { return l.filter(function (x) { return x.id !== id; }); });
+    else setLabourPayments(function (l) { return l.filter(function (x) { return x.id !== id; }); });
     showToast(t("openingDelete"));
     logActivity("labour_deleted", kind);
   }
