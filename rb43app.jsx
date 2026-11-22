@@ -1206,7 +1206,7 @@ function RaeesBuilderApp() {
     var next = null, flags = {};
     sales.forEach(function (sl) {
       if (sl.isOpening || sl.type === "cash") return;
-      var gl = rbGpsFor(gatePasses, sl.id); if (!gl.length) return;
+      var gl = rbGpsFor(gatePasses, sl.id); if (!gl.length && !rbHasChhatFot(sl)) return;
       var lf = rbLabourFit(sl, gl, returnLog, siteWaste, extraGarderRate());
       var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 slab " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + lf.gRate : "");
       var list = next || labourWork, idx = -1;
@@ -1284,6 +1284,24 @@ function RaeesBuilderApp() {
     if (!editAlerts.some(function (a) { return a && a.afterGps === null; })) return;
     setEditAlerts(function (prev) { return prev.map(function (a) { return a && a.afterGps === null ? Object.assign({}, a, { afterGps: rbGpSnap(gatePasses, a.saleId) }) : a; }); });
   }, [gatePasses, editAlerts]);
+  /* har chhat (pemaishe bill) ki fotwari User / Admin khud set kare - labour ki mazdoori usi par; User set kare to Admin ko alert */
+  function setChhatFot(saleId, value) {
+    var s0 = sales.filter(function (x) { return x.id === saleId; })[0]; if (!s0) return;
+    var clear = value === "" || value === null;
+    var v = clear ? null : Math.round((Number(value) || 0) * 100) / 100;
+    if (!clear && !(v > 0)) { showToast("Sahi fotwari likhein"); return; }
+    var gl = rbGpsFor(gatePasses, s0.id);
+    var beforeFt = rbLabourFit(s0, gl, returnLog, siteWaste, extraGarderRate()).ft;
+    var who = rbSessionName() || (role === "admin" ? (rbIsSuper() ? RB_SUPER_NAME : "Admin") : "User");
+    setSales(function (prev) { return prev.map(function (x) { return x.id === saleId ? Object.assign({}, x, { chhatFot: clear ? null : v, chhatFotBy: who, chhatFotRole: role, chhatFotAt: new Date().toISOString() }) : x; }); });
+    logActivity("chhat_fot", (s0.customerName || "") + " #" + s0.serial + " - " + (clear ? "gate pass wali" : v + " sq ft"));
+    showToast("Chhat fotwari save ho gayi");
+    if (role !== "admin") {
+      var afterFt = clear ? rbLabourFit(Object.assign({}, s0, { chhatFot: null }), gl, returnLog, siteWaste, extraGarderRate()).ft : v;
+      var al = { id: rbUid(), kind: "fot", saleId: s0.id, serial: s0.serial, customerName: s0.customerName, by: role, byName: rbSessionName() || "User", at: new Date().toISOString(), beforeFt: beforeFt, afterFt: afterFt, billFt: (rbFotCheck(s0, gl.length ? gl : [{ items: [] }], returnLog, siteWaste) || {}).bill || null, seen: false };
+      setEditAlerts(function (prev) { return [al].concat(prev || []).slice(0, 300); });
+    }
+  }
   function seenEditAlert(id) {
     if (role !== "admin") return;
     setEditAlerts(function (prev) { return prev.map(function (a) { return a.id === id ? Object.assign({}, a, { seen: true, seenBy: rbSessionName() || (rbIsSuper() ? RB_SUPER_NAME : "Admin"), seenAt: new Date().toISOString() }) : a; }); });
@@ -2937,7 +2955,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { if (rbGpsFor(gatePasses, sale.id).length) setGpExtraFor(sale); else setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onSetChhatFot={rbIsSuper() ? null : setChhatFot} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { if (rbGpsFor(gatePasses, sale.id).length) setGpExtraFor(sale); else setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} parties={parties} partyLog={partyLog} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} onEditMaterial={(role === "admin" || rbIsSuper()) ? editMaterial : null} onDeleteMaterial={(role === "admin" || rbIsSuper()) ? deleteMaterial : null} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} onSetMaterialStock={rbIsSuper() ? superSetMaterialStock : null} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />

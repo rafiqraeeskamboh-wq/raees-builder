@@ -259,8 +259,10 @@ function rbRowCalc(row, mode) {
 /* slab ki fotwari: aam slab lambai x 1.5, bacha lambai x 1 */
 function rbSlabFt(c, v, q) { if (c !== "slab") return 0; var L = Number(rbVariantNum(c, v)) || 0; var W = (typeof rbIsBacha === "function" && rbIsBacha(c, v)) ? 1 : 1.5; return L * W * (Number(q) || 0); }
 /* pemaish bill: bill ki fotwari (rooms) vs chhat par lagi slab ki fotwari (labour) - labour bill se ziada nahi honi chahiye */
+function rbHasChhatFot(sale) { return !!sale && sale.chhatFot !== undefined && sale.chhatFot !== null && sale.chhatFot !== "" && !isNaN(Number(sale.chhatFot)); }
 function rbFotCheck(sale, gpList, returnLog, siteWaste) {
-  if (!sale || sale.isOpening || sale.type === "cash" || !gpList || !gpList.length) return null;
+  if (!sale || sale.isOpening || sale.type === "cash" || ((!gpList || !gpList.length) && !rbHasChhatFot(sale))) return null;
+  gpList = gpList || [];
   var bill = 0, extras = 0, sent = 0, ret = 0, sw = 0;
   (sale.items || []).forEach(function (it) { var cc = rbRowCalc(it, "area"); if (cc.kind === "sqft") bill += cc.sqft; if (it.category === "slab") extras += rbSlabFt(it.category, it.variant, it.qty); });
   if (!(bill > 0)) return null;
@@ -268,7 +270,7 @@ function rbFotCheck(sale, gpList, returnLog, siteWaste) {
   (returnLog || []).forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { ret += rbSlabFt(it.category, it.variant, it.qty); }); });
   (siteWaste || []).forEach(function (w) { if (w.saleId === sale.id) sw += rbSlabFt(w.category, w.variant, w.qty); });
   var r2 = function (x) { return Math.round(x * 100) / 100; };
-  var labour = r2(sent - extras - ret - sw); bill = r2(bill);
+  var labour = rbHasChhatFot(sale) ? r2(Number(sale.chhatFot)) : r2(sent - extras - ret - sw); bill = r2(bill);
   return { bill: bill, labour: labour, diff: r2(bill - labour), ok: labour <= bill + 0.001 };
 }
 /* labour chhat fitting: chhat par lagi slab ki fotwari (bill wali nahi) + extra garder Rs 100 fi garder */
@@ -281,6 +283,8 @@ function rbLabourFit(sale, gpList, returnLog, siteWaste, garderRate) {
   (returnLog || []).forEach(function (r) { if (r.saleId !== sale.id) return; (r.items || []).forEach(function (it) { ret += rbSlabFt(it.category, it.variant, it.qty); }); });
   (siteWaste || []).forEach(function (w) { if (w.saleId === sale.id) sw += rbSlabFt(w.category, w.variant, w.qty); });
   var ft = Math.max(0, Math.round((sent - extras - ret - sw) * 100) / 100);
+  /* User / Admin ne is chhat ki fotwari khud set ki ho to labour ki mazdoori usi par */
+  if (rbHasChhatFot(sale)) ft = Math.round(Number(sale.chhatFot) * 100) / 100;
   return { ft: ft, garders: garders, gRate: gRate, extraAmt: garders * gRate };
 }
 /* pemaish bill: extra garder / slab bill bante hi gate pass mein - ye un ki gate pass lines */
