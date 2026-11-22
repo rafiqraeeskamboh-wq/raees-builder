@@ -2341,6 +2341,7 @@ function LabourTab(p) {
                       {r.k === "work" && !r.verified ? <span style={{ fontSize: 8.5, fontWeight: 700, color: TC.cream, background: TC.stamp, borderRadius: 20, padding: "1px 6px" }}>{t("labourUnverified")}</span> : null}
                     </div>
                     <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "work" && r.qty ? " · " + r.qty + " " + t(kk.unitKey) + (r.rate ? " × " + rbMoney(r.rate) : "") : ""}{r.k === "work" && Number(r.extra) > 0 ? " + " + rbMoney(r.extra) : ""}{r.note ? " · " + r.note : ""}</div>
+                    {r.k === "work" && r.kind === "fitting" && r.raw && r.raw.src === "sale" ? <RbChhatFotEdit saleId={r.raw.srcId} /> : null}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "work" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "work" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
