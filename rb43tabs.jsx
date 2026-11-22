@@ -700,12 +700,12 @@ function RbChhatFotEdit(p) {
   var over = inf.bill !== null && cur > inf.bill + 0.001;
   var isAdmin = api.role === "admin";
   function startEdit() { setVal(has ? String(s.chhatFot) : String(inf.auto || "")); setOpen(true); }
-  if (!isAdmin) return null; /* chhat fotwari ka edit / delete sirf Admin ke Ledger mein */
+  if (!isAdmin && !p.allowUser) return null; /* Admin: Ledger mein; User: Labour khate mein */
   if (p.inline && !open) return (
     <span className="no-print" data-html2canvas-ignore="true" onClick={function (e) { e.stopPropagation(); }} style={{ marginInlineStart: 5, whiteSpace: "nowrap" }}>
       {has ? <span style={{ fontSize: 9, color: "#999" }}>(slab {rbMoney2(inf.auto)}) </span> : null}
       <button type="button" onClick={startEdit} style={{ padding: "0 6px", borderRadius: 4, border: "1px solid #1F3F8A", background: "#fff", color: "#1F3F8A", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 }}>Edit</button>
-      {has ? <button type="button" onClick={function () { if (window.confirm("Edit fot (" + rbMoney2(s.chhatFot) + ") hata kar slab fot (" + rbMoney2(inf.auto) + ") par wapas?")) api.set(s.id, ""); }} style={{ marginInlineStart: 4, padding: "0 6px", borderRadius: 4, border: "1px solid #B0262B", background: "#fff", color: "#B0262B", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 }}>Delete</button> : null}
+      {has && isAdmin ? <button type="button" onClick={function () { if (window.confirm("Edit fot (" + rbMoney2(s.chhatFot) + ") hata kar slab fot (" + rbMoney2(inf.auto) + ") par wapas?")) api.set(s.id, ""); }} style={{ marginInlineStart: 4, padding: "0 6px", borderRadius: 4, border: "1px solid #B0262B", background: "#fff", color: "#B0262B", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 }}>Delete</button> : null}
     </span>
   );
   return (
@@ -2334,6 +2334,7 @@ function RbLabourSimple(p) {
                   <td style={c0}>{rbDate(x.date)}</td>
                   <td style={Object.assign({}, c0, { wordBreak: "break-word", color: w ? TC.ink : TC.success, fontWeight: 600 })}>
                     {w ? workText(x) : payText(x)}
+                    {!p.isAdmin && w && x.kind === "fitting" && x.src === "sale" ? <div><RbChhatFotEdit inline={true} allowUser={true} saleId={x.srcId} /></div> : null}
                     {p.isAdmin ? (
                       <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
                         <button onClick={function () { if (w) setEditWork(x); else { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} } }} style={Object.assign({}, sb, { border: "1px solid #2A4FC9", color: "#2A4FC9" })}>Edit</button>

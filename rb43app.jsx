@@ -1286,7 +1286,7 @@ function RaeesBuilderApp() {
   }, [gatePasses, editAlerts]);
   /* har chhat (pemaishe bill) ki fotwari User / Admin khud set kare - labour ki mazdoori usi par; User set kare to Admin ko alert */
   function setChhatFot(saleId, value) {
-    if (role !== "admin") return; /* sirf Admin (Ledger se) */
+    if (role !== "admin" && !can("labour")) return; /* Admin (Ledger) aur User (Labour khata) */
     var s0 = sales.filter(function (x) { return x.id === saleId; })[0]; if (!s0) return;
     var clear = value === "" || value === null;
     var v = clear ? null : Math.round((Number(value) || 0) * 100) / 100;
