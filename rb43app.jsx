@@ -997,7 +997,13 @@ function StartupPinGate(p) {
   var s3 = React.useState(""), who = s3[0], setWho = s3[1];
   var people = (rbGet("security", {}).people || []).filter(function (x) { return !(p.deviceLocked && x.role === "admin"); });
   var sel = people.filter(function (x) { return x.id === who; })[0];
-  function submit() { if (!val) return; if (p.onSubmit(val, who)) { setErr(""); setVal(""); } else { setErr("Galat PIN"); setVal(""); } }
+  function submit() { if (!val) return; if (p.onSubmit(val, who)) { setErr(""); setVal(""); rbAutoBioForAdmin(); } else { setErr("Galat PIN"); setVal(""); } }
+  /* login screen khulte hi fingerprint khud maange (agar is phone par on hai) */
+  React.useEffect(function () {
+    if (!p.onBioLogin || !rbBioSupported() || !rbBioGet()) return;
+    var tm = setTimeout(function () { rbBioVerify().then(function (b) { if (!p.onBioLogin(b)) setErr("Is phone par is role ka fingerprint login band hai - PIN darj karein"); }).catch(function () {}); }, 400);
+    return function () { clearTimeout(tm); };
+  }, []);
   return (
     <div style={{ position: "fixed", inset: 0, background: TC.appBg, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}>
       <div style={{ background: TC.appBg2, borderRadius: 14, padding: 24, width: "100%", maxWidth: 340, textAlign: "center" }}>

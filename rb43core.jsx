@@ -206,6 +206,16 @@ function rbBioRegister(role, isSuper) {
     authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
     .then(function (cred) { var b = { id: rbB64(cred.rawId), role: role, super: !!isSuper, name: rbSessionName() }; localStorage.setItem(RB_BIO_KEY, JSON.stringify(b)); return b; });
 }
+/* Admin (aur Super Admin) PIN se login kare to isi phone par fingerprint khud on - Settings mein alag option nahi */
+function rbAutoBioForAdmin() {
+  try {
+    if (!rbBioSupported()) return;
+    var role = rbSS.getItem("rb2-session-role"); if (role !== "admin") return;
+    var cur = rbBioGet(), nm = rbSessionName(), sup = rbIsSuper();
+    if (cur && cur.role === "admin" && !!cur.super === sup && (cur.name || "") === (nm || "")) return; /* pehle se on */
+    rbBioRegister("admin", sup).catch(function () {});
+  } catch (e) {}
+}
 function rbBioVerify() {
   var b = rbBioGet(); if (!b) return Promise.reject(new Error("none"));
   return navigator.credentials.get({ publicKey: { challenge: rbRand(32), allowCredentials: [{ type: "public-key", id: rbUnB64(b.id) }], userVerification: "required", timeout: 60000 } }).then(function () { return b; });

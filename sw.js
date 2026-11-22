@@ -1,5 +1,5 @@
 /* Raees Builder - service worker */
-const CACHE = 'raees-builder-v215';
+const CACHE = 'raees-builder-v216';
 
 const CORE_ASSETS = [
   './',

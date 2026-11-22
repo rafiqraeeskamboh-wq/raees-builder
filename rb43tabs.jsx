@@ -4534,9 +4534,11 @@ function SettingsTab(p) {
           <NextSerialSetter t={t} nextSerial={nextSerial} onSet={onSetNextSerial} />
         </SettingsBlock>
       ) : null}
+      {role === "admin" ? null : (
       <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Fingerprint Login">
         <RbBioSetting role={role} />
       </SettingsBlock>
+      )}
       <SettingsBlock icon={<Ico name="globe" size={16} color={TC.cream} />} title={t("language")}>
         <div style={{ display: "flex", gap: 8 }}>
           {[["en", "English"], ["ur", "اردو"]].map(function (o) {
