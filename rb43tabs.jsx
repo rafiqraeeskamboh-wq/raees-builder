@@ -752,7 +752,7 @@ function EditVariantModal(p) {
   var ok = Number(val) > 0;
   return (
     <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9400, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18 }}>
+      <div style={{ width: "100%", maxWidth: RB_MW, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18 }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{t("editSize")}</div>
         <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t(cat)} &middot; {rbVariantNum(cat, v)}{cat === "garden" ? " ft" : ""}</div>
         <input type="number" inputMode="decimal" value={val} onChange={function (e) { setVal(e.target.value); }} placeholder={t("sizeValue")} style={Object.assign({}, inp, { marginBottom: 8 })} />
@@ -1126,7 +1126,7 @@ function CementPromptModal(p) {
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9200,
       display: "flex", alignItems: "flex-end", justifyContent: "center"
     }}>
-      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
+      <div style={{ width: "100%", maxWidth: RB_MW, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{t("cementPromptTitle")}</div>
         <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t("cementAskLine")}</div>
         {blocking ? (
@@ -1691,7 +1691,7 @@ function LabourPromptModal(p) {
   var t = p.t, items = p.items || [];
   return (
     <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
+      <div style={{ width: "100%", maxWidth: RB_MW, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{t("labourPromptTitle")}</div>
         <div style={{ fontSize: 11.5, color: "#A39C8A", marginBottom: 12 }}>{t("labourAskLine")}</div>
         {p.blocking ? (
@@ -1728,7 +1728,7 @@ function LabourWorkEditModal(p) {
   var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
   return (
     <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9300, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div style={{ width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
+      <div style={{ width: "100%", maxWidth: RB_MW, background: TC.appBg, borderRadius: "16px 16px 0 0", padding: 18, maxHeight: "88vh", overflowY: "auto" }}>
         <div className="rb-display" style={{ color: TC.cream, fontSize: 15, fontWeight: 600, marginBottom: 10 }}>{t("labourEditEntry")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
           {LABOUR_KINDS.filter(function (k) { return !editKinds.length || editKinds.indexOf(k.id) >= 0 || k.id === kind; }).map(function (k) {
@@ -1782,7 +1782,7 @@ function LabourKhataModal(p) {
   var btn = { width: "100%", marginBottom: 10, padding: "12px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxSizing: "border-box" };
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9095, overflowY: "auto" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
+      <div style={{ maxWidth: RB_MW, margin: "0 auto", minHeight: "100vh", padding: 16 }}>
         <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; {t("back")}</button>
           <button onClick={function () { window.print(); }} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.stamp, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>

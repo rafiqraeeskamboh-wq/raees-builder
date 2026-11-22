@@ -2967,7 +2967,7 @@ function editStockEntry(id, qty, date) {
   return (
     <div dir={dir} style={{ background: TC.appBg, minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
       <FontLoader />
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: TC.appBg, display: "flex", flexDirection: "column" }}>
+      <div style={{ maxWidth: RB_W, margin: "0 auto", minHeight: "100vh", background: TC.appBg, display: "flex", flexDirection: "column" }}>
         <AppHeader t={t} role={role} onLogout={security.adminPin ? logoutSession : null} />
         <div style={{ flex: 1, paddingBottom: 88 }}>{body}</div>
         <TabBar t={t} tab={tab} setTab={goTab} role={role} permissions={permissions} duesCount={duesCount} />

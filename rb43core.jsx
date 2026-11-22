@@ -120,6 +120,12 @@ var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "v
     localStorage.setItem(rk, JSON.stringify(n));
   } catch (e) {}
 })();
+/* Laptop screen: is device par app poori chaudi screen par (sirf isi phone / laptop par yaad, cloud par nahi jata) */
+var RB_WIDE = (function () { try { return localStorage.getItem("raees-wide") === "1"; } catch (e) { return false; } })();
+var RB_W = RB_WIDE ? 1200 : 480;      /* app ki chaudai */
+var RB_MW = RB_WIDE ? 760 : 480;      /* popup ki chaudai */
+function rbSetWide(on) { try { localStorage.setItem("raees-wide", on ? "1" : "0"); } catch (e) {} location.reload(); }
+function rbShowWideBtn() { try { return RB_WIDE || window.innerWidth >= 768; } catch (e) { return RB_WIDE; } }
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
 /* English likhte waqt har lafz ka pehla harf bara (Ali khan -> Ali Khan). number/date/PIN/mobile par nahi.
@@ -847,7 +853,7 @@ function ModalShell(p) {
       display: "flex", alignItems: "flex-end", justifyContent: "center"
     }}>
       <div onClick={function (e) { e.stopPropagation(); }} style={{
-        width: "100%", maxWidth: 480, background: TC.appBg, borderRadius: "16px 16px 0 0",
+        width: "100%", maxWidth: RB_MW, background: TC.appBg, borderRadius: "16px 16px 0 0",
         padding: 18, maxHeight: "85vh", overflowY: "auto"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -927,7 +933,13 @@ function AppHeader(p) {
             })}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {rbShowWideBtn() ? (
+            <button onClick={function () { rbSetWide(!RB_WIDE); }} style={{
+              background: RB_WIDE ? "#D9A441" : "transparent", border: "1.5px solid #D9A441", color: RB_WIDE ? "#1C1A15" : "#D9A441",
+              fontSize: 10, fontWeight: 700, padding: "5px 9px", borderRadius: 5, cursor: "pointer"
+            }}>{RB_WIDE ? "Mobile screen" : "Laptop screen"}</button>
+          ) : null}
           <div style={{
             background: role === "admin" ? TC.stamp : TC.slab, color: TC.cream,
             fontSize: 10.5, fontWeight: 700, padding: "5px 10px", borderRadius: 5,
@@ -964,7 +976,7 @@ function TabBar(p) {
   return (
     <div className="no-print rb-nav" style={{
       position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-      width: "100%", maxWidth: 480, background: TC.appBg2, borderTop: "1px solid #3A362C",
+      width: "100%", maxWidth: RB_W, background: TC.appBg2, borderTop: "1px solid #3A362C",
       display: "flex", padding: "8px 6px 8px", zIndex: 9040,
       overflowX: "auto", scrollbarWidth: "none"
     }} >
