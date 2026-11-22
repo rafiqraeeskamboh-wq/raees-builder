@@ -1208,7 +1208,7 @@ function RaeesBuilderApp() {
       if (sl.isOpening || sl.type === "cash") return;
       var gl = rbGpsFor(gatePasses, sl.id); if (!gl.length && !rbHasChhatFot(sl)) return;
       var lf = rbLabourFit(sl, gl, returnLog, siteWaste, extraGarderRate());
-      var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 slab " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + lf.gRate : "");
+      var note = (sl.customerName || "") + " \u00b7 #" + sl.serial + " \u00b7 fotwari " + lf.ft + " sq ft" + (lf.garders ? " + extra garder " + lf.garders + " x " + lf.gRate : "");
       var list = next || labourWork, idx = -1;
       list.forEach(function (x, i) { if (idx < 0 && x.auto && x.src === "sale" && x.srcId === sl.id && x.kind === "fitting") idx = i; });
       if (idx >= 0) {

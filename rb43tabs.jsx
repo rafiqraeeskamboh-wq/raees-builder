@@ -1892,7 +1892,7 @@ function LabourKhataModal(p) {
                       if (hasBill) return (
                         <div>
                           <div style={{ fontSize: 14.5, fontWeight: 800, color: TC.ink }}>{parts[1]} · {parts[0]}{edBtn}</div>
-                          <div>{detail}{parts.length > 2 ? " · " + parts.slice(2).join(" · ") : ""}</div>
+                          <div>{detail}{parts.length > 2 ? " · " + parts.slice(2).join(" · ").replace(/\bslab (?=[\d.]+ sq ft)/g, "fotwari ") : ""}</div>
                           {fotEd}
                         </div>
                       );
@@ -5330,7 +5330,7 @@ function RbLabourDayLedger(p) {
     /* har cheez alag line: customer + fotwari tafseel + raqam, phir payment (received) - har line ke baad balance */
     var pk0 = Object.keys(d.parts);
     if (pk0.length) { var pAmt = 0; var pTx = pk0.map(function (pk) { var pt = d.parts[pk]; pAmt += pt.amt; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey); var rr = (Math.round(pt.rate * 100) / 100).toLocaleString("en-US"); return (pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + rr + ")" : pt.qty + " " + unit + " \u00d7 " + rr) + " = " + rbMoney(pt.amt); }); bal += pAmt; lines.push({ date: d.date, cust: "-", tx: pTx, work: pAmt, paid: 0, bal: bal }); }
-    d.fits.forEach(function (f) { var tx = ["Slab fotwari " + f.qty + " sq ft \u00d7 " + (Math.round(f.rate * 100) / 100).toLocaleString("en-US") + " = " + rbMoney(f.slabAmt)]; if (f.extra > 0) tx.push("Extra garder " + (f.gN ? f.gN + " \u00d7 " + rbMoney(f.gR) + " " : "") + "= " + rbMoney(f.extra)); bal += f.amt; lines.push({ date: d.date, cust: f.cust, saleId: f.saleId, tx: tx, work: f.amt, paid: 0, bal: bal }); });
+    d.fits.forEach(function (f) { var tx = ["Fotwari " + f.qty + " sq ft \u00d7 " + (Math.round(f.rate * 100) / 100).toLocaleString("en-US") + " = " + rbMoney(f.slabAmt)]; if (f.extra > 0) tx.push("Extra garder " + (f.gN ? f.gN + " \u00d7 " + rbMoney(f.gR) + " " : "") + "= " + rbMoney(f.extra)); bal += f.amt; lines.push({ date: d.date, cust: f.cust, saleId: f.saleId, tx: tx, work: f.amt, paid: 0, bal: bal }); });
     d.pays.forEach(function (py) { bal -= py.amount; lines.push({ date: d.date, cust: "-", pay: true, tx: [(py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")) + (py.note ? " \u2014 " + py.note : "") + (py.by ? " (dene wala: " + py.by + ")" : "")], work: 0, paid: py.amount, bal: bal }); });
   });
   closeWeek();
@@ -5338,7 +5338,8 @@ function RbLabourDayLedger(p) {
   function printIt() {
     var el = document.getElementById(idRef.current); if (!el) return;
     var w = window.open("", "_blank"); if (!w) { window.print(); return; }
-    w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    var cl = el.cloneNode(true); Array.prototype.forEach.call(cl.querySelectorAll("[data-html2canvas-ignore]"), function (n) { n.remove(); });
+    w.document.write("<html><head><title>Labour Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
   var cell = { border: "1px solid #bbb", padding: "3px 3px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
