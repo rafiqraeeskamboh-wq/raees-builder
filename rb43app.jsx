@@ -2012,6 +2012,14 @@ function RaeesBuilderApp() {
     logActivity("labour_paid", "Advance baqi theek kiya - Rs " + rbMoney(want));
   }
 
+  /* labour ko di gayi raqam (wasooli / adaigi) ka edit - sirf Admin */
+  function editLabourPayment(id, amount, date, note) {
+    if (role !== "admin") return;
+    var amt = Number(amount) || 0; if (!(amt > 0)) return;
+    setLabourPayments(function (a) { return a.map(function (x) { return x.id === id ? Object.assign({}, x, { amount: amt, date: date || x.date, note: String(note == null ? x.note : note).trim(), editedBy: rbSessionName() || "Admin", editedAt: new Date().toISOString() }) : x; }); });
+    showToast(t("billUpdated"));
+    logActivity("labour_paid_edit", "Rs " + rbMoney(amt));
+  }
   function deleteLabourEntry(kind, id) {
     if (role !== "admin") return;
     if (kind === "work") setLabourWork(labourWork.filter(function (x) { return x.id !== id; }));
@@ -2980,7 +2988,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "labour") {
     body = can("labour") ? <LabourTab showToast={showToast} t={t} labourers={labourers} labourTotals={labourTotals} isAdmin={role === "admin"}
       onAddLabourer={addLabourer} onRenameLabourer={renameLabourer} onSetOpening={setLabourerOpening} onSetBaqi={setLabourBaqi} onSetAdvBal={setLabourAdvBal} onAddWork={addLabourWork}
-      onAddPayment={addLabourPayment} onDeleteEntry={deleteLabourEntry} onDeleteGroup={deleteLabourGroup} onMergeGroup={mergeLabourGroup}
+      onAddPayment={addLabourPayment} onEditPayment={editLabourPayment} onDeleteEntry={deleteLabourEntry} onDeleteGroup={deleteLabourGroup} onMergeGroup={mergeLabourGroup}
       labourConfig={labourConfig} onSaveConfig={saveLabourConfig} onSetKinds={setLabourerKinds}
       pendingItems={labourPendingItems} onPostPending={postPendingLabour} onSkipPending={skipPendingLabour}
       onEditWork={editLabourWork} onVerifyWork={verifyLabourWork} onVerifyAll={verifyAllLabour} onSettle={settleLabour} />

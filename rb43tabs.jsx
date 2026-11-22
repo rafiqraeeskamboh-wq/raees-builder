@@ -2228,6 +2228,125 @@ function RbLabBalEdit(p) {
   );
 }
 
+/* Labour kholne par sada ledger: Wasooli, Extra kaam, aur har line par Edit / Delete (Admin) */
+function RbLabourSimple(p) {
+  var t = p.t, lb = p.labourer, tot = p.totals;
+  var a = React.useState(""), mode = a[0], setMode = a[1];
+  var b = React.useState(""), amt = b[0], setAmt = b[1];
+  var c = React.useState(rbToday()), dt = c[0], setDt = c[1];
+  var d = React.useState(""), note = d[0], setNote = d[1];
+  var e = React.useState(null), editPay = e[0], setEditPay = e[1];
+  var f = React.useState(null), editWork = f[0], setEditWork = f[1];
+  function open(m) { setMode(mode === m ? "" : m); setAmt(""); setNote(""); setDt(rbToday()); setEditPay(null); }
+  function save() {
+    var v = Number(amt) || 0; if (!(v > 0) || !note.trim()) return;
+    if (editPay) { p.onEditPayment(editPay.id, v, dt, note.trim()); setEditPay(null); }
+    else if (mode === "pay") p.onAddPayment(lb.id, v, dt, note.trim(), "wage");
+    else if (mode === "work") p.onAddWork(lb.id, "custom", 0, 0, v, dt, note.trim(), 0);
+    setMode(""); setAmt(""); setNote("");
+  }
+  /* ledger: purana baqi, phir har kaam (+) aur har adaigi (-) tareekh se, saath baqi */
+  var ents = (tot.works || []).map(function (x) { return { k: "work", x: x, date: x.date, at: x.createdAt || "" }; })
+    .concat((tot.payments || []).map(function (x) { return { k: "pay", x: x, date: x.date, at: x.createdAt || "" }; }))
+    .sort(function (m, n) { var c1 = String(m.date || "").localeCompare(String(n.date || "")); return c1 !== 0 ? c1 : String(m.at).localeCompare(String(n.at)); });
+  var bal = Number(tot.opening) || 0;
+  var rows = ents.map(function (r) { var v = Number(r.x.amount) || 0; bal += r.k === "work" ? v : -v; return Object.assign({}, r, { bal: bal }); });
+  function workText(x) {
+    var kk = labourKind(x.kind);
+    if (x.kind === "custom") return x.note || t(kk.labelKey);
+    if (x.kind === "fitting") { var pr = String(x.note || "").split(" · "); var head = (pr.length >= 2 && /^#/.test(pr[1])) ? pr[1] + " " + pr[0] : ""; return (head ? head + " · " : "") + "Fotwari " + (Math.round((Number(x.qty) || 0) * 100) / 100) + " sq ft" + (x.rate ? " × " + x.rate : "") + (Number(x.extra) > 0 ? " + garder " + rbMoney(x.extra) : ""); }
+    return t(kk.labelKey) + " " + (Math.round((Number(x.qty) || 0) * 100) / 100) + " " + t(kk.unitKey) + (x.rate ? " × " + x.rate : "") + (x.note ? " · " + x.note : "");
+  }
+  function payText(x) { return (x.type === "advCut" ? "Advance se kata" : "Wasooli") + (x.note ? " · " + x.note : ""); }
+  var fld = { width: "100%", boxSizing: "border-box", padding: "11px 12px", borderRadius: 9, border: "1.5px solid #4A4436", background: "#1C1A15", color: TC.cream, fontSize: 15, outline: "none" };
+  var lbl = { fontSize: 10, color: "#A39C8A", fontWeight: 700, marginBottom: 3 };
+  var sb = { padding: "3px 8px", borderRadius: 5, fontSize: 10.5, fontWeight: 700, cursor: "pointer", background: "#fff" };
+  var formOn = mode === "pay" || mode === "work" || !!editPay;
+  var okF = Number(amt) > 0 && !!note.trim();
+  var c0 = { fontSize: 11.5, color: TC.ink, padding: "8px 6px", borderBottom: "1px solid #E6DCC0", verticalAlign: "top" };
+  var cr = Object.assign({}, c0, { textAlign: "right", whiteSpace: "nowrap" });
+  var hd = { fontSize: 9.5, color: "#7A7260", fontWeight: 800, padding: "7px 6px", background: "#EFE6CC", whiteSpace: "nowrap" };
+  return (
+    <div style={{ padding: "14px 14px 4px" }}>
+      <button onClick={p.onBack} style={{ background: "none", border: "none", color: "#A39C8A", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}>&#8592; Labour</button>
+      <div style={{ background: "linear-gradient(180deg, #312C24 0%, #26221C 100%)", borderRadius: 14, padding: 14, border: "1px solid #3A362C", marginBottom: 12, boxShadow: "0 4px 14px rgba(0,0,0,.28)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: TC.cream }}>{lb.name}</div>
+            <div style={{ fontSize: 11, color: "#A39C8A", marginTop: 2 }}>{labourKindsOf(lb).map(function (k) { return t(labourKind(k).labelKey); }).join(" · ")}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, color: "#A39C8A", fontWeight: 700 }}>BAQI</div>
+            <div className="rb-mono" style={{ fontSize: 22, fontWeight: 900, color: tot.dues > 0 ? "#FF9A8A" : "#8FD19E" }}>Rs {rbMoney(tot.dues)}</div>
+            {tot.advBal > 0 ? <div style={{ fontSize: 10, color: "#E6C875", fontWeight: 700 }}>Bara advance {rbMoney(tot.advBal)}</div> : null}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button onClick={function () { open("pay"); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: mode === "pay" ? "#7E2A20" : TC.stamp, color: TC.cream, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Wasooli</button>
+          <button onClick={function () { open("work"); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: mode === "work" ? TC.gardenDark : TC.garden, color: TC.cream, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>+ Extra kaam</button>
+        </div>
+        {formOn ? (
+          <div style={{ marginTop: 12, background: "#1F1C16", borderRadius: 11, padding: 10, border: "1px solid " + (mode === "work" ? TC.garden : TC.stamp) }}>
+            <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 800, marginBottom: 8 }}>{editPay ? "Wasooli edit" : (mode === "pay" ? "Wasooli (labour ko di gayi raqam)" : "Extra kaam (mazdoori jurh jaye gi)")}</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>RAQAM (Rs)</div><input type="number" inputMode="numeric" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="0" style={Object.assign({}, fld, { fontWeight: 800, fontSize: 17 })} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>TAREEKH</div><input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={fld} /></div>
+            </div>
+            <div style={lbl}>TAFSEEL (lazmi)</div>
+            <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder={mode === "work" ? "Jaise: maal utara, safai" : "Jaise: hafta, naqad"} style={Object.assign({}, fld, { marginBottom: 8, border: "1.5px solid " + (note.trim() ? "#4A4436" : TC.stamp) })} />
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={function () { setMode(""); setEditPay(null); }} style={{ flex: 1, padding: "11px", borderRadius: 9, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button disabled={!okF} onClick={save} style={{ flex: 2, padding: "11px", borderRadius: 9, border: "none", background: okF ? (mode === "work" ? TC.garden : TC.stamp) : "#4A4638", color: TC.cream, fontWeight: 800, fontSize: 13.5, cursor: okF ? "pointer" : "not-allowed" }}>Save</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ background: TC.paper, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.22)" }}>
+        <div style={{ padding: "10px 12px", fontSize: 14, fontWeight: 900, color: TC.ink }}>Ledger</div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>TAREEKH</th>
+            <th style={Object.assign({}, hd, { textAlign: "left" })}>TAFSEEL</th>
+            <th style={Object.assign({}, hd, { textAlign: "right" })}>MAZDOORI</th>
+            <th style={Object.assign({}, hd, { textAlign: "right" })}>MILA</th>
+            <th style={Object.assign({}, hd, { textAlign: "right" })}>BAQI</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style={c0}>{tot.openingDate ? rbDate(tot.openingDate) : "-"}</td><td style={Object.assign({}, c0, { fontWeight: 700, color: TC.inkSoft })}>Purana baqi</td><td style={cr}></td><td style={cr}></td><td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800 })}>{rbMoney(Number(tot.opening) || 0)}</td></tr>
+            {rows.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, c0, { textAlign: "center", color: TC.inkSoft })}>Abhi koi entry nahi</td></tr> : rows.map(function (r, i) {
+              var x = r.x, w = r.k === "work";
+              return (
+                <tr key={r.k + x.id} style={{ background: i % 2 ? "#F6F0DE" : "transparent" }}>
+                  <td style={c0}>{rbDate(x.date)}</td>
+                  <td style={Object.assign({}, c0, { wordBreak: "break-word", color: w ? TC.ink : TC.success, fontWeight: 600 })}>
+                    {w ? workText(x) : payText(x)}
+                    {p.isAdmin ? (
+                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                        <button onClick={function () { if (w) setEditWork(x); else { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} } }} style={Object.assign({}, sb, { border: "1px solid #2A4FC9", color: "#2A4FC9" })}>Edit</button>
+                        <button onClick={function () { if (window.confirm((w ? "Ye kaam" : "Ye wasooli") + " delete karein? Rs " + rbMoney(x.amount) + " (" + rbDate(x.date) + ")")) p.onDeleteEntry(w ? "work" : "pay", x.id); }} style={Object.assign({}, sb, { border: "1px solid #C0262D", color: "#C0262D" })}>Delete</button>
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700 })}>{w ? rbMoney(x.amount) : ""}</td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { color: TC.success, fontWeight: 700 })}>{w ? "" : rbMoney(x.amount)}</td>
+                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800, color: r.bal > 0 ? TC.stamp : TC.success })}>{rbMoney(r.bal)}</td>
+                </tr>
+              );
+            })}
+            <tr style={{ background: "#FFE9B8" }}>
+              <td colSpan={2} style={Object.assign({}, c0, { fontWeight: 900, borderBottom: "none" })}>Total</td>
+              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none" })}>{rbMoney(tot.work)}</td>
+              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none", color: TC.success })}>{rbMoney(tot.paid)}</td>
+              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none", color: tot.dues > 0 ? TC.stamp : TC.success })}>{rbMoney(tot.dues)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {editWork ? <LabourWorkEditModal t={t} entry={editWork} labourers={p.labourers} onSave={p.onEditWork} onClose={function () { setEditWork(null); }} /> : null}
+    </div>
+  );
+}
 function LabourTab(p) {
   var t = p.t, labourers = p.labourers || [], labourTotals = p.labourTotals;
   var pendingItems = p.pendingItems || [];
@@ -2266,6 +2385,8 @@ function LabourTab(p) {
   var curKinds = current ? labourKindsOf(current) : [];
   React.useEffect(function () { if (curKinds.length && curKinds.indexOf(wKind) < 0) setWKind(curKinds[0]); }, [openId, curKinds.join(",")]);
 
+  if (current) return <RbLabourSimple t={t} labourer={current} totals={labourTotals(current.id)} labourers={labourers} isAdmin={p.isAdmin}
+    onBack={function () { setOpenId(null); }} onAddPayment={p.onAddPayment} onEditPayment={p.onEditPayment} onAddWork={p.onAddWork} onEditWork={p.onEditWork} onDeleteEntry={p.onDeleteEntry} />;
   if (current) {
     var tot = labourTotals(current.id);
     var kindInfo = labourKind(wKind);
