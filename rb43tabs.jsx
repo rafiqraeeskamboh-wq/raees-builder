@@ -2325,92 +2325,10 @@ function RbLabourSimple(p) {
         ) : null}
       </div>
 
-      <div style={{ background: TC.paper, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.22)" }}>
-        <div style={{ padding: "10px 12px", fontSize: 14, fontWeight: 900, color: TC.ink }}>Ledger</div>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>
-            <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>TAREEKH</th>
-            <th style={Object.assign({}, hd, { textAlign: "left" })}>TAFSEEL</th>
-            <th style={Object.assign({}, hd, { textAlign: "right" })}>MAZDOORI</th>
-            <th style={Object.assign({}, hd, { textAlign: "right" })}>MILA</th>
-            <th style={Object.assign({}, hd, { textAlign: "right" })}>BAQI</th>
-          </tr></thead>
-          <tbody>
-            <tr><td style={c0}>{tot.openingDate ? rbDate(tot.openingDate) : "-"}</td><td style={Object.assign({}, c0, { fontWeight: 700, color: TC.inkSoft })}>Purana baqi</td><td style={cr}></td><td style={cr}></td><td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800 })}>{rbMoney(Number(tot.opening) || 0)}</td></tr>
-            {rows.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, c0, { textAlign: "center", color: TC.inkSoft })}>Abhi koi entry nahi</td></tr> : rows.map(function (r, i) {
-              if (r.week) return (
-                <tr key={"wk" + r.from} style={{ background: "#FFF1CF" }}>
-                  <td colSpan={2} style={Object.assign({}, c0, { fontWeight: 900, color: "#7A4E12", borderBottom: "2px solid #E2C98A" })}>Hafta total <span style={{ fontSize: 10, fontWeight: 700 }}>({rbDate(r.from)} - {rbDate(r.to)})</span></td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.w)}</td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, color: TC.success, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.p)}</td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, color: r.bal > 0 ? TC.stamp : TC.success, borderBottom: "2px solid #E2C98A" })}>{rbMoney(r.bal)}</td>
-                </tr>
-              );
-              var x = r.x, w = r.k === "work";
-              return (
-                <tr key={r.k + x.id} style={{ background: i % 2 ? "#F6F0DE" : "transparent" }}>
-                  <td style={c0}>{rbDate(x.date)}</td>
-                  <td style={Object.assign({}, c0, { wordBreak: "break-word", color: w ? TC.ink : TC.success, fontWeight: 600 })}>
-                    {w ? workText(x) : payText(x)}
-                    {!p.isAdmin && w && x.kind === "fitting" && x.src === "sale" ? <div><RbChhatFotEdit inline={true} allowUser={true} saleId={x.srcId} /></div> : null}
-                    {p.isAdmin ? (
-                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-                        <button onClick={function () { if (w) setEditWork(x); else { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} } }} style={Object.assign({}, sb, { border: "1px solid #2A4FC9", color: "#2A4FC9" })}>Edit</button>
-                        <button onClick={function () { if (window.confirm((w ? "Ye kaam" : "Ye wasooli") + " delete karein? Rs " + rbMoney(x.amount) + " (" + rbDate(x.date) + ")")) p.onDeleteEntry(w ? "work" : "pay", x.id); }} style={Object.assign({}, sb, { border: "1px solid #C0262D", color: "#C0262D" })}>Delete</button>
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700 })}>{w ? rbMoney(x.amount) : ""}</td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { color: TC.success, fontWeight: 700 })}>{w ? "" : rbMoney(x.amount)}</td>
-                  <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800, color: r.bal > 0 ? TC.stamp : TC.success })}>{rbMoney(r.bal)}</td>
-                </tr>
-              );
-            })}
-            <tr style={{ background: "#FFE9B8" }}>
-              <td colSpan={2} style={Object.assign({}, c0, { fontWeight: 900, borderBottom: "none" })}>Total</td>
-              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none" })}>{rbMoney(tot.work)}</td>
-              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none", color: TC.success })}>{rbMoney(tot.paid)}</td>
-              <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 900, borderBottom: "none", color: tot.dues > 0 ? TC.stamp : TC.success })}>{rbMoney(tot.dues)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      {advRows.length ? (
-        <div style={{ background: TC.paper, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.22)", marginTop: 12 }}>
-          <div style={{ padding: "10px 12px", fontSize: 14, fontWeight: 900, color: TC.ink, display: "flex", justifyContent: "space-between" }}><span>Bara advance</span><span className="rb-mono" style={{ color: "#7A4E12" }}>Baqi Rs {rbMoney(tot.advBal || 0)}</span></div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr>
-              <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>TAREEKH</th>
-              <th style={Object.assign({}, hd, { textAlign: "left" })}>TAFSEEL</th>
-              <th style={Object.assign({}, hd, { textAlign: "right" })}>DIYA</th>
-              <th style={Object.assign({}, hd, { textAlign: "right" })}>KATA</th>
-              <th style={Object.assign({}, hd, { textAlign: "right" })}>BAQI</th>
-            </tr></thead>
-            <tbody>
-              {advRows.map(function (r, i) {
-                var x = r.x, cut = x.type === "advCut", adj = x.type === "advAdj", v = Number(x.amount) || 0;
-                return (
-                  <tr key={x.id} style={{ background: i % 2 ? "#F6F0DE" : "transparent" }}>
-                    <td style={c0}>{rbDate(x.date)}</td>
-                    <td style={Object.assign({}, c0, { wordBreak: "break-word", fontWeight: 600 })}>
-                      {(cut ? "Advance se kata" : (adj ? "Advance theek kiya" : "Advance diya")) + (x.note ? " \u00b7 " + x.note : "")}
-                      {p.isAdmin ? (
-                        <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-                          {!adj ? <button onClick={function () { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} }} style={Object.assign({}, sb, { border: "1px solid #2A4FC9", color: "#2A4FC9" })}>Edit</button> : null}
-                          <button onClick={function () { if (window.confirm("Ye advance entry delete karein? Rs " + rbMoney(v) + " (" + rbDate(x.date) + ")")) p.onDeleteEntry("pay", x.id); }} style={Object.assign({}, sb, { border: "1px solid #C0262D", color: "#C0262D" })}>Delete</button>
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700 })}>{!cut && v > 0 ? rbMoney(v) : ""}</td>
-                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700, color: TC.success })}>{cut ? rbMoney(v) : (v < 0 ? rbMoney(-v) : "")}</td>
-                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800, color: "#7A4E12" })}>{rbMoney(r.bal)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+      {/* Ledger tab wala Labour Ledger - yahin labour ke khate mein */}
+      <RbLabourDayLedger inline={true} t={t} lb={lb} tot={tot} isAdmin={p.isAdmin}
+        onEditEntry={function (k, x) { if (k === "work") setEditWork(x); else { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} } }}
+        onDelEntry={function (k, x) { p.onDeleteEntry(k === "work" ? "work" : "pay", x.id); }} />
       {editWork ? <LabourWorkEditModal t={t} entry={editWork} labourers={p.labourers} onSave={p.onEditWork} onClose={function () { setEditWork(null); }} /> : null}
     </div>
   );
@@ -5569,7 +5487,7 @@ function rbLabourQty(x) {
 }
 function rbLabourUnitWord(t, kind) { return kind === "garder" ? "garder" : (kind === "slab" ? "slab" : (kind === "ring" ? "ring" : (kind === "fitting" ? "sq ft" : ""))); }
 function RbLabourDayLedger(p) {
-  rbUseBack(true, p.onClose);
+  rbUseBack(!p.inline, p.onClose);
   var t = p.t, lb = p.lb, tot = p.tot;
   var a = React.useState({ preset: "all" }), range = a[0], setRange = a[1];
   var r = resolveRange(range);
@@ -5581,11 +5499,13 @@ function RbLabourDayLedger(p) {
     /* hisab dikhane ke liye: kaam x rate = raqam (har kism aur rate alag) */
     var rt = Number(x.rate) || 0, pk = x.kind + "|" + rt;
     /* chhat fitting: har customer alag line - naam, slab fotwari, extra garder */
-    if (x.kind === "fitting") { var segs = String(x.note || "").split(" \u00b7 "); var gm = String(x.note || "").match(/extra garder (\d+) x ([\d.]+)/); d.fits.push({ saleId: x.src === "sale" ? x.srcId : null, cust: segs.slice(0, 2).join(" \u00b7 ") || "-", qty: Number(x.qty) || 0, rate: rt, slabAmt: (Number(x.qty) || 0) * rt, extra: Number(x.extra) || 0, gN: gm ? Number(gm[1]) : 0, gR: gm ? Number(gm[2]) : 0, amt: Number(x.amount) || 0 }); return; }
-    var pt = d.parts[pk] || (d.parts[pk] = { kind: x.kind, rate: rt, qty: 0, mult: 0, amt: 0 });
-    pt.qty += q; pt.mult += Number(x.qty) || 0; pt.amt += Number(x.amount) || 0;
+    if (x.kind === "fitting") { var segs = String(x.note || "").split(" \u00b7 "); var gm = String(x.note || "").match(/extra garder (\d+) x ([\d.]+)/); d.fits.push({ saleId: x.src === "sale" ? x.srcId : null, cust: segs.slice(0, 2).join(" \u00b7 ") || "-", qty: Number(x.qty) || 0, rate: rt, slabAmt: (Number(x.qty) || 0) * rt, extra: Number(x.extra) || 0, gN: gm ? Number(gm[1]) : 0, gR: gm ? Number(gm[2]) : 0, amt: Number(x.amount) || 0, x: x }); return; }
+    /* extra kaam: apni tafseel ke saath alag line */
+    if (x.kind === "custom") { d.fits.push({ custom: true, cust: "-", note: x.note || "Extra kaam", amt: Number(x.amount) || 0, x: x }); return; }
+    var pt = d.parts[pk] || (d.parts[pk] = { kind: x.kind, rate: rt, qty: 0, mult: 0, amt: 0, xs: [] });
+    pt.xs.push(x); pt.qty += q; pt.mult += Number(x.qty) || 0; pt.amt += Number(x.amount) || 0;
   });
-  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; d.pays.push({ amount: Number(x.amount) || 0, note: x.note || "", by: x.byName || (x.by === "admin" ? "Admin" : (x.by === "accountant" ? "User" : "")), type: x.type }); if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
+  (tot.payments || []).forEach(function (x) { var d = D(x.date); d.paid += Number(x.amount) || 0; d.pays.push({ amount: Number(x.amount) || 0, note: x.note || "", by: x.byName || (x.by === "admin" ? "Admin" : (x.by === "accountant" ? "User" : "")), type: x.type, x: x }); if (x.type === "advCut") d.notes.push("advance se kata " + rbMoney(x.amount)); else if (x.note) d.notes.push(x.note); });
   var list = Object.keys(days).sort().map(function (k) { return days[k]; });
   /* range se pehle ka sab "pichla baqi" */
   var carry = opening, shown = [];
@@ -5602,9 +5522,9 @@ function RbLabourDayLedger(p) {
     wAgg.work += d.work; wAgg.paid += d.paid;
     /* har cheez alag line: customer + fotwari tafseel + raqam, phir payment (received) - har line ke baad balance */
     var pk0 = Object.keys(d.parts);
-    if (pk0.length) { var pAmt = 0; var pTx = pk0.map(function (pk) { var pt = d.parts[pk]; pAmt += pt.amt; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey); var rr = (Math.round(pt.rate * 100) / 100).toLocaleString("en-US"); return (pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + rr + ")" : pt.qty + " " + unit + " \u00d7 " + rr) + " = " + rbMoney(pt.amt); }); bal += pAmt; lines.push({ date: d.date, cust: "-", tx: pTx, work: pAmt, paid: 0, bal: bal }); }
-    d.fits.forEach(function (f) { var tx = ["Fotwari " + f.qty + " sq ft \u00d7 " + (Math.round(f.rate * 100) / 100).toLocaleString("en-US") + " = " + rbMoney(f.slabAmt)]; if (f.extra > 0) tx.push("Extra garder " + (f.gN ? f.gN + " \u00d7 " + rbMoney(f.gR) + " " : "") + "= " + rbMoney(f.extra)); bal += f.amt; lines.push({ date: d.date, cust: f.cust, saleId: f.saleId, tx: tx, work: f.amt, paid: 0, bal: bal }); });
-    d.pays.forEach(function (py) { bal -= py.amount; lines.push({ date: d.date, cust: "-", pay: true, tx: [(py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")) + (py.note ? " \u2014 " + py.note : "") + (py.by ? " (dene wala: " + py.by + ")" : "")], work: 0, paid: py.amount, bal: bal }); });
+    if (pk0.length) { var pAmt = 0; var pTx = pk0.map(function (pk) { var pt = d.parts[pk]; pAmt += pt.amt; var unit = rbLabourUnitWord(t, pt.kind) || t(labourKind(pt.kind).labelKey); var rr = (Math.round(pt.rate * 100) / 100).toLocaleString("en-US"); return (pt.kind === "garder" ? pt.qty + " " + unit + " (" + pt.mult + " bharai \u00d7 " + rr + ")" : pt.qty + " " + unit + " \u00d7 " + rr) + " = " + rbMoney(pt.amt); }); bal += pAmt; var pXs = []; pk0.forEach(function (pk) { pXs = pXs.concat(d.parts[pk].xs || []); }); lines.push({ date: d.date, cust: "-", tx: pTx, work: pAmt, paid: 0, bal: bal, xs: pXs.map(function (x) { return { k: "work", x: x }; }) }); }
+    d.fits.forEach(function (f) { if (f.custom) { bal += f.amt; lines.push({ date: d.date, cust: "-", tx: ["Extra kaam \u2014 " + f.note], work: f.amt, paid: 0, bal: bal, xs: [{ k: "work", x: f.x }] }); return; } var tx = ["Fotwari " + f.qty + " sq ft \u00d7 " + (Math.round(f.rate * 100) / 100).toLocaleString("en-US") + " = " + rbMoney(f.slabAmt)]; if (f.extra > 0) tx.push("Extra garder " + (f.gN ? f.gN + " \u00d7 " + rbMoney(f.gR) + " " : "") + "= " + rbMoney(f.extra)); bal += f.amt; lines.push({ date: d.date, cust: f.cust, saleId: f.saleId, tx: tx, work: f.amt, paid: 0, bal: bal, xs: [{ k: "work", x: f.x }] }); });
+    d.pays.forEach(function (py) { bal -= py.amount; lines.push({ date: d.date, cust: "-", pay: true, tx: [(py.type === "advCut" ? "Advance se kata" : (py.type === "advance" ? "Advance diya" : "Payment di")) + (py.note ? " \u2014 " + py.note : "") + (py.by ? " (dene wala: " + py.by + ")" : "")], work: 0, paid: py.amount, bal: bal, xs: [{ k: "pay", x: py.x }] }); });
   });
   closeWeek();
   var idRef = React.useRef("rbll" + rbUid());
@@ -5620,11 +5540,29 @@ function RbLabourDayLedger(p) {
   var wkC = Object.assign({}, cell, { background: "#FFF3D6", fontWeight: 700 });
   function m(v) { return v ? rbMoney(v) : ""; }
   function bt(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
+  /* Admin: har line par chhota Edit / Delete (tasveer / print mein nahi aata) */
+  var canEd = !!(p.isAdmin && p.onEditEntry && p.onDelEntry);
+  var eb = { padding: "0 6px", borderRadius: 4, background: "#fff", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 };
+  function edBtns(xs) {
+    if (!canEd || !xs || !xs.length) return null;
+    return (
+      <div className="no-print" data-html2canvas-ignore="true" style={{ marginTop: 3 }}>
+        {xs.map(function (o, oi) { if (!o || !o.x) return null; return (
+          <div key={o.x.id || oi} style={{ display: "flex", gap: 4, alignItems: "center", marginTop: oi ? 2 : 0 }}>
+            {xs.length > 1 ? <span style={{ fontSize: 9, color: "#777" }}>{rbMoney(o.x.amount)}</span> : null}
+            {o.noEdit ? null : <button type="button" onClick={function () { p.onEditEntry(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #1F3F8A", color: "#1F3F8A" })}>Edit</button>}
+            <button type="button" onClick={function () { if (window.confirm((o.k === "work" ? "Ye kaam" : "Ye entry") + " delete karein? Rs " + rbMoney(o.x.amount) + " (" + rbDate(o.x.date) + ")")) p.onDelEntry(o.k, o.x); }} style={Object.assign({}, eb, { border: "1px solid #B0262B", color: "#B0262B" })}>Delete</button>
+          </div>
+        ); })}
+      </div>
+    );
+  }
+  var inl = !!p.inline;
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
+    <div style={inl ? {} : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
+      <div style={inl ? {} : { maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
+        <div style={{ display: "flex", justifyContent: inl ? "flex-end" : "space-between", alignItems: "center", marginBottom: 10 }}>
+          {inl ? null : <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>}
           <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name="ledger" /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
         </div>
         <RangeFilter t={t} range={range} onChange={setRange} />
@@ -5657,7 +5595,7 @@ function RbLabourDayLedger(p) {
                   <tr key={i}>
                     <td style={cell}>{l.date ? rbDate(l.date) : "-"}</td>
                     <td style={Object.assign({}, cell, { whiteSpace: "normal", fontWeight: l.cust !== "-" ? 700 : 400, color: l.cust !== "-" ? "#1F3F8A" : "#888" })}>{l.cust}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}{xi === 0 && l.saleId ? <RbChhatFotEdit inline={true} saleId={l.saleId} /> : null}</div>; })}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}{xi === 0 && l.saleId ? <RbChhatFotEdit inline={true} allowUser={inl} saleId={l.saleId} /> : null}</div>; })}{edBtns(l.xs)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{m(l.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", color: "#1E7A3C", fontWeight: 700 })}>{m(l.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
@@ -5699,7 +5637,7 @@ function RbLabourDayLedger(p) {
                       return (
                         <tr key={i}>
                           <td style={cell}>{rbDate(x.date)}</td>
-                          <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : (x.type === "advAdj" ? "Advance theek kiya" : "Mazdoori se kata")) + (x.note ? " - " + x.note : "")}</td>
+                          <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{(x.type === "advance" ? "Advance diya" : (x.type === "advAdj" ? "Advance theek kiya" : "Mazdoori se kata")) + (x.note ? " - " + x.note : "")}{edBtns([{ k: "pay", x: x, noEdit: x.type === "advAdj" }])}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{given ? rbMoney(given) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right" })}>{cut ? rbMoney(cut) : ""}</td>
                           <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{rbMoney(ab)}</td>
