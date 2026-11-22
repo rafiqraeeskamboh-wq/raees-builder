@@ -3012,7 +3012,7 @@ function editStockEntry(id, qty, date) {
   } else if (tab === "dues") {
     body = <DuesTab t={t} role={role} advances={advances} onAddAdvance={addAdvance} onReturnAdvance={returnAdvance} sales={sales} onOpen={setViewingBill} onCollect={collectPayment} onReceipt={setViewingReceipt} onAddOpening={addCustomerOpening} onDeleteOpening={deleteCustomerOpening} />;
   } else if (tab === "settings") {
-    body = <SettingsTab catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
+    body = <SettingsTab labourSettings={{ labourers: labourers, labourConfig: labourConfig, onSaveConfig: saveLabourConfig, onAddLabourer: addLabourer }} catNames={catNames} onSaveCatNames={saveCatNames} t={t} lang={lang} role={role} nextSerial={nextSerial} onSetNextSerial={function (n) { if (Number(n) > 0) { setNextSerial(Number(n)); showToast(t("nextBillNo") + " #" + Number(n)); logActivity("serial_set", "#" + Number(n)); } }} onLang={setLang} onRole={handleRoleChange} permissions={permissions} onTogglePermission={togglePermission}
       onClear={clearAllData} superData={{ colls: RB_COLLS, trash: trash, onSave: superSaveRecord, onDelete: superDeleteRecord, onRestore: superRestore, onForget: superForget }} activityLog={activityLog} security={security} onSetUserPin={setUserPin} onSetAdminPin={setAdminPin} onSetSuperPin={setSuperPin} onSetPeople={setPeople} onLockDevice={lockDeviceToUser} />;
   }
 

@@ -2717,15 +2717,6 @@ function LabourTab(p) {
 
   return (
     <InlineShell title={t("labourers")}>
-      {pendingItems.length > 0 ? (
-        <div style={{ background: TC.stamp, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("labourPendingBanner")} ({pendingItems.length})</div>
-          {pendingItems.slice(0, 5).map(function (it) {
-            return <LabourPendingRow key={it.key} t={t} item={it} labourers={labourers} config={p.labourConfig} onPost={p.onPostPending} onSkip={p.isAdmin ? p.onSkipPending : null} />;
-          })}
-          {pendingItems.length > 5 ? <div style={{ fontSize: 10, color: TC.cream }}>+{pendingItems.length - 5}</div> : null}
-        </div>
-      ) : null}
 
       {labourers.length === 0 ? (
         <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noLabourers")}</div>
@@ -2750,24 +2741,6 @@ function LabourTab(p) {
           })}
         </div>
       )}
-      {adding ? (
-        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-          <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("labourerName")} style={Object.assign({}, inp, { marginBottom: 6 })} />
-          <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={Object.assign({}, inp, { marginBottom: 8 })} />
-          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("labourPickKinds")}</div>
-          <div style={{ marginBottom: 8 }}><LabourKindChips t={t} value={newKinds} onChange={setNewKinds} /></div>
-          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("openingBalance")}</div>
-          <OpeningDirPicker value={newObDir} onChange={setNewObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
-          <input type="number" inputMode="decimal" value={newOb} onChange={function (e) { setNewOb(e.target.value); }} placeholder={t("openingAmount")} style={Object.assign({}, inp, { marginBottom: 8 })} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={function () { p.onAddLabourer(nm, mob, newOb, newObDir, rbToday(), newKinds); setNm(""); setMob(""); setNewOb(""); setNewObDir("due"); setNewKinds([]); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
-            <button onClick={function () { setAdding(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addLabourer")}</button>
-      )}
-        {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
     </InlineShell>
   );
 }
@@ -4865,6 +4838,39 @@ function RbSuperDataTools(p) {
     </div>
   );
 }
+/* Settings: Labour - naya banda aur rate (Labour page par sirf bandon ki list) */
+function RbLabourSettings(p) {
+  var t = p.t;
+  var b = React.useState(false), adding = b[0], setAdding = b[1];
+  var n1 = React.useState(""), nm = n1[0], setNm = n1[1];
+  var n2 = React.useState(""), mob = n2[0], setMob = n2[1];
+  var n3 = React.useState(""), newOb = n3[0], setNewOb = n3[1];
+  var n4 = React.useState("due"), newObDir = n4[0], setNewObDir = n4[1];
+  var n5 = React.useState([]), newKinds = n5[0], setNewKinds = n5[1];
+  var inp = { width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5 };
+  return (
+    <div>
+      {adding ? (
+        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("labourerName")} style={Object.assign({}, inp, { marginBottom: 6 })} />
+          <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="03xx xxxxxxx" style={Object.assign({}, inp, { marginBottom: 8 })} />
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("labourPickKinds")}</div>
+          <div style={{ marginBottom: 8 }}><LabourKindChips t={t} value={newKinds} onChange={setNewKinds} /></div>
+          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 5 }}>{t("openingBalance")}</div>
+          <OpeningDirPicker value={newObDir} onChange={setNewObDir} dueLabel={t("openingSuppDue")} advLabel={t("openingSuppAdv")} />
+          <input type="number" inputMode="decimal" value={newOb} onChange={function (e) { setNewOb(e.target.value); }} placeholder={t("openingAmount")} style={Object.assign({}, inp, { marginBottom: 8 })} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={function () { p.onAddLabourer(nm, mob, newOb, newObDir, rbToday(), newKinds); setNm(""); setMob(""); setNewOb(""); setNewObDir("due"); setNewKinds([]); setAdding(false); }} disabled={!nm.trim()} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", background: nm.trim() ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: nm.trim() ? "pointer" : "not-allowed" }}>{t("save")}</button>
+            <button onClick={function () { setAdding(false); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "1.5px solid #3A362C", background: "transparent", color: "#A39C8A", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{t("cancel")}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addLabourer")}</button>
+      )}
+      <LabourConfigCard t={t} labourers={p.labourers || []} config={p.labourConfig} onSave={p.onSaveConfig} />
+    </div>
+  );
+}
 function SettingsTab(p) {
   var t = p.t, lang = p.lang, role = p.role, onLang = p.onLang, onRole = p.onRole, onClear = p.onClear, activityLog = p.activityLog; var permissions = p.permissions || DEFAULT_PERMISSIONS, onTogglePermission = p.onTogglePermission; var security = p.security || {}, onSetUserPin = p.onSetUserPin; var nextSerial = p.nextSerial, onSetNextSerial = p.onSetNextSerial; var onSetAdminPin = p.onSetAdminPin; var onLockDevice = p.onLockDevice;
   var a = React.useState(false), confirming = a[0], setConfirming = a[1];
@@ -4918,6 +4924,11 @@ function SettingsTab(p) {
       </SettingsBlock>
       )}
 
+      {role === "admin" && p.labourSettings ? (
+        <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="Labour (naya banda aur rate)">
+          <RbLabourSettings t={t} labourers={p.labourSettings.labourers} labourConfig={p.labourSettings.labourConfig} onSaveConfig={p.labourSettings.onSaveConfig} onAddLabourer={p.labourSettings.onAddLabourer} />
+        </SettingsBlock>
+      ) : null}
       {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanTabSale")} checked={permissions.tabSale !== false} onChange={function (v) { onTogglePermission("tabSale", v); }} /> <PermissionCheckRow label={t("userCanTabBills")} checked={permissions.tabBills !== false} onChange={function (v) { onTogglePermission("tabBills", v); }} /> <PermissionCheckRow label={t("userCanTabGatePass")} checked={permissions.tabGatePass !== false} onChange={function (v) { onTogglePermission("tabGatePass", v); }} /> <PermissionCheckRow label={t("userCanTabDues")} checked={permissions.tabDues !== false} onChange={function (v) { onTogglePermission("tabDues", v); }} /> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
