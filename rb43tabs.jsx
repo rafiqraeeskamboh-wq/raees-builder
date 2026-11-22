@@ -5653,6 +5653,90 @@ function RbIncomeExpense(p) {
   );
 }
 
+/* Bill ledger: har bill kis ne banaya aur us ki wasooli kis ne ki */
+function rbWhoLabel(by, name) { var r = by === "admin" ? "Admin" : (by === "accountant" ? "User" : ""); return ((r ? r + " " : "") + (name || "")).trim() || "-"; }
+function RbBillWhoLedger(p) {
+  var a = React.useState("month"), rng = a[0], setRng = a[1];
+  var b = React.useState(rbToday().slice(0, 8) + "01"), from = b[0], setFrom = b[1];
+  var c = React.useState(rbToday()), to = c[0], setTo = c[1];
+  var d = React.useState(""), q = d[0], setQ = d[1];
+  function shift(days) { var x = new Date(); x.setDate(x.getDate() - days); return isoOf(x); }
+  var f = rng === "today" ? rbToday() : rng === "7" ? shift(6) : rng === "month" ? rbToday().slice(0, 8) + "01" : rng === "all" ? "" : from;
+  var tt = rng === "custom" ? to : "";
+  var qk = q.trim().toLowerCase();
+  var bills = (p.sales || []).filter(function (s) {
+    if (!s || s.isOpening) return false;
+    var dt = String(s.date || "");
+    if (f && dt < f) return false; if (tt && dt > tt) return false;
+    if (qk && String(s.serial).indexOf(qk) !== 0 && String(s.customerName || "").toLowerCase().indexOf(qk) < 0) return false;
+    return true;
+  }).sort(function (m, n) { return (Number(m.serial) || 0) - (Number(n.serial) || 0); });
+  var tot = { bill: 0, got: 0, dues: 0 }, made = {}, coll = {};
+  bills.forEach(function (s) {
+    tot.bill += Number(s.totalBill) || 0; tot.dues += Math.max(0, Number(s.dues) || 0);
+    var mk = rbWhoLabel(s.createdBy, s.createdByName); made[mk] = made[mk] || { n: 0, amt: 0 }; made[mk].n++; made[mk].amt += Number(s.totalBill) || 0;
+    (s.payments || []).forEach(function (py) { var amt = Number(py.amount) || 0; tot.got += amt; var ck = py.fromAdvance ? "Advance receipt se" : rbWhoLabel(py.by, py.byName); coll[ck] = (coll[ck] || 0) + amt; });
+  });
+  var pill = function (on) { return { padding: "7px 11px", borderRadius: 16, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }; };
+  var dIn = { padding: "8px 9px", borderRadius: 8, border: "1.5px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13 };
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        {[["today", "Aaj"], ["7", "7 din"], ["month", "Is mahine"], ["all", "Sab"], ["custom", "Custom"]].map(function (o) { return <button key={o[0]} onClick={function () { setRng(o[0]); }} style={pill(rng === o[0])}>{o[1]}</button>; })}
+      </div>
+      {rng === "custom" ? (
+        <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input type="date" value={from} onChange={function (e) { setFrom(e.target.value); }} style={dIn} /><span style={{ color: "#A39C8A", fontSize: 12 }}>se</span>
+          <input type="date" value={to} onChange={function (e) { setTo(e.target.value); }} style={dIn} />
+        </div>
+      ) : null}
+      <input value={q} onChange={function (e) { setQ(e.target.value); }} placeholder="Bill number ya customer ka naam" style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", marginBottom: 10 })} />
+
+      <div style={{ background: TC.paper, borderRadius: 10, padding: 10, marginBottom: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
+          <StatBlock label="Bill" value={bills.length} bold />
+          <StatBlock label="Kul bill" value={"Rs " + rbMoney(tot.bill)} bold />
+          <StatBlock label="Wasooli" value={"Rs " + rbMoney(tot.got)} bold color={TC.success} />
+          <StatBlock label="Baqaya" value={"Rs " + rbMoney(tot.dues)} bold color={tot.dues > 0 ? TC.stamp : TC.success} />
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, borderTop: "1px dashed " + TC.paperLine, paddingTop: 6 }}>
+          <div style={{ flex: 1, minWidth: 150 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: TC.inkSoft, marginBottom: 3 }}>BILL KIS NE BANAYE</div>
+            {Object.keys(made).map(function (k) { return <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: TC.ink }}><span>{k} ({made[k].n})</span><span className="rb-mono" style={{ fontWeight: 700 }}>Rs {rbMoney(made[k].amt)}</span></div>; })}
+          </div>
+          <div style={{ flex: 1, minWidth: 150 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: TC.inkSoft, marginBottom: 3 }}>WASOOLI KIS NE KI</div>
+            {Object.keys(coll).map(function (k) { return <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: TC.ink }}><span>{k}</span><span className="rb-mono" style={{ fontWeight: 700, color: TC.success }}>Rs {rbMoney(coll[k])}</span></div>; })}
+          </div>
+        </div>
+      </div>
+
+      {bills.length === 0 ? <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>Is waqt mein koi bill nahi</div> : bills.map(function (s) {
+        var pays = s.payments || [];
+        return (
+          <div key={s.id} style={{ background: TC.paper, borderRadius: 10, padding: "10px 12px", marginBottom: 8, borderLeft: "5px solid " + (Number(s.dues) > 0 ? TC.stamp : TC.success) }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: TC.ink }}>#{s.serial} <span style={{ fontWeight: 600, fontSize: 12.5 }}>{s.customerName || ""}</span></span>
+              <span className="rb-mono" style={{ fontSize: 13.5, fontWeight: 800, color: TC.ink, whiteSpace: "nowrap" }}>Rs {rbMoney(s.totalBill)}</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 1 }}>{rbDate(s.date)} · {s.type === "cash" ? "Cash Sale" : "Pemaishe Sale"}</div>
+            <div style={{ fontSize: 12, color: TC.ink, marginTop: 6 }}>Bill banaya: <b>{rbWhoLabel(s.createdBy, s.createdByName)}</b>{s.userEdited ? <span style={{ color: TC.stamp }}> · edit: User {s.userEditedBy}</span> : null}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: TC.inkSoft, margin: "6px 0 2px" }}>WASOOLI</div>
+            {pays.length === 0 ? <div style={{ fontSize: 11.5, color: TC.inkSoft }}>Abhi koi wasooli nahi</div> : pays.map(function (py) {
+              return (
+                <div key={py.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, color: TC.ink, padding: "2px 0" }}>
+                  <span>{rbDate(py.date)} · {py.fromAdvance ? "Advance receipt se" : <b>{rbWhoLabel(py.by, py.byName)}</b>}{py.note && !py.fromAdvance ? " · " + py.note : ""}</span>
+                  <span className="rb-mono" style={{ fontWeight: 700, color: TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(py.amount)}</span>
+                </div>
+              );
+            })}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 800, marginTop: 4, borderTop: "1px dashed " + TC.paperLine, paddingTop: 4, color: Number(s.dues) > 0 ? TC.stamp : TC.success }}><span>Baqaya</span><span className="rb-mono">Rs {rbMoney(Math.max(0, Number(s.dues) || 0))}</span></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function RbLedgerTab(p) {
   var t = p.t;
   var a = React.useState(function () { return rbUiGet("ledgerSec", "customer") || "customer"; }), sec = a[0], setSec = a[1];
@@ -5667,7 +5751,7 @@ function RbLedgerTab(p) {
   if (qk) list = list.filter(function (x) { return String(x.name).toLowerCase().indexOf(qk) >= 0 || String(x.sub).indexOf(q.trim()) >= 0; });
   list.sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
   var cur = null; list.forEach(function (x) { if (x.key === openKey) cur = x; });
-  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["stock", "Stock"], ["income", "Income / Kharcha"], ["party", "Dusri factory"]];
+  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["bills", "Bill / Wasooli"], ["stock", "Stock"], ["income", "Income / Kharcha"], ["party", "Dusri factory"]];
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber, marginBottom: 10 }}>Ledger</div>
@@ -5675,6 +5759,7 @@ function RbLedgerTab(p) {
         {tabs.map(function (o) { var on = sec === o[0]; return <button key={o[0]} onClick={function () { pick(o[0]); }} style={{ flex: "1 1 30%", padding: "9px 6px", borderRadius: 8, border: "2px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#A39C8A", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{o[1]}</button>; })}
       </div>
       {sec === "income" ? <RbIncomeExpense t={t} all={p.personAll} /> : null}
+      {sec === "bills" ? <RbBillWhoLedger sales={p.sales} /> : null}
       {sec === "party" ? <RbPartyModal t={t} parties={p.parties || []} partyLog={p.partyLog || []} variantsFor={p.variantsFor} remainingFor={p.remainingFor} onAddParty={p.onAddParty} onAddEntry={p.onAddPartyEntry} onClose={function () { pick("customer"); }} /> : null}
       {sec === "people" ? <RbPersonLedgerModal t={t} all={p.personAll} onClose={function () { pick("customer"); }} /> : null}
       {sec === "stock" ? (
