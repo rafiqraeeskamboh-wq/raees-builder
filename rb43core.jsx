@@ -81,6 +81,21 @@ function isoOf(d) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 function rbToday() { return isoOf(new Date()); }
+/* User ek bill sirf ek dafa, aur sirf usi din (bill ki tareekh = aaj) edit kar sakta hai. Admin hamesha. */
+function rbUserEditOk(sale, role, permissions) {
+  if (!sale || role !== "accountant" || sale.isOpening) return false;
+  if (hasPerm(role, permissions, "editSale")) return false; /* poori ijazat alag hai */
+  return String(sale.date || "") === rbToday() && !sale.userEdited;
+}
+function rbSaleSnap(s) {
+  if (!s) return null;
+  return { date: s.date, customerName: s.customerName, totalBill: Number(s.totalBill) || 0, discount: Number(s.discount) || 0, advance: Number(s.advance) || 0, dues: Number(s.dues) || 0,
+    items: (s.items || []).map(function (it) { return { desc: it.desc || "", category: it.category, variant: it.variant, qty: it.qty, length: it.length || "", width: it.width || "", sqft: it.sqft || 0, rate: it.rate, amount: Number(it.amount) || 0 }; }) };
+}
+function rbGpSnap(gatePasses, saleId) {
+  return (gatePasses || []).filter(function (g) { return g && g.saleId === saleId; }).sort(function (a, b) { return (Number(a.trip) || 1) - (Number(b.trip) || 1); })
+    .map(function (g) { return { no: rbGpNo(g), date: g.date, items: (g.items || []).map(function (it) { return { desc: it.desc || "", variant: it.variant, qty: it.qty }; }) }; });
+}
 function rbUid() { return Math.random().toString(36).slice(2, 10); }
 function rbDate(d) {
   var s = String(d || "");

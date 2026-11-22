@@ -41,7 +41,8 @@ function BillModal(p) {
       return before ? n + Math.max(0, Number(x.dues) || 0) : n;
     }, 0);
   })();
-  var canEdit = hasPerm(role, permissions, "editSale"); /* cash bill bhi edit ho sakta hai (Admin) */
+  var userOnce = rbUserEditOk(sale, role, permissions);
+  var canEdit = hasPerm(role, permissions, "editSale") || userOnce; /* cash bill bhi edit ho sakta hai (Admin); User: usi din ek dafa */
   var headers = isCash
     ? [t("sr"), t("description"), t("qty"), t("rate"), t("amount")]
     : [t("sr"), t("description"), t("qty"), t("length"), t("width"), t("sqft"), t("rate"), t("amount")];
@@ -90,7 +91,7 @@ function BillModal(p) {
             ) : null}
             {canEdit ? (
               <button onClick={function () { onEdit(sale); }} style={{ background: "transparent", border: "1.5px solid " + TC.amber, color: TC.amber, padding: "6px 12px", borderRadius: 7, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
-                <Ico name="pencil" size={13} /> {t("edit")}
+                <Ico name="pencil" size={13} /> {t("edit")}{userOnce ? " (sirf 1 dafa)" : ""}
               </button>
             ) : null}
             <button onClick={function () { window.print(); }} style={{ background: TC.stamp, border: "none", color: TC.cream, padding: "7px 14px", borderRadius: 7, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>
@@ -1149,6 +1150,7 @@ function RaeesBuilderApp() {
   var sa = React.useState(function () { return rbGet("sales", []); }), sales = sa[0], setSales = sa[1];
   var ns = React.useState(function () { return rbGet("next-serial", 1); }), nextSerial = ns[0], setNextSerial = ns[1];
   var gpS = React.useState(function () { return rbGet("gate-passes", []); }), gatePasses = gpS[0], setGatePasses = gpS[1];
+  var eaS = React.useState(function () { return rbGet("edit-alerts", []); }), editAlerts = eaS[0], setEditAlerts = eaS[1];
   var wl = React.useState(function () { return rbGet("wastage-log", []); }), wastageLog = wl[0], setWastageLog = wl[1];
   var cl = React.useState(function () { return rbGet("conversion-log", []); }), conversionLog = cl[0], setConversionLog = cl[1];
   var cv = React.useState(function () { return rbGet("custom-variants", { garden: [], slab: [] }); }), customVariants = cv[0], setCustomVariants = cv[1];
@@ -1276,6 +1278,16 @@ function RaeesBuilderApp() {
   React.useEffect(function () { rbSet("sales", sales); }, [sales]);
   React.useEffect(function () { rbSet("next-serial", nextSerial); }, [nextSerial]);
   React.useEffect(function () { rbSet("gate-passes", gatePasses); }, [gatePasses]);
+  React.useEffect(function () { rbSet("edit-alerts", editAlerts); }, [editAlerts]);
+  /* User ke bill edit ke baad "ab" wala gate pass bhi alert mein likh do */
+  React.useEffect(function () {
+    if (!editAlerts.some(function (a) { return a && a.afterGps === null; })) return;
+    setEditAlerts(function (prev) { return prev.map(function (a) { return a && a.afterGps === null ? Object.assign({}, a, { afterGps: rbGpSnap(gatePasses, a.saleId) }) : a; }); });
+  }, [gatePasses, editAlerts]);
+  function seenEditAlert(id) {
+    if (role !== "admin") return;
+    setEditAlerts(function (prev) { return prev.map(function (a) { return a.id === id ? Object.assign({}, a, { seen: true, seenBy: rbSessionName() || (rbIsSuper() ? RB_SUPER_NAME : "Admin"), seenAt: new Date().toISOString() }) : a; }); });
+  }
   React.useEffect(function () { rbSet("wastage-log", wastageLog); }, [wastageLog]);
   React.useEffect(function () { rbSet("conversion-log", conversionLog); }, [conversionLog]);
   React.useEffect(function () { rbSet("custom-variants", customVariants); }, [customVariants]);
@@ -2677,9 +2689,12 @@ function editStockEntry(id, qty, date) {
     }
     if (sale.editId) {
       var updated = null;
+      var orig0 = sales.filter(function (s) { return s.id === sale.editId; })[0];
+      var userOnceEdit = role === "accountant" && !hasPerm(role, permissions, "editSale");
+      if (userOnceEdit && !rbUserEditOk(orig0, role, permissions)) { showToast("User bill sirf ek dafa aur usi din edit kar sakta hai"); setEditingSale(null); return; }
       var nextSales = sales.map(function (s) {
         if (s.id !== sale.editId) return s;
-        updated = Object.assign({}, s, {
+        updated = Object.assign({}, s, userOnceEdit ? { userEdited: true, userEditedBy: rbSessionName() || "User", userEditedAt: new Date().toISOString() } : {}, {
           customerName: sale.customerName, date: sale.date, items: sale.items, mobile: sale.mobile,
           roofLabourRate: sale.roofLabourRate, labourTotal: sale.labourTotal,
           itemsTotal: sale.itemsTotal, totalBill: sale.totalBill, discount: sale.discount,
@@ -2781,6 +2796,12 @@ function editStockEntry(id, qty, date) {
         }
         setViewingBill(updated);
         logActivity("sale_edited", updated.customerName + " — #" + updated.serial);
+        if (userOnceEdit && orig0) {
+          /* Admin ko alert: pehle ye bill aur gate pass tha, ab ye ho gaya */
+          var alertNew = { id: rbUid(), saleId: updated.id, serial: updated.serial, customerName: updated.customerName, by: role, byName: rbSessionName() || "User", at: new Date().toISOString(),
+            before: rbSaleSnap(orig0), beforeGps: rbGpSnap(gatePasses, orig0.id), after: rbSaleSnap(updated), afterGps: null, seen: false };
+          setEditAlerts(function (prev) { return [alertNew].concat(prev || []).slice(0, 300); });
+        }
       }
       return;
     }
@@ -2975,6 +2996,7 @@ function editStockEntry(id, qty, date) {
       <FontLoader />
       <div style={{ maxWidth: RB_W, margin: "0 auto", minHeight: "100vh", background: TC.appBg, display: "flex", flexDirection: "column" }}>
         <AppHeader t={t} role={role} onLogout={security.adminPin ? logoutSession : null} />
+        {role === "admin" ? <RbEditAlerts alerts={editAlerts} onSeen={seenEditAlert} /> : null}
         <div style={{ flex: 1, paddingBottom: 88 }}>{body}</div>
         <TabBar t={t} tab={tab} setTab={goTab} role={role} permissions={permissions} duesCount={duesCount} />
       </div>

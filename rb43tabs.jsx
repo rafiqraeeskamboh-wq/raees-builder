@@ -4421,6 +4421,70 @@ function RbMissingSuppliers() {
     </div>
   );
 }
+/* Admin ke liye alert: User ne bill edit kiya - pehle kya tha, ab kya hai (bill + gate pass) */
+function RbEditAlerts(p) {
+  var list = (p.alerts || []).filter(function (a) { return a && !a.seen; });
+  var o = React.useState(false), open = o[0], setOpen = o[1];
+  if (!list.length) return null;
+  function itemLine(it) {
+    var size = (it.length || it.width) ? (it.length || "") + (it.width ? " \u00d7 " + it.width : "") : "";
+    return (it.desc || "Item") + " \u00b7 " + (it.qty || 0) + (size ? " \u00b7 " + size : "") + (Number(it.rate) ? " \u00d7 " + rbMoney(it.rate) : "");
+  }
+  function side(title, color, snap, gps) {
+    return (
+      <div style={{ flex: 1, minWidth: 240, background: TC.paper, borderRadius: 10, padding: 10, borderTop: "4px solid " + color }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: color, marginBottom: 6, letterSpacing: 0.4 }}>{title}</div>
+        {snap ? (
+          <div>
+            <div style={{ fontSize: 10.5, color: TC.inkSoft, marginBottom: 4 }}>Bill · {rbDate(snap.date)} · {snap.customerName}</div>
+            {(snap.items || []).map(function (it, i) {
+              return (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, color: TC.ink, padding: "3px 0", borderBottom: "1px dashed " + TC.paperLine }}>
+                  <span style={{ minWidth: 0 }}>{itemLine(it)}</span><span className="rb-mono" style={{ fontWeight: 700, whiteSpace: "nowrap" }}>Rs {rbMoney(it.amount)}</span>
+                </div>
+              );
+            })}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 800, color: TC.ink, marginTop: 5 }}><span>Total bill</span><span className="rb-mono">Rs {rbMoney(snap.totalBill)}</span></div>
+            {snap.discount ? <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: TC.inkSoft }}><span>Discount</span><span className="rb-mono">Rs {rbMoney(snap.discount)}</span></div> : null}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: TC.inkSoft }}><span>Wasooli</span><span className="rb-mono">Rs {rbMoney(snap.advance)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: TC.inkSoft }}><span>Baqaya</span><span className="rb-mono">Rs {rbMoney(snap.dues)}</span></div>
+          </div>
+        ) : null}
+        <div style={{ fontSize: 10.5, fontWeight: 800, color: TC.inkSoft, margin: "8px 0 3px" }}>GATE PASS</div>
+        {gps === null ? <div style={{ fontSize: 11, color: TC.inkSoft }}>...</div> : (gps || []).length === 0 ? <div style={{ fontSize: 11, color: TC.inkSoft }}>Koi gate pass nahi</div> : (gps || []).map(function (g, i) {
+          return (
+            <div key={i} style={{ fontSize: 11, color: TC.ink, marginBottom: 4 }}>
+              <b>#{g.no}</b> · {rbDate(g.date)}
+              {(g.items || []).map(function (it, j) { return <div key={j} style={{ paddingLeft: 8 }}>{(it.desc || it.variant || "") + " \u00b7 " + (it.qty || 0)}</div>; })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return (
+    <div style={{ margin: "10px 12px 0", background: "#3A2A22", border: "2px solid " + TC.stamp, borderRadius: 12, padding: 10 }}>
+      <button onClick={function () { setOpen(!open); }} style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 13, color: TC.cream, fontWeight: 800, textAlign: "left" }}>{"\u26a0"} Alert: User ne {list.length} bill edit {list.length > 1 ? "kiye" : "kiya"}</span>
+        <span style={{ fontSize: 12, color: "#E8C9B8", fontWeight: 700 }}>{open ? "Band karein" : "Dekhein"}</span>
+      </button>
+      {open ? list.map(function (a) {
+        var tm = String(a.at || "");
+        return (
+          <div key={a.id} style={{ marginTop: 10, background: TC.appBg2, borderRadius: 10, padding: 10 }}>
+            <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 800, marginBottom: 2 }}>Bill #{a.serial} · {a.customerName}</div>
+            <div style={{ fontSize: 11, color: "#E8C9B8", marginBottom: 8 }}>User {a.byName} ne edit kiya · {rbDate(tm.slice(0, 10))} {tm ? new Date(tm).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {side("PEHLE (edit se pehle)", TC.concrete, a.before, a.beforeGps)}
+              {side("AB (edit ke baad)", TC.stamp, a.after, a.afterGps)}
+            </div>
+            <button onClick={function () { p.onSeen(a.id); }} style={{ width: "100%", marginTop: 8, padding: "10px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>Dekh liya</button>
+          </div>
+        );
+      }) : null}
+    </div>
+  );
+}
 function RbSuperDataTools(p) {
   var a = React.useState(0), step = a[0], setStep = a[1];
   var b = React.useState(""), pin1 = b[0], setPin1 = b[1];
