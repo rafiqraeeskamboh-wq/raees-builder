@@ -4283,7 +4283,6 @@ var RB_CLEAR_PARTS = [
   ["baqaya", "Baqaya", "customers ka purana baqi"],
   ["advance", "Advance", "advance receipts"],
   ["stock", "Stock", "stock nil - opening, stock entries, wastage, conversion"],
-  ["supplier", "Supplier", "is store ki khareedari aur payments (supplier ke khate nahi mitte)"],
   ["labour", "Labour", "mazdoor, kaam, payments"],
   ["daybook", "Day Book", "kharche, cash transfer, roz ka verify"],
   ["party", "Dusri factory", "factory ke naam aur slab / garder len-den"],
@@ -4319,12 +4318,7 @@ function rbClearStoreParts(st, parts) {
     }
     if (!on.party) put("party-log", get("party-log", []).map(function (x) { return Object.assign({}, x, { stockCut: true }); }));
   }
-  if (on.supplier) {
-    var pur = get("purchases", []).filter(function (x) { return stOf(x) !== st; });
-    var pay = get("supplier-payments", []).filter(function (x) { return stOf(x) !== st; });
-    /* supplier ka khata (naam, purana baqi) dono store ka sanjha hai - clear par kabhi nahi mitta */
-    put("purchases", pur); put("supplier-payments", pay);
-  }
+  /* Supplier ka koi data (khata, kharid, adaigi) - Himmat ho ya Rangpur - clear data se kabhi nahi mitta */
   if (on.labour) { put("labourers", []); put("labour-work", []); put("labour-payments", []); }
   if (on.daybook) {
     put("expenses", []); put("day-verify", {}); put("cash-adjust", []);
@@ -4352,26 +4346,40 @@ function rbDownloadSafeBackup(pin, done) {
   }).catch(function () { done("Backup nahi ban saka"); });
 }
 function rbDownloadBackup(b) { try { var blob = new Blob([JSON.stringify(b)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "raees-backup-" + b.store + "-" + String(b.at).slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { window.alert("Download nahi ho saka"); } }
-/* is phone ke backups mein jo supplier hain magar ab list mein nahi - unhein wapas lane ke liye */
-function rbMissingSuppliers() {
-  var cur = {}; (rbGet("suppliers", []) || []).forEach(function (s) { if (s && s.id) cur[s.id] = 1; });
+/* is phone ke backups mein jo supplier / kharid / adaigi hain magar ab app mein nahi - unhein wapas lane ke liye */
+function rbMissingFromBackups(key) {
+  var cur = {}; (rbGet(key, []) || []).forEach(function (s) { if (s && s.id) cur[s.id] = 1; });
   var found = {};
-  function take(arr) { (arr || []).forEach(function (s) { if (s && s.id && s.name && !cur[s.id] && !found[s.id]) found[s.id] = s; }); }
+  function take(arr) { (Array.isArray(arr) ? arr : []).forEach(function (s) { if (s && s.id && !cur[s.id] && !found[s.id]) found[s.id] = s; }); }
   function parse(v) { try { return typeof v === "string" ? JSON.parse(v) : v; } catch (e) { return null; } }
   try {
     Object.keys(localStorage).forEach(function (k) {
       if (k.indexOf("raees-backup-") !== 0) return;
       var b = parse(localStorage.getItem(k)); if (!b) return;
-      if (b.data && b.data.suppliers) take(parse(b.data.suppliers));
-      if (b.stores) Object.keys(b.stores).forEach(function (st) { var d = b.stores[st]; if (d && d.suppliers) take(parse(d.suppliers)); });
+      if (b.data && b.data[key]) take(parse(b.data[key]));
+      if (b.stores) Object.keys(b.stores).forEach(function (st) { var d = b.stores[st]; if (d && d[key]) take(parse(d[key])); });
     });
   } catch (e) {}
   return Object.keys(found).map(function (id) { return found[id]; });
 }
+function rbMissingSuppliers() { return rbMissingFromBackups("suppliers").filter(function (s) { return s.name; }); }
 function RbMissingSuppliers() {
   var a = React.useState(function () { return rbMissingSuppliers(); }), list = a[0], setList = a[1];
   var b = React.useState(""), msg = b[0], setMsg = b[1];
-  if (!list.length && !msg) return null;
+  var c = React.useState(function () { return rbMissingFromBackups("purchases").map(function (x) { return { key: "purchases", x: x }; }).concat(rbMissingFromBackups("supplier-payments").map(function (x) { return { key: "supplier-payments", x: x }; })); }), ents = c[0];
+  var supName = {}; (rbGet("suppliers", []) || []).concat(list).forEach(function (s) { if (s && s.id) supName[s.id] = s.name; });
+  if (!list.length && !ents.length && !msg) return null;
+  function bringEntry(it) {
+    var x = it.x, buy = it.key === "purchases";
+    var nm = supName[x.supplierId] || "Supplier";
+    if (!window.confirm(nm + ": " + (buy ? "kharid" : "adaigi") + " Rs " + rbMoney(x.amount) + " (" + rbDate(x.date) + ") wapas layein?")) return;
+    var cur = rbGet(it.key, []) || [];
+    if (cur.some(function (y) { return y && y.id === x.id; })) { setMsg("Ye pehle se maujood hai"); return; }
+    window.rbClearing = true;
+    try { localStorage.setItem(rbKey(it.key), JSON.stringify([x].concat(cur))); } catch (e) { window.rbClearing = false; setMsg("Wapas nahi aa saka"); return; }
+    setMsg("Wapas aa gaya. App dobara khul rahi hai...");
+    setTimeout(function () { location.reload(); }, 2500);
+  }
   function bring(s) {
     if (!window.confirm(s.name + " ka khata (purana baqi Rs " + rbMoney(s.opening) + ") wapas layein?")) return;
     var cur = rbGet("suppliers", []) || [];
@@ -4383,7 +4391,7 @@ function RbMissingSuppliers() {
   }
   return (
     <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
-      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Ghaib supplier wapas layein</div>
+      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Ghaib supplier data wapas layein</div>
       <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Ye supplier pehle the (backup mein hain) magar ab list mein nahi. Wapas lane se kuch nahi mitta.</div>
       {list.map(function (s) {
         return (
@@ -4393,6 +4401,19 @@ function RbMissingSuppliers() {
               <div style={{ fontSize: 11, color: "#A39C8A" }}>Purana baqi Rs {rbMoney(s.opening)}{s.openingDate ? " · " + rbDate(s.openingDate) : ""}</div>
             </div>
             <button onClick={function () { bring(s); }} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Wapas layein</button>
+          </div>
+        );
+      })}
+      {ents.length ? <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, margin: "10px 0 6px" }}>Ghaib supplier entries (kharid / adaigi)</div> : null}
+      {ents.map(function (it) {
+        var x = it.x, buy = it.key === "purchases";
+        return (
+          <div key={it.key + x.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#2A2620", borderRadius: 8, padding: "8px 10px", marginBottom: 6, borderLeft: "4px solid " + (buy ? TC.garden : TC.stamp) }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700 }}>{supName[x.supplierId] || "Supplier"} · {buy ? "Kharid" : "Adaigi"} Rs {rbMoney(x.amount)}</div>
+              <div style={{ fontSize: 11, color: "#A39C8A" }}>{rbDate(x.date)}{x.store ? " · " + (x.store === "rangpur" ? "Rangpur" : "Himmat") : ""}{buy && x.materialName ? " · " + rbQtyOf(x) + " " + (x.unit || "") + " " + x.materialName : ""}{!buy && x.note ? " · " + x.note : ""}</div>
+            </div>
+            <button onClick={function () { bringEntry(it); }} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Wapas layein</button>
           </div>
         );
       })}
