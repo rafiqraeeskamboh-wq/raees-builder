@@ -700,27 +700,22 @@ function RbChhatFotEdit(p) {
   var over = inf.bill !== null && cur > inf.bill + 0.001;
   var isAdmin = api.role === "admin";
   return (
-    <div className="no-print" data-html2canvas-ignore="true" onClick={function (e) { e.stopPropagation(); }} style={{ marginTop: 5, padding: "6px 8px", borderRadius: 7, background: "#EEF3FB", border: "1px solid #C7D3EA", fontFamily: "Arial, sans-serif", whiteSpace: "normal" }}>
-      <div style={{ fontSize: 10.5, color: "#1F3F8A", fontWeight: 700 }}>Chhat · Bill #{s.serial} · {s.customerName}</div>
-      <div style={{ fontSize: 10.5, color: "#333", lineHeight: 1.5 }}>
-        {inf.bill !== null ? <div>Bill fotwari: <b>{rbMoney2(inf.bill)} sq ft</b></div> : null}
-        <div>Gate pass ki slab: <b>{rbMoney2(inf.auto)} sq ft</b></div>
-        <div>Labour chhat fotwari: <b style={{ color: over ? "#B0262B" : "#1E7A3C" }}>{rbMoney2(cur)} sq ft</b> {has ? "(set: " + (s.chhatFotRole === "admin" ? "Admin " : "User ") + (s.chhatFotBy || "") + (s.chhatFotAt ? ", " + rbDate(String(s.chhatFotAt).slice(0, 10)) : "") + ")" : "(gate pass se)"}</div>
-        {inf.bill !== null ? <div style={{ color: over ? "#B0262B" : "#1E7A3C", fontWeight: 700 }}>{over ? "Labour fot bill se ziada! " : "Farq: "}{rbMoney2(Math.abs(inf.bill - cur))} sq ft</div> : null}
+    <div className="no-print" data-html2canvas-ignore="true" onClick={function (e) { e.stopPropagation(); }} style={{ marginTop: 4, fontFamily: "Arial, sans-serif", whiteSpace: "normal" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: has ? 10 : 12.5, color: has ? "#888" : "#222", fontWeight: has ? 500 : 800 }}>Slab fot: {rbMoney2(inf.auto)}</span>
+        {has ? <span style={{ fontSize: 14.5, color: over ? "#B0262B" : "#1F3F8A", fontWeight: 800 }}>Edit fot: {rbMoney2(s.chhatFot)}</span> : null}
+        {open ? null : <button type="button" onClick={function () { setVal(has ? String(s.chhatFot) : String(inf.auto || "")); setOpen(true); }} style={{ padding: "3px 9px", borderRadius: 6, border: "none", background: "#1F3F8A", color: "#fff", fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>Edit</button>}
       </div>
       {open ? (
         <div style={{ marginTop: 5 }}>
           <div style={{ display: "flex", gap: 5 }}>
-            <input type="number" inputMode="decimal" value={val} onChange={function (e) { setVal(e.target.value); }} placeholder="Chhat fotwari sq ft" style={{ flex: 1, minWidth: 0, padding: "7px 8px", borderRadius: 6, border: "1.5px solid #9DB0D6", fontSize: 14, fontWeight: 700, color: "#111", background: "#fff" }} />
+            <input type="number" inputMode="decimal" value={val} onChange={function (e) { setVal(e.target.value); }} placeholder="Edit fot" style={{ flex: 1, minWidth: 0, padding: "7px 8px", borderRadius: 6, border: "1.5px solid #9DB0D6", fontSize: 14, fontWeight: 700, color: "#111", background: "#fff" }} />
             <button type="button" disabled={!(Number(val) > 0)} onClick={function () { api.set(s.id, val); setOpen(false); }} style={{ padding: "7px 12px", borderRadius: 6, border: "none", background: Number(val) > 0 ? "#1E7A3C" : "#AAB3C2", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>Save</button>
             <button type="button" onClick={function () { setOpen(false); }} style={{ padding: "7px 9px", borderRadius: 6, border: "1px solid #9DB0D6", background: "#fff", color: "#1F3F8A", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>Band</button>
           </div>
-          <div style={{ fontSize: 10, color: "#555", marginTop: 3 }}>Labour ki chhat fitting mazdoori isi fotwari par banegi.{isAdmin ? "" : " Admin ko alert jaye ga."}</div>
-          {has && isAdmin ? <button type="button" onClick={function () { api.set(s.id, ""); setOpen(false); }} style={{ marginTop: 4, padding: "5px 9px", borderRadius: 6, border: "1px solid #888", background: "#fff", color: "#444", fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>Gate pass wali fotwari par wapas ({rbMoney2(inf.auto)} sq ft)</button> : null}
+          {has && isAdmin ? <button type="button" onClick={function () { api.set(s.id, ""); setOpen(false); }} style={{ marginTop: 4, padding: "5px 9px", borderRadius: 6, border: "1px solid #888", background: "#fff", color: "#444", fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>Edit fot hatayein</button> : null}
         </div>
-      ) : (
-        <button type="button" onClick={function () { setVal(has ? String(s.chhatFot) : String(inf.auto || "")); setOpen(true); }} style={{ marginTop: 4, padding: "5px 10px", borderRadius: 6, border: "none", background: "#1F3F8A", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Chhat fotwari edit</button>
-      )}
+      ) : null}
     </div>
   );
 }
