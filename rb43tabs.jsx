@@ -2237,12 +2237,14 @@ function RbLabourSimple(p) {
   var d = React.useState(""), note = d[0], setNote = d[1];
   var e = React.useState(null), editPay = e[0], setEditPay = e[1];
   var f = React.useState(null), editWork = f[0], setEditWork = f[1];
-  function open(m) { setMode(mode === m ? "" : m); setAmt(""); setNote(""); setDt(rbToday()); setEditPay(null); }
+  var g = React.useState("advance"), advType = g[0], setAdvType = g[1];
+  function open(m) { setMode(mode === m ? "" : m); setAmt(""); setNote(""); setDt(rbToday()); setEditPay(null); setAdvType("advance"); }
   function save() {
     var v = Number(amt) || 0; if (!(v > 0) || !note.trim()) return;
     if (editPay) { p.onEditPayment(editPay.id, v, dt, note.trim()); setEditPay(null); }
     else if (mode === "pay") p.onAddPayment(lb.id, v, dt, note.trim(), "wage");
     else if (mode === "work") p.onAddWork(lb.id, "custom", 0, 0, v, dt, note.trim(), 0);
+    else if (mode === "adv") { if (advType === "advCut" && v > (Number(tot.advBal) || 0)) return; p.onAddPayment(lb.id, v, dt, note.trim(), advType); }
     setMode(""); setAmt(""); setNote("");
   }
   /* ledger: purana baqi, phir har kaam (+) aur har adaigi (-) tareekh se, saath baqi */
@@ -2261,8 +2263,12 @@ function RbLabourSimple(p) {
   var fld = { width: "100%", boxSizing: "border-box", padding: "11px 12px", borderRadius: 9, border: "1.5px solid #4A4436", background: "#1C1A15", color: TC.cream, fontSize: 15, outline: "none" };
   var lbl = { fontSize: 10, color: "#A39C8A", fontWeight: 700, marginBottom: 3 };
   var sb = { padding: "3px 8px", borderRadius: 5, fontSize: 10.5, fontWeight: 700, cursor: "pointer", background: "#fff" };
-  var formOn = mode === "pay" || mode === "work" || !!editPay;
-  var okF = Number(amt) > 0 && !!note.trim();
+  var formOn = mode === "pay" || mode === "work" || mode === "adv" || !!editPay;
+  var okF = Number(amt) > 0 && !!note.trim() && !(mode === "adv" && advType === "advCut" && Number(amt) > (Number(tot.advBal) || 0));
+  /* bara advance ka hisab: diya (+), kata (-), theek kiya (+/-) */
+  var advBal0 = 0;
+  var advRows = (tot.advEntries || []).slice().sort(function (m, n) { var c1 = String(m.date || "").localeCompare(String(n.date || "")); return c1 !== 0 ? c1 : String(m.createdAt || "").localeCompare(String(n.createdAt || "")); })
+    .map(function (x) { var v = Number(x.amount) || 0; advBal0 += x.type === "advCut" ? -v : v; return { x: x, bal: advBal0 }; });
   var c0 = { fontSize: 11.5, color: TC.ink, padding: "8px 6px", borderBottom: "1px solid #E6DCC0", verticalAlign: "top" };
   var cr = Object.assign({}, c0, { textAlign: "right", whiteSpace: "nowrap" });
   var hd = { fontSize: 9.5, color: "#7A7260", fontWeight: 800, padding: "7px 6px", background: "#EFE6CC", whiteSpace: "nowrap" };
@@ -2284,10 +2290,17 @@ function RbLabourSimple(p) {
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           <button onClick={function () { open("pay"); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: mode === "pay" ? "#7E2A20" : TC.stamp, color: TC.cream, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Wasooli</button>
           <button onClick={function () { open("work"); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: mode === "work" ? TC.gardenDark : TC.garden, color: TC.cream, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>+ Extra kaam</button>
+          <button onClick={function () { open("adv"); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: mode === "adv" ? "#5A3A0E" : "#7A4E12", color: TC.cream, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Bara advance</button>
         </div>
         {formOn ? (
           <div style={{ marginTop: 12, background: "#1F1C16", borderRadius: 11, padding: 10, border: "1px solid " + (mode === "work" ? TC.garden : TC.stamp) }}>
-            <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 800, marginBottom: 8 }}>{editPay ? "Wasooli edit" : (mode === "pay" ? "Wasooli (labour ko di gayi raqam)" : "Extra kaam (mazdoori jurh jaye gi)")}</div>
+            <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 800, marginBottom: 8 }}>{editPay ? "Edit" : (mode === "pay" ? "Wasooli (labour ko di gayi raqam)" : (mode === "adv" ? "Bara advance" : "Extra kaam (mazdoori jurh jaye gi)"))}</div>
+            {mode === "adv" ? (
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                {[["advance", "Advance diya"], ["advCut", "Advance se kata"]].map(function (o) { var on = advType === o[0]; return <button key={o[0]} type="button" onClick={function () { setAdvType(o[0]); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1.5px solid " + (on ? "#D9A441" : "#4A4436"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>{o[1]}</button>; })}
+              </div>
+            ) : null}
+            {mode === "adv" ? <div style={{ fontSize: 11, color: "#E6C875", marginBottom: 6 }}>Bara advance baqi: Rs {rbMoney(tot.advBal || 0)}{advType === "advCut" ? " - is se zyada nahi kat sakta" : ""}</div> : null}
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>RAQAM (Rs)</div><input type="number" inputMode="numeric" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="0" style={Object.assign({}, fld, { fontWeight: 800, fontSize: 17 })} /></div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>TAREEKH</div><input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={fld} /></div>
@@ -2296,7 +2309,7 @@ function RbLabourSimple(p) {
             <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder={mode === "work" ? "Jaise: maal utara, safai" : "Jaise: hafta, naqad"} style={Object.assign({}, fld, { marginBottom: 8, border: "1.5px solid " + (note.trim() ? "#4A4436" : TC.stamp) })} />
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={function () { setMode(""); setEditPay(null); }} style={{ flex: 1, padding: "11px", borderRadius: 9, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-              <button disabled={!okF} onClick={save} style={{ flex: 2, padding: "11px", borderRadius: 9, border: "none", background: okF ? (mode === "work" ? TC.garden : TC.stamp) : "#4A4638", color: TC.cream, fontWeight: 800, fontSize: 13.5, cursor: okF ? "pointer" : "not-allowed" }}>Save</button>
+              <button disabled={!okF} onClick={save} style={{ flex: 2, padding: "11px", borderRadius: 9, border: "none", background: okF ? (mode === "work" ? TC.garden : (mode === "adv" ? "#7A4E12" : TC.stamp)) : "#4A4638", color: TC.cream, fontWeight: 800, fontSize: 13.5, cursor: okF ? "pointer" : "not-allowed" }}>Save</button>
             </div>
           </div>
         ) : null}
@@ -2343,6 +2356,42 @@ function RbLabourSimple(p) {
           </tbody>
         </table>
       </div>
+      {advRows.length ? (
+        <div style={{ background: TC.paper, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.22)", marginTop: 12 }}>
+          <div style={{ padding: "10px 12px", fontSize: 14, fontWeight: 900, color: TC.ink, display: "flex", justifyContent: "space-between" }}><span>Bara advance</span><span className="rb-mono" style={{ color: "#7A4E12" }}>Baqi Rs {rbMoney(tot.advBal || 0)}</span></div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>TAREEKH</th>
+              <th style={Object.assign({}, hd, { textAlign: "left" })}>TAFSEEL</th>
+              <th style={Object.assign({}, hd, { textAlign: "right" })}>DIYA</th>
+              <th style={Object.assign({}, hd, { textAlign: "right" })}>KATA</th>
+              <th style={Object.assign({}, hd, { textAlign: "right" })}>BAQI</th>
+            </tr></thead>
+            <tbody>
+              {advRows.map(function (r, i) {
+                var x = r.x, cut = x.type === "advCut", adj = x.type === "advAdj", v = Number(x.amount) || 0;
+                return (
+                  <tr key={x.id} style={{ background: i % 2 ? "#F6F0DE" : "transparent" }}>
+                    <td style={c0}>{rbDate(x.date)}</td>
+                    <td style={Object.assign({}, c0, { wordBreak: "break-word", fontWeight: 600 })}>
+                      {(cut ? "Advance se kata" : (adj ? "Advance theek kiya" : "Advance diya")) + (x.note ? " \u00b7 " + x.note : "")}
+                      {p.isAdmin ? (
+                        <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                          {!adj ? <button onClick={function () { setMode(""); setEditPay(x); setAmt(String(x.amount || "")); setDt(x.date || rbToday()); setNote(x.note || ""); try { window.scrollTo(0, 0); } catch (er) {} }} style={Object.assign({}, sb, { border: "1px solid #2A4FC9", color: "#2A4FC9" })}>Edit</button> : null}
+                          <button onClick={function () { if (window.confirm("Ye advance entry delete karein? Rs " + rbMoney(v) + " (" + rbDate(x.date) + ")")) p.onDeleteEntry("pay", x.id); }} style={Object.assign({}, sb, { border: "1px solid #C0262D", color: "#C0262D" })}>Delete</button>
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700 })}>{!cut && v > 0 ? rbMoney(v) : ""}</td>
+                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 700, color: TC.success })}>{cut ? rbMoney(v) : (v < 0 ? rbMoney(-v) : "")}</td>
+                    <td className="rb-mono" style={Object.assign({}, cr, { fontWeight: 800, color: "#7A4E12" })}>{rbMoney(r.bal)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
       {editWork ? <LabourWorkEditModal t={t} entry={editWork} labourers={p.labourers} onSave={p.onEditWork} onClose={function () { setEditWork(null); }} /> : null}
     </div>
   );
@@ -2678,37 +2727,29 @@ function LabourTab(p) {
         </div>
       ) : null}
 
-      {labourers.length > 0 ? (
-        <div style={{ background: TC.paper, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-          <div className="rb-display" style={{ fontSize: 11.5, fontWeight: 700, color: TC.ink, marginBottom: 6 }}>{t("labourSummaryTitle")}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
-            <StatBlock label={t("labourAllWork")} value={"Rs " + rbMoney(sumWork)} bold />
-            <StatBlock label={t("labourAllPaid")} value={"Rs " + rbMoney(sumPaid)} bold color={TC.success} />
-            <StatBlock label={t("labourAllDues")} value={"Rs " + rbMoney(sumDues)} bold color={sumDues > 0 ? TC.stamp : TC.success} />
-          </div>
-          {Object.keys(sumKind).length > 0 ? (
-            <div style={{ marginTop: 6, borderTop: "1px dashed " + TC.paperLine, paddingTop: 5 }}>
-              {LABOUR_KINDS.map(function (k) {
-                var v = sumKind[k.id];
-                if (!v) return null;
-                return (
-                  <div key={k.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, padding: "1px 0" }}>
-                    <span style={{ color: TC.inkSoft }}>{t(k.labelKey) + " · " + Math.round(v.qty * 100) / 100 + " " + t(k.unitKey)}</span>
-                    <span className="rb-mono" style={{ fontWeight: 700, color: TC.ink }}>Rs {rbMoney(v.amount)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {p.isAdmin && sumUnver > 0 ? (
-            <button onClick={function () { p.onVerifyAll(null); }} style={{ width: "100%", marginTop: 8, padding: "8px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontWeight: 700, fontSize: 11.5, cursor: "pointer" }}>{t("labourVerifyAll")} ({sumUnver})</button>
-          ) : null}
+      {labourers.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noLabourers")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+          {labourers.map(function (lb) {
+            var tt = labourTotals(lb.id);
+            var ks = labourKindsOf(lb);
+            return (
+              <div key={lb.id} onClick={function () { setOpenId(lb.id); try { window.scrollTo(0, 0); } catch (e) {} }} style={{ background: TC.paper, borderRadius: 12, padding: "12px 14px", cursor: "pointer", borderLeft: "5px solid " + (tt.dues > 0 ? TC.stamp : TC.success), boxShadow: "0 2px 10px rgba(0,0,0,.22)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: TC.ink }}>{lb.name}</div>
+                  <div style={{ fontSize: 12, color: TC.slab, fontWeight: 700, marginTop: 2 }}>Kaam: {ks.length ? ks.map(function (k) { return t(labourKind(k).labelKey); }).join(", ") : "-"}</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 9.5, color: TC.inkSoft, fontWeight: 700 }}>BAQI</div>
+                  <div className="rb-mono" style={{ fontSize: 15, fontWeight: 900, color: tt.dues > 0 ? TC.stamp : TC.success }}>Rs {rbMoney(tt.dues)}</div>
+                  <div style={{ fontSize: 11, color: TC.slab, fontWeight: 800 }}>Ledger \u203a</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ) : null}
-
-      <RbLabourWeekCard t={t} labourers={labourers} labourTotals={p.labourTotals} isAdmin={p.isAdmin} onPay={p.onAddPayment} onAddWork={p.onAddWork} labourConfig={p.labourConfig} onOpen={function (id) { setOpenId(id); try { window.scrollTo(0, 0); } catch (e) {} }} />
-        {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
-
+      )}
       {adding ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
           <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder={t("labourerName")} style={Object.assign({}, inp, { marginBottom: 6 })} />
@@ -2726,28 +2767,7 @@ function LabourTab(p) {
       ) : (
         <button onClick={function () { setAdding(true); }} style={{ width: "100%", marginBottom: 12, padding: "10px", borderRadius: 8, border: "1.5px dashed " + TC.concrete, background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>+ {t("addLabourer")}</button>
       )}
-      {labourers.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#A39C8A", textAlign: "center", padding: "16px 0" }}>{t("noLabourers")}</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {labourers.map(function (lb) {
-            var tt = labourTotals(lb.id);
-            return (
-              <div key={lb.id} onClick={function () { setOpenId(lb.id); }} style={{ background: TC.paper, borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: TC.ink }}>{lb.name}</span>
-                  <span className="rb-mono" style={{ fontSize: 12, fontWeight: 700, color: tt.dues > 0 ? TC.stamp : TC.success, whiteSpace: "nowrap" }}>Rs {rbMoney(tt.dues)}</span>
-                </div>
-                <div style={{ marginTop: 4 }}><LabourKindTags t={t} kinds={labourKindsOf(lb)} /></div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 4, gap: 8 }}>
-                  <span style={{ color: TC.inkSoft }}>{t("labourWorkTotal")} {rbMoney(tt.work)}</span>
-                  <span style={{ color: TC.inkSoft }}>{t("labourPaidTotal")} {rbMoney(tt.paid)}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {p.isAdmin ? <LabourConfigCard t={t} labourers={labourers} config={p.labourConfig} onSave={p.onSaveConfig} /> : null}
     </InlineShell>
   );
 }
