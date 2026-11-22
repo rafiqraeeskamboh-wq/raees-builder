@@ -1336,7 +1336,8 @@ function RaeesBuilderApp() {
     wastageLog: { list: wastageLog, set: setWastageLog, label: "Wastage" },
     conversionLog: { list: conversionLog, set: setConversionLog, label: "Conversion" },
     returnLog: { list: returnLog, set: setReturnLog, label: "Returns" },
-    materials: { list: materials, set: setMaterials, label: "Materials" }
+    materials: { list: materials, set: setMaterials, label: "Materials" },
+    siteWaste: { list: siteWaste, set: setSiteWaste, label: "Site wastage" }
   };
   var trackPrev = React.useRef(null), trackMute = React.useRef(false);
   React.useEffect(function () {
@@ -1357,7 +1358,7 @@ function RaeesBuilderApp() {
       });
     });
     if (found.length) setTrash(function (tl) { return found.concat(tl || []).slice(0, 500); });
-  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, cashAdjust, parties, partyLog, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials]);
+  }, [sales, stockLog, suppliers, purchases, supplierPayments, advances, expenses, transfers, cashAdjust, parties, partyLog, labourers, labourWork, labourPayments, gatePasses, wastageLog, conversionLog, returnLog, materials, siteWaste]);
   function superSaveRecord(coll, item) {
     if (role !== "admin" || !rbIsSuper() || !RB_COLLS[coll]) return;
     RB_COLLS[coll].set(function (l) { return l.map(function (x) { return x && x.id === item.id ? item : x; }); });
