@@ -1352,46 +1352,98 @@ function SupplierModal(p) {
           )
         ) : null}
 
-        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("buyMaterial")}</div>
-          <div style={{ fontSize: 11, color: "#D8CDA9", fontWeight: 700, marginBottom: 6 }}>Ye maal kis store ka hai? (lazmi)</div>
-          <div style={{ marginBottom: 8 }}><div style={{ display: "flex", gap: 8 }}>{RB_STORES.map(function (st) { var on = pStore === st[0]; return <button key={st[0]} type="button" onClick={function () { setPStore(st[0]); }} style={{ flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{st[1]}</button>; })}</div></div>
-          <select value={pMat} onChange={function (e) { setPMat(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13, marginBottom: 6 }}>
-            {mats.map(function (m) { return <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>; })}
-          </select>
-          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <input type="number" inputMode="numeric" value={pBags} onChange={function (e) { setPBags(e.target.value); }} placeholder={curMat ? curMat.unit : t("qty")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
-            <input type="number" inputMode="numeric" value={pRate} onChange={function (e) { setPRate(e.target.value); }} placeholder={t("rate")} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
-          </div>
-          <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13, marginBottom: 6 }} />
-          <div style={{ fontSize: 10.5, color: "#A39C8A", marginBottom: 6 }}>{t("total")}: <span className="rb-mono" style={{ color: TC.cream, fontWeight: 700 }}>Rs {rbMoney((Number(pBags) || 0) * (Number(pRate) || 0))}</span></div>
-          <button disabled={!(Number(pBags) > 0 && pStore)} onClick={function () { if (!pStore) return; p.onAddPurchase(current.id, pBags, pRate, pDate, pMat, pStore); setPBags(""); setPRate(""); setPStore(""); }} style={{ width: "100%", padding: "9px", borderRadius: 7, border: "none", background: (Number(pBags) > 0 && pStore) ? TC.garden : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(pBags) > 0 ? "pointer" : "not-allowed" }}>{t("buyMaterial")}</button>
-        </div>
+        {(function () {
+          /* ---- Maal kharid + Adaigi: naya khoobsurat design (kaam wahi purana) ---- */
+          var buyOk = Number(pBags) > 0 && !!pStore;
+          var payOk = Number(payAmt) > 0 && !!supNote.trim();
+          var buyTotal = (Number(pBags) || 0) * (Number(pRate) || 0);
+          var lbl = { fontSize: 10.5, color: "#A39C8A", fontWeight: 700, marginBottom: 4, letterSpacing: 0.3 };
+          var fld = { width: "100%", boxSizing: "border-box", padding: "11px 12px", borderRadius: 10, border: "1.5px solid #4A4436", background: "#1C1A15", color: TC.cream, fontSize: 15, outline: "none" };
+          function card(accent) { return { position: "relative", background: "linear-gradient(180deg, #312C24 0%, #26221C 100%)", borderRadius: 14, padding: "14px 14px 14px 16px", marginBottom: 12, border: "1px solid #3A362C", borderLeft: "5px solid " + accent, boxShadow: "0 4px 14px rgba(0,0,0,.28)" }; }
+          function head(accent, mark, title, sub) {
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: accent, color: TC.cream, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, flexShrink: 0 }}>{mark}</span>
+                <span style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, color: TC.cream, fontWeight: 800 }}>{title}</div>
+                  <div style={{ fontSize: 10.5, color: "#A39C8A" }}>{sub}</div>
+                </span>
+              </div>
+            );
+          }
+          function bigBtn(ok, bg) { return { width: "100%", marginTop: 12, padding: "13px", borderRadius: 11, border: "none", background: ok ? bg : "#4A4638", color: ok ? TC.cream : "#8A8270", fontWeight: 800, fontSize: 14, letterSpacing: 0.4, cursor: ok ? "pointer" : "not-allowed", boxShadow: ok ? "0 3px 10px rgba(0,0,0,.35)" : "none" }; }
+          return (
+            <React.Fragment>
+              <div style={card(TC.garden)}>
+                {head(TC.garden, "+", t("buyMaterial"), "Supplier se aaya hua maal likhein")}
+                <div style={lbl}>STORE (lazmi)</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  {RB_STORES.map(function (st) { var on = pStore === st[0]; return <button key={st[0]} type="button" onClick={function () { setPStore(st[0]); }} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: "2px solid " + (on ? "#D9A441" : "#4A4436"), background: on ? "#D9A441" : "#1C1A15", color: on ? "#1C1A15" : "#D8CDA9", fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>{on ? "\u2713 " : ""}{st[1]}</button>; })}
+                </div>
+                <div style={lbl}>RAW MATERIAL</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                  {mats.map(function (m) { var on = pMat === m.id; return <button key={m.id} type="button" onClick={function () { setPMat(m.id); }} style={{ padding: "8px 12px", borderRadius: 20, border: "1.5px solid " + (on ? TC.garden : "#4A4436"), background: on ? TC.garden : "transparent", color: on ? TC.cream : "#D8CDA9", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{m.name} <span style={{ opacity: 0.75, fontWeight: 600 }}>({m.unit})</span></button>; })}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={lbl}>QTY {curMat ? "(" + curMat.unit + ")" : ""}</div>
+                    <input type="number" inputMode="numeric" value={pBags} onChange={function (e) { setPBags(e.target.value); }} placeholder="0" style={fld} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={lbl}>RATE (Rs)</div>
+                    <input type="number" inputMode="numeric" value={pRate} onChange={function (e) { setPRate(e.target.value); }} placeholder="0" style={fld} />
+                  </div>
+                </div>
+                <div style={lbl}>TAREEKH</div>
+                <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={fld} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, padding: "11px 14px", borderRadius: 10, background: "rgba(92,122,63,.18)", border: "1px dashed " + TC.garden }}>
+                  <span style={{ fontSize: 12, color: "#C9D6B8", fontWeight: 700 }}>{t("total")}</span>
+                  <span className="rb-mono" style={{ fontSize: 18, color: TC.cream, fontWeight: 800 }}>Rs {rbMoney(buyTotal)}</span>
+                </div>
+                <button disabled={!buyOk} onClick={function () { if (!pStore) return; p.onAddPurchase(current.id, pBags, pRate, pDate, pMat, pStore); setPBags(""); setPRate(""); setPStore(""); }} style={bigBtn(buyOk, TC.garden)}>{t("buyMaterial")} \u2714</button>
+              </div>
 
-        <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-          <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 8 }}>{t("payToSupplier")}</div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input type="number" inputMode="numeric" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="Rs" style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
-            <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={{ flex: 1, padding: "8px 9px", borderRadius: 7, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13 }} />
-          </div>
-          <input value={supNote} onChange={function (e) { setSupNote(e.target.value); }} placeholder="Description - lazmi (jaise: cash, bank, cheque, kis ke haath)" style={{ width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 9px", borderRadius: 7, border: "2px solid " + (supNote.trim() ? "#3A362C" : TC.stamp), background: "transparent", color: TC.cream, fontSize: 13 }} />
-          <button disabled={!(Number(payAmt) > 0 && supNote.trim())} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate, supNote.trim()); setPayAmt(""); setSupNote(""); }} style={{ width: "100%", marginTop: 6, padding: "9px", borderRadius: 7, border: "none", background: (Number(payAmt) > 0 && supNote.trim()) ? TC.stamp : "#4A4638", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: Number(payAmt) > 0 ? "pointer" : "not-allowed" }}>{t("payToSupplier")}</button>
-        </div>
+              <div style={card(TC.stamp)}>
+                {head(TC.stamp, "Rs", t("payToSupplier"), "Supplier ko di gayi raqam likhein")}
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={lbl}>RAQAM (Rs)</div>
+                    <input type="number" inputMode="numeric" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="0" style={Object.assign({}, fld, { fontSize: 17, fontWeight: 700 })} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={lbl}>TAREEKH</div>
+                    <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={fld} />
+                  </div>
+                </div>
+                <div style={lbl}>DESCRIPTION (lazmi)</div>
+                <input value={supNote} onChange={function (e) { setSupNote(e.target.value); }} placeholder="Jaise: cash, bank, cheque, kis ke haath" style={Object.assign({}, fld, { border: "1.5px solid " + (supNote.trim() ? "#4A4436" : TC.stamp) })} />
+                <button disabled={!payOk} onClick={function () { p.onPaySupplier(current.id, payAmt, payDate, supNote.trim()); setPayAmt(""); setSupNote(""); }} style={bigBtn(payOk, TC.stamp)}>{t("payToSupplier")}{Number(payAmt) > 0 ? " \u2014 Rs " + rbMoney(payAmt) : ""}</button>
+              </div>
+            </React.Fragment>
+          );
+        })()}
 
         {!p.isAdmin ? null : rows.length === 0 ? (
           <div style={{ fontSize: 11.5, color: "#A39C8A", textAlign: "center", padding: "10px 0" }}>{t("noEntriesRange")}</div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {rows.map(function (r) {
+              var buy = r.k === "buy";
+              var acc = buy ? TC.garden : TC.stamp;
+              var stName = buy ? (r.src && r.src.store === "rangpur" ? "Rangpur" : "Himmat") : "";
               return (
-                <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 7, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success }}>{r.k === "buy" ? (r.matName || t("buyMaterial")) : t("payToSupplier")}</div>
-                    <div className="rb-mono" style={{ fontSize: 10, color: TC.inkSoft, marginTop: 1 }}>{rbDate(r.date)}{r.k === "buy" ? " \u00b7 " + r.bags + " " + (r.unit || "") + (Number(r.rate) ? " x " + rbMoney(r.rate) : "") : ""}</div>
+                <div key={r.k + r.id} style={{ background: TC.paper, borderRadius: 11, padding: "10px 12px 10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderLeft: "5px solid " + acc, boxShadow: "0 2px 8px rgba(0,0,0,.18)" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: TC.cream, background: acc, padding: "2px 8px", borderRadius: 10, letterSpacing: 0.3 }}>{buy ? "MAAL KHARID" : "ADAIGI"}</span>
+                      {buy ? <span style={{ fontSize: 10, fontWeight: 700, color: TC.ink, background: "#E9D9AE", padding: "2px 8px", borderRadius: 10 }}>{stName}</span> : null}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: TC.ink, marginTop: 4 }}>{buy ? ((r.src && r.src.materialName) || t("buyMaterial")) : ((r.src && (r.src.note || r.src.desc || r.src.description)) || t("payToSupplier"))}</div>
+                    <div className="rb-mono" style={{ fontSize: 10.5, color: TC.inkSoft, marginTop: 2 }}>{rbDate(r.date)}{buy ? " \u00b7 " + r.bags + " " + (r.unit || "") + (Number(r.rate) ? " \u00d7 " + rbMoney(r.rate) : "") : ""}</div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span className="rb-mono" style={{ fontSize: 12.5, fontWeight: 700, color: r.k === "buy" ? TC.ink : TC.success, whiteSpace: "nowrap" }}>{r.k === "buy" ? "" : "-"}Rs {rbMoney(r.amount)}</span>
-                    <div><RbSupFix inline={false} coll={r.k === "buy" ? "purchases" : "supplierPayments"} item={r.src} /></div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <span className="rb-mono" style={{ fontSize: 15, fontWeight: 800, color: buy ? TC.ink : TC.stamp, whiteSpace: "nowrap" }}>{buy ? "" : "-"}Rs {rbMoney(r.amount)}</span>
+                    <div><RbSupFix inline={false} coll={buy ? "purchases" : "supplierPayments"} item={r.src} /></div>
                   </div>
                 </div>
               );
@@ -1544,7 +1596,7 @@ function LabourConfigCard(p) {
   return (
     <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
       <button onClick={function () { setOpen(!open); }} style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700 }}>{t("labourSettings")}</span>
+        <span style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700 }}>{t("labourSettings")} <span style={{ color: TC.amber }}>({rbStoreName()} store)</span></span>
         <span style={{ color: "#A39C8A", fontSize: 12 }}>{open ? "−" : "+"}</span>
       </button>
       {open ? (
@@ -3612,7 +3664,7 @@ function RbPeopleManager(p) {
   function stName(x) { return x === "rangpur" ? "Rangpur" : "Himmat"; }
   function add(role) {
     var name = nm.trim();
-    if (role === "admin" && !isSup) return;
+    if (!isSup) return; /* naya User / Admin sirf Super Admin bana sakta hai */
     if (!name) { setMsg("Naam likhein"); return; }
     if (pin.length < 4) { setMsg("PIN kam az kam 4 hindson ka ho"); return; }
     var sec = p.security || {};
@@ -3623,20 +3675,43 @@ function RbPeopleManager(p) {
     setNm(""); setMob(""); setPin(""); setMsg(name + " (" + (role === "admin" ? "Admin" : "User") + " - " + stName(store) + ") save ho gaya");
   }
   function remove(x) { if (window.confirm(x.name + " ko hata dein?")) p.onSave(all.filter(function (y) { return y.id !== x.id; })); }
+  var g = React.useState(""), pinFor = g[0], setPinFor = g[1];
+  var h = React.useState(""), newPin = h[0], setNewPin = h[1];
+  function changePin(x) {
+    if (!isSup) return;
+    if (newPin.length < 4) { setMsg("PIN kam az kam 4 hindson ka ho"); return; }
+    var sec = p.security || {};
+    var used = all.some(function (y) { return y.id !== x.id && y.pin === newPin; }) || newPin === sec.adminPin || newPin === sec.userPin || newPin === sec.superPin;
+    if (used) { setMsg("Ye PIN pehle se kisi aur ka hai - alag PIN rakhein"); return; }
+    p.onSave(all.map(function (y) { return y.id === x.id ? Object.assign({}, y, { pin: newPin, pinChangedAt: new Date().toISOString() }) : y; }));
+    setPinFor(""); setNewPin(""); setMsg(x.name + " ka PIN badal gaya");
+  }
   var inp = { padding: "9px 10px", borderRadius: 8, border: "2px solid #3A362C", background: "transparent", color: TC.cream, fontSize: 13.5, minWidth: 0, boxSizing: "border-box" };
   function btn(on) { return { flex: 1, padding: "9px 8px", borderRadius: 8, border: "2px solid " + (on ? "#D9A441" : "#3A362C"), background: on ? "#D9A441" : "transparent", color: on ? "#1C1A15" : "#D8CDA9", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }; }
   return (
     <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
       <div style={{ fontSize: 11.5, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>{isSup ? "Users aur Admins" : "Users (" + stName(RB_STORE) + ")"}</div>
-      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{isSup ? "Super Admin naye User aur Admin bana sakta hai. Har bande ka naam, mobile, store aur apna PIN." : "Admin apne store ke User bana sakta hai."} Login par naam chun kar apna PIN darj karein. Har entry par us ka naam likha jaye ga.</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>{isSup ? "Super Admin naye User aur Admin bana sakta hai, aur har bande ka PIN badal sakta hai." : "Naya User banana aur PIN badalna sirf Super Admin kar sakta hai."} Login par naam chun kar apna PIN darj karein. Har entry par us ka naam likha jaye ga.</div>
       {list.map(function (x) {
         return (
-          <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 10px", marginBottom: 6, borderRadius: 8, background: TC.appBg, color: TC.cream, fontSize: 13 }}>
+          <React.Fragment key={x.id}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 10px", marginBottom: 6, borderRadius: 8, background: TC.appBg, color: TC.cream, fontSize: 13 }}>
             <span style={{ minWidth: 0 }}><b>{x.name}</b> <span style={{ color: "#A39C8A", fontSize: 11 }}>({x.role === "admin" ? "Admin" : "User"} · {stName(x.store || "himmat")}{x.mobile ? " · " + x.mobile : ""})</span></span>
-            <button onClick={function () { remove(x); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Hatayein</button>
+            <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {isSup ? <button onClick={function () { setPinFor(pinFor === x.id ? "" : x.id); setNewPin(""); setMsg(""); }} style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: TC.stamp, color: TC.cream, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>PIN badlein</button> : null}
+              <button onClick={function () { remove(x); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1.5px solid #6B6656", background: "transparent", color: "#D8CDA9", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Hatayein</button>
+            </span>
           </div>
+          {isSup && pinFor === x.id ? (
+            <div style={{ display: "flex", gap: 6, margin: "-2px 0 8px" }}>
+              <input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={function (e) { setNewPin(e.target.value.replace(/\D/g, "")); }} placeholder={"Naya PIN - " + x.name} style={Object.assign({}, inp, { flex: 1 })} />
+              <button type="button" onClick={function () { changePin(x); }} style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>Save</button>
+            </div>
+          ) : null}
+          </React.Fragment>
         );
       })}
+      {isSup ? (<React.Fragment>
       <input value={nm} onChange={function (e) { setNm(e.target.value); }} placeholder="Naam (jaise Ali)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
       <input type="tel" value={mob} onChange={function (e) { setMob(e.target.value); }} placeholder="Mobile number (03xx xxxxxxx)" style={Object.assign({}, inp, { width: "100%", marginBottom: 6 })} />
       {isSup ? (
@@ -3649,6 +3724,7 @@ function RbPeopleManager(p) {
         <button type="button" onClick={function () { add("accountant"); }} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: TC.stamp, color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>+ Add User</button>
         {isSup ? <button type="button" onClick={function () { add("admin"); }} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7A4E12", color: TC.cream, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>+ Add Admin</button> : null}
       </div>
+      </React.Fragment>) : null}
       {msg ? <div style={{ fontSize: 11.5, color: TC.cream, marginTop: 6 }}>{msg}</div> : null}
     </div>
   );
@@ -4207,7 +4283,7 @@ var RB_CLEAR_PARTS = [
   ["baqaya", "Baqaya", "customers ka purana baqi"],
   ["advance", "Advance", "advance receipts"],
   ["stock", "Stock", "stock nil - opening, stock entries, wastage, conversion"],
-  ["supplier", "Supplier", "is store ke supplier, khareedari, payments"],
+  ["supplier", "Supplier", "is store ki khareedari aur payments (supplier ke khate nahi mitte)"],
   ["labour", "Labour", "mazdoor, kaam, payments"],
   ["daybook", "Day Book", "kharche, cash transfer, roz ka verify"],
   ["party", "Dusri factory", "factory ke naam aur slab / garder len-den"],
@@ -4246,9 +4322,8 @@ function rbClearStoreParts(st, parts) {
   if (on.supplier) {
     var pur = get("purchases", []).filter(function (x) { return stOf(x) !== st; });
     var pay = get("supplier-payments", []).filter(function (x) { return stOf(x) !== st; });
-    var used2 = {}; pur.concat(pay).forEach(function (x) { used2[x.supplierId] = 1; });
+    /* supplier ka khata (naam, purana baqi) dono store ka sanjha hai - clear par kabhi nahi mitta */
     put("purchases", pur); put("supplier-payments", pay);
-    put("suppliers", get("suppliers", []).filter(function (x) { return used2[x.id]; }));
   }
   if (on.labour) { put("labourers", []); put("labour-work", []); put("labour-payments", []); }
   if (on.daybook) {
@@ -4277,6 +4352,54 @@ function rbDownloadSafeBackup(pin, done) {
   }).catch(function () { done("Backup nahi ban saka"); });
 }
 function rbDownloadBackup(b) { try { var blob = new Blob([JSON.stringify(b)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "raees-backup-" + b.store + "-" + String(b.at).slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { window.alert("Download nahi ho saka"); } }
+/* is phone ke backups mein jo supplier hain magar ab list mein nahi - unhein wapas lane ke liye */
+function rbMissingSuppliers() {
+  var cur = {}; (rbGet("suppliers", []) || []).forEach(function (s) { if (s && s.id) cur[s.id] = 1; });
+  var found = {};
+  function take(arr) { (arr || []).forEach(function (s) { if (s && s.id && s.name && !cur[s.id] && !found[s.id]) found[s.id] = s; }); }
+  function parse(v) { try { return typeof v === "string" ? JSON.parse(v) : v; } catch (e) { return null; } }
+  try {
+    Object.keys(localStorage).forEach(function (k) {
+      if (k.indexOf("raees-backup-") !== 0) return;
+      var b = parse(localStorage.getItem(k)); if (!b) return;
+      if (b.data && b.data.suppliers) take(parse(b.data.suppliers));
+      if (b.stores) Object.keys(b.stores).forEach(function (st) { var d = b.stores[st]; if (d && d.suppliers) take(parse(d.suppliers)); });
+    });
+  } catch (e) {}
+  return Object.keys(found).map(function (id) { return found[id]; });
+}
+function RbMissingSuppliers() {
+  var a = React.useState(function () { return rbMissingSuppliers(); }), list = a[0], setList = a[1];
+  var b = React.useState(""), msg = b[0], setMsg = b[1];
+  if (!list.length && !msg) return null;
+  function bring(s) {
+    if (!window.confirm(s.name + " ka khata (purana baqi Rs " + rbMoney(s.opening) + ") wapas layein?")) return;
+    var cur = rbGet("suppliers", []) || [];
+    if (cur.some(function (x) { return x && x.id === s.id; })) { setList(rbMissingSuppliers()); return; }
+    window.rbClearing = true; /* app ki purani halat beech mein dobara na likhi jaye */
+    try { localStorage.setItem(rbKey("suppliers"), JSON.stringify(cur.concat([s]))); } catch (e) { window.rbClearing = false; setMsg("Wapas nahi aa saka"); return; }
+    setMsg(s.name + " wapas aa gaya. App dobara khul rahi hai...");
+    setTimeout(function () { location.reload(); }, 2500);
+  }
+  return (
+    <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px dashed #3A362C" }}>
+      <div style={{ fontSize: 12, color: TC.cream, fontWeight: 700, marginBottom: 4 }}>Ghaib supplier wapas layein</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 8 }}>Ye supplier pehle the (backup mein hain) magar ab list mein nahi. Wapas lane se kuch nahi mitta.</div>
+      {list.map(function (s) {
+        return (
+          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "#2A2620", borderRadius: 8, padding: "8px 10px", marginBottom: 6 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: TC.cream, fontWeight: 700 }}>{s.name}</div>
+              <div style={{ fontSize: 11, color: "#A39C8A" }}>Purana baqi Rs {rbMoney(s.opening)}{s.openingDate ? " · " + rbDate(s.openingDate) : ""}</div>
+            </div>
+            <button onClick={function () { bring(s); }} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Wapas layein</button>
+          </div>
+        );
+      })}
+      {msg ? <div style={{ fontSize: 12, color: "#E8C9B8", marginTop: 6 }}>{msg}</div> : null}
+    </div>
+  );
+}
 function RbSuperDataTools(p) {
   var a = React.useState(0), step = a[0], setStep = a[1];
   var b = React.useState(""), pin1 = b[0], setPin1 = b[1];
@@ -4375,6 +4498,7 @@ function RbSuperDataTools(p) {
         <label style={Object.assign({}, ghost, { display: "block", textAlign: "center", boxSizing: "border-box" })}>Backup file se wapas layein<input type="file" accept=".json,application/json" onChange={restoreFile} style={{ display: "none" }} /></label>
         <button onClick={function () { if (rpin !== superPin()) { setMsg("Backup ke liye pehle upar Super Admin PIN darj karein"); return; } var pn = rpin; setRpin(""); setMsg("Mehfooz backup ban raha hai..."); rbDownloadSafeBackup(pn, setMsg); }} style={Object.assign({}, red, { background: TC.success, marginTop: 6 })}>Backup download (mehfooz, taala-band)</button>
       </div>
+      <RbMissingSuppliers />
       {msg ? <div style={{ fontSize: 12, color: "#E8C9B8", marginTop: 8 }}>{msg}</div> : null}
     </div>
   );
@@ -4433,8 +4557,8 @@ function SettingsTab(p) {
       {role === "admin" ? ( <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title={t("permissions")}> <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>{t("permissionsHint")}</div> <div style={{ background: TC.appBg2, borderRadius: 8, padding: "2px 10px" }}> <PermissionCheckRow label={t("userCanTabSale")} checked={permissions.tabSale !== false} onChange={function (v) { onTogglePermission("tabSale", v); }} /> <PermissionCheckRow label={t("userCanTabBills")} checked={permissions.tabBills !== false} onChange={function (v) { onTogglePermission("tabBills", v); }} /> <PermissionCheckRow label={t("userCanTabGatePass")} checked={permissions.tabGatePass !== false} onChange={function (v) { onTogglePermission("tabGatePass", v); }} /> <PermissionCheckRow label={t("userCanTabDues")} checked={permissions.tabDues !== false} onChange={function (v) { onTogglePermission("tabDues", v); }} /> <PermissionCheckRow label={t("userCanStockAdd")} checked={permissions.stockAdd} onChange={function (v) { onTogglePermission("stockAdd", v); }} /> <PermissionCheckRow label={t("userCanSupplier")} checked={permissions.supplier} onChange={function (v) { onTogglePermission("supplier", v); }} /> <PermissionCheckRow label={t("userCanLabour")} checked={permissions.labour} onChange={function (v) { onTogglePermission("labour", v); }} /> <PermissionCheckRow label={t("userCanReports")} checked={permissions.reports} onChange={function (v) { onTogglePermission("reports", v); }} /> <PermissionCheckRow label={t("userCanWastage")} checked={permissions.wastage} onChange={function (v) { onTogglePermission("wastage", v); }} /> <PermissionCheckRow label={t("userCanEditSale")} checked={permissions.editSale} onChange={function (v) { onTogglePermission("editSale", v); }} /> <PermissionCheckRow label={t("userCanGatePass")} checked={permissions.gatePass} onChange={function (v) { onTogglePermission("gatePass", v); }} /> <PermissionCheckRow label={t("userCanBillsSummary")} checked={permissions.billsSummary} onChange={function (v) { onTogglePermission("billsSummary", v); }} /> </div> </SettingsBlock> ) : null} {role === "admin" ? (
         <SettingsBlock icon={<Ico name="usercog" size={16} color={TC.cream} />} title="PIN Security">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <AdminPinSetter security={security} onSetPin={onSetAdminPin} />
-            <UserPinSetter security={security} onSetPin={onSetUserPin} />
+            {rbIsSuper() || !security.superPin ? <AdminPinSetter security={security} onSetPin={onSetAdminPin} /> : null}
+            {rbIsSuper() || !security.superPin ? <UserPinSetter security={security} onSetPin={onSetUserPin} /> : <div style={{ fontSize: 11, color: "#A39C8A" }}>PIN badalna aur naya User banana sirf Super Admin kar sakta hai.</div>}
             {p.onSetSuperPin && (rbIsSuper() || !security.superPin) ? <SuperPinSetter security={security} onSetPin={p.onSetSuperPin} /> : null}
             {p.onSetPeople ? <RbPeopleManager security={security} onSave={p.onSetPeople} /> : null}
             

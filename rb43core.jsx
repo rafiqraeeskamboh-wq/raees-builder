@@ -105,7 +105,21 @@ var RB2_PRE = "rb2:";
 /* do store: Himmat (purana data) aur Rangpur - har store ka data alag */
 var RB_STORES = [["himmat", "Himmat"], ["rangpur", "Rangpur"]];
 var RB_STORE = (function () { try { return localStorage.getItem("raees-store") === "rangpur" ? "rangpur" : "himmat"; } catch (e) { return "himmat"; } })();
-var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, "labour-config": 1, suppliers: 1, purchases: 1, "supplier-payments": 1, "expense-heads": 1, "cash-transfers": 1 };
+var RB_STORE_SHARED = { prefs: 1, permissions: 1, security: 1, deviceLock: 1, "variant-labels": 1, "custom-variants": 1, "hidden-variants": 1, "cat-names": 1, materials: 1, suppliers: 1, purchases: 1, "supplier-payments": 1, "expense-heads": 1, "cash-transfers": 1 };
+/* labour rate ab har store ka alag: Himmat purani setting rakhta hai (rb2:labour-config).
+   Rangpur ki apni setting pehli dafa na ho to Himmat wale rate se shuru (banda khali - Rangpur ka banda khud chuna jaye ga) */
+(function () {
+  try {
+    if (RB_STORE !== "rangpur") return;
+    var rk = RB2_PRE + "rangpur:labour-config";
+    if (localStorage.getItem(rk) !== null) return;
+    var old = JSON.parse(localStorage.getItem(RB2_PRE + "labour-config") || "null");
+    if (!old || typeof old !== "object") return;
+    var n = {};
+    Object.keys(old).forEach(function (k) { var c = old[k] || {}; n[k] = { labourerId: "", rate: Number(c.rate) || 0 }; });
+    localStorage.setItem(rk, JSON.stringify(n));
+  } catch (e) {}
+})();
 function rbStoreName() { return RB_STORE === "rangpur" ? "Rangpur" : "Himmat"; }
 function rbKey(key) { return (RB_STORE === "himmat" || RB_STORE_SHARED[key]) ? RB2_PRE + key : RB2_PRE + RB_STORE + ":" + key; }
 /* English likhte waqt har lafz ka pehla harf bara (Ali khan -> Ali Khan). number/date/PIN/mobile par nahi.
