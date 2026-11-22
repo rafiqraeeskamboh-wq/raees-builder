@@ -1497,6 +1497,18 @@ function RaeesBuilderApp() {
     logActivity(newRt ? "super_edit" : "super_delete", "Advance wapsi");
   }
   /* har jagah (Day book, supplier, kharcha, labour ...) Super Admin ke Edit / Delete buttons isi se chalte hain */
+  /* chhat fotwari: labour ke khate / ledger ki chhat wali line se edit */
+  window.rbChhatApi = {
+    role: role,
+    info: function (saleId) {
+      var s0 = sales.filter(function (x) { return x.id === saleId; })[0]; if (!s0) return null;
+      var gl = rbGpsFor(gatePasses, s0.id);
+      var auto = rbLabourFit(Object.assign({}, s0, { chhatFot: null }), gl, returnLog, siteWaste, extraGarderRate()).ft;
+      var fcx = rbFotCheck(s0, gl.length ? gl : [{ items: [] }], returnLog, siteWaste);
+      return { sale: s0, auto: auto, bill: fcx ? fcx.bill : null };
+    },
+    set: setChhatFot
+  };
   window.rbSuperApi = (role === "admin" && rbIsSuper()) ? {
     save: superSaveRecord, del: superDeleteRecord, salePay: superSalePay, advReturn: superAdvReturn,
     delBill: superDeleteBill, editBill: startEditSale
@@ -2955,7 +2967,7 @@ function editStockEntry(id, qty, date) {
     body = <NewSaleTab t={t} lang={lang} remainingFor={remainingFor} variantsFor={variantsFor} onSave={saveSale}
       editingSale={editingSale} nextSerial={nextSerial} role={role} onCancelEdit={function () { setEditingSale(null); }}
       presetSerial={fillSerial} onCancelPreset={function () { setFillSerial(null); }} />;
-  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onSetChhatFot={rbIsSuper() ? null : setChhatFot} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { if (rbGpsFor(gatePasses, sale.id).length) setGpExtraFor(sale); else setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
+  } else if (tab === "bills") { body = <BillsTab t={t} role={role} onFillGap={function (n) { setEditingSale(null); setFillSerial(n); setTab("sale"); }} onVerifyBill={verifyBill} sales={sales} gatePasses={gatePasses} onOpen={setViewingBill} canGatePass={can("gatePass")} canSeeSummary={can("billsSummary")} onMakeGatePass={function (sale) { if (rbGpsFor(gatePasses, sale.id).length) setGpExtraFor(sale); else setGatePassBuilderFor(sale); }} onViewGatePass={function (sale, entry) { setViewingGatePass({ sale: sale, items: entry.items, entry: entry }); }} returnLog={returnLog} onMoreGatePass={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale) { setGpExtraFor(sale); }} siteWaste={siteWaste} onSiteWaste={null} onGpReturn={(rbIsSuper() || !(role === "admin" || can("gatePass"))) ? null : function (sale, entry) { setGpReturnFor({ sale: sale, entry: entry }); }} />; } else if (tab === "stock") {
     body = can("stock") ? <StockTab t={t} parties={parties} partyLog={partyLog} onAddParty={rbIsSuper() ? null : addParty} onAddPartyEntry={rbIsSuper() ? null : addPartyEntry} canEdit={role === "admin"} canAdd={role === "admin" || can("stockAdd")} canSupplier={role === "admin" || can("supplier")} cementTotals={cementTotals} materials={materials} materialTotals={materialTotals} onAddMaterial={addMaterial} onEditMaterial={(role === "admin" || rbIsSuper()) ? editMaterial : null} onDeleteMaterial={(role === "admin" || rbIsSuper()) ? deleteMaterial : null} isAdmin={role === "admin"} suppliers={suppliers} supplierTotals={supplierTotals} onAddSupplier={addSupplier} onAddPurchase={addPurchase} purchases={storePurchases} onPaySupplier={addSupplierPayment} onRenameSupplier={renameSupplier} onSetSupplierOpening={setSupplierOpening} stockLog={stockLog} stockTotals={stockTotals} remainingFor={remainingFor}
           variantsFor={variantsFor} onAddStock={addStockEntry} onAddOpeningStock={addOpeningStock} materialOpening={materialOpening} onSaveMaterialOpening={saveMaterialOpening} onSetMaterialStock={rbIsSuper() ? superSetMaterialStock : null} labourPreview={labourPreviewFor} stockReport={stockReport} stockLedgerRows={stockLedgerRows} onAddVariant={addCustomVariant} onEditVariant={editVariant} onDeleteVariant={deleteVariant} onEditStock={editStockEntry} onDeleteStock={deleteStockEntry} onVerifyStock={verifyStockEntry}
           pendingCement={pendingCement} onOpenCement={function () { setCementNextTab(null); setCementPromptOpen(true); }} />
