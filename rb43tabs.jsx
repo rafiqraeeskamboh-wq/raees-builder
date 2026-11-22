@@ -1400,7 +1400,7 @@ function SupplierModal(p) {
                   <span style={{ fontSize: 12, color: "#C9D6B8", fontWeight: 700 }}>{t("total")}</span>
                   <span className="rb-mono" style={{ fontSize: 18, color: TC.cream, fontWeight: 800 }}>Rs {rbMoney(buyTotal)}</span>
                 </div>
-                <button disabled={!buyOk} onClick={function () { if (!pStore) return; p.onAddPurchase(current.id, pBags, pRate, pDate, pMat, pStore); setPBags(""); setPRate(""); setPStore(""); }} style={bigBtn(buyOk, TC.garden)}>{t("buyMaterial")} \u2714</button>
+                <button disabled={!buyOk} onClick={function () { if (!pStore) return; p.onAddPurchase(current.id, pBags, pRate, pDate, pMat, pStore); setPBags(""); setPRate(""); setPStore(""); }} style={bigBtn(buyOk, TC.garden)}>{t("buyMaterial")} {"\u2714"}</button>
               </div>
 
               <div style={card(TC.stamp)}>
