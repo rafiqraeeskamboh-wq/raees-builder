@@ -699,6 +699,13 @@ function RbChhatFotEdit(p) {
   var s = inf.sale, has = rbHasChhatFot(s), cur = has ? Number(s.chhatFot) : inf.auto;
   var over = inf.bill !== null && cur > inf.bill + 0.001;
   var isAdmin = api.role === "admin";
+  function startEdit() { setVal(has ? String(s.chhatFot) : String(inf.auto || "")); setOpen(true); }
+  if (p.inline && !open) return (
+    <span className="no-print" data-html2canvas-ignore="true" onClick={function (e) { e.stopPropagation(); }} style={{ marginInlineStart: 5, whiteSpace: "nowrap" }}>
+      {has ? <span style={{ fontSize: 9, color: "#999" }}>(slab {rbMoney2(inf.auto)}) </span> : null}
+      <button type="button" onClick={startEdit} style={{ padding: "0 6px", borderRadius: 4, border: "1px solid #1F3F8A", background: "#fff", color: "#1F3F8A", fontSize: 9.5, fontWeight: 700, cursor: "pointer", lineHeight: 1.5 }}>Edit</button>
+    </span>
+  );
   return (
     <div className="no-print" data-html2canvas-ignore="true" onClick={function (e) { e.stopPropagation(); }} style={{ marginTop: 4, fontFamily: "Arial, sans-serif", whiteSpace: "normal" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -5376,7 +5383,7 @@ function RbLabourDayLedger(p) {
                   <tr key={i}>
                     <td style={cell}>{l.date ? rbDate(l.date) : "-"}</td>
                     <td style={Object.assign({}, cell, { whiteSpace: "normal", fontWeight: l.cust !== "-" ? 700 : 400, color: l.cust !== "-" ? "#1F3F8A" : "#888" })}>{l.cust}</td>
-                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}</div>; })}{l.saleId ? <RbChhatFotEdit saleId={l.saleId} /> : null}</td>
+                    <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal", color: l.pay ? "#1E7A3C" : "#222" })}>{l.tx.map(function (x, xi) { return <div key={xi}>{x}{xi === 0 && l.saleId ? <RbChhatFotEdit inline={true} saleId={l.saleId} /> : null}</div>; })}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{m(l.work)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", color: "#1E7A3C", fontWeight: 700 })}>{m(l.paid)}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{bt(l.bal)}</td>
