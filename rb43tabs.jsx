@@ -6093,12 +6093,20 @@ function RbBillWasooliLedger(p) {
   }).sort(function (m, n) { return (Number(m.serial) || 0) - (Number(n.serial) || 0); });
   /* har bill mein kis ne kitni wasooli ki */
   var people = {}, rows = [], tot = { bill: 0, baqi: 0, by: {} };
+  /* sab login wale bande (Rafiq, Fayaz, Sajid, Mehboob, Ramzan...) ka apna khana hamesha */
+  var books = rbMakeBooks().filter(function (bk) { return bk.name; });
+  books.forEach(function (bk, i) { var k = rbPersonTag(bk); if (!people[k]) people[k] = { k: k, ord: (bk.role === "admin" ? 100 : 200) + i }; });
+  function whoKey(py) {
+    if (py.fromAdvance) return "Advance se";
+    var hit = null; books.forEach(function (bk) { if (!hit && rbBookMine(bk, py.byName, py.by)) hit = bk; });
+    return hit ? rbPersonTag(hit) : rbWhoLabel(py.by, py.byName);
+  }
   bills.forEach(function (s) {
     var got = {};
     (s.payments || []).forEach(function (py) {
       var amt = Number(py.amount) || 0; if (!amt) return;
-      var k = py.fromAdvance ? "Advance se" : rbWhoLabel(py.by, py.byName);
-      if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 3 : (py.by === "admin" ? 1 : 2) };
+      var k = whoKey(py);
+      if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 900 : (py.by === "admin" ? 150 : 250) };
       got[k] = (got[k] || 0) + amt; tot.by[k] = (tot.by[k] || 0) + amt;
     });
     var baqi = Math.max(0, Number(s.dues) || 0);
