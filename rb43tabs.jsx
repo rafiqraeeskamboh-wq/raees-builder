@@ -5363,7 +5363,7 @@ function RbLedgerModal(p) {
                     <td style={Object.assign({}, cell, { wordBreak: "break-word", whiteSpace: "normal" })}>{l.x.detail}{l.x.fix || null}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.a ? rbMoney(l.x.a) : ""}</td>
                     <td style={Object.assign({}, cell, { textAlign: "right" })}>{l.x.b ? rbMoney(l.x.b) : ""}</td>
-                    <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: l.bal < 0 ? "#1E7A3C" : "#222" })}>{balTxt(l.bal)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: p.signColors ? rbSignClr(l.bal) : (l.bal < 0 ? "#1E7A3C" : "#222") })}>{balTxt(l.bal)}</td>
                   </tr>
                 );
               })}
