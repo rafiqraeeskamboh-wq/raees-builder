@@ -6092,7 +6092,8 @@ function RbBillWasooliLedger(p) {
     return true;
   }).sort(function (m, n) { return (Number(m.serial) || 0) - (Number(n.serial) || 0); });
   /* har bill mein kis ne kitni wasooli ki */
-  var people = {}, rows = [], tot = { bill: 0, baqi: 0, by: {} };
+  var people = {}, rows = [], tot = { bill: 0, baqi: 0, by: {} }, det = {};
+  var wo = React.useState(null), openWho = wo[0], setOpenWho = wo[1];
   /* sirf wohi naam jin ki wasooli is ledger mein hai (naya naam aaye to us ka khana khud ban jaye) - sirf saada naam */
   var books = rbMakeBooks().filter(function (bk) { return bk.name; });
   function whoKey(py) {
@@ -6107,6 +6108,7 @@ function RbBillWasooliLedger(p) {
       var k = whoKey(py);
       if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 3 : (py.by === "admin" ? 1 : 2) };
       got[k] = (got[k] || 0) + amt; tot.by[k] = (tot.by[k] || 0) + amt;
+      (det[k] = det[k] || []).push({ date: py.date || s.date, serial: s.serial, name: s.customerName || "-", amt: amt, note: py.note || "" });
     });
     var baqi = Math.max(0, Number(s.dues) || 0);
     tot.bill += Number(s.totalBill) || 0; tot.baqi += baqi;
@@ -6142,6 +6144,12 @@ function RbBillWasooliLedger(p) {
         <RbShotBtn targetId={idRef.current} name="bill-ledger" />
         <button onClick={printIt} style={{ flex: 1, padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
       </div>
+      {cols.length ? (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+          {cols.map(function (k) { return <button key={k} onClick={function () { setOpenWho(k); }} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{k} ki wasooli tafseel · Rs {rbMoney(tot.by[k] || 0)}</button>; })}
+        </div>
+      ) : null}
+      {openWho ? <RbWasooliDetail t={p.t} who={openWho} list={det[openWho] || []} dated={dated} onClose={function () { setOpenWho(null); }} /> : null}
       <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t ? p.t("appName") : "Raees Builders"} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={12} />
@@ -6177,6 +6185,66 @@ function RbBillWasooliLedger(p) {
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+/* ek bande (jaise Sajid) ki wasooli ki tafseel: har wasooli alag line, saath kul jama */
+function RbWasooliDetail(p) {
+  rbUseBack(true, p.onClose);
+  var idRef = React.useRef("rbwd" + rbUid());
+  var list = (p.list || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || ((Number(m.serial) || 0) - (Number(n.serial) || 0)); });
+  var run = 0;
+  var lines = list.map(function (x) { run += x.amt; return { x: x, run: run }; });
+  function printIt() {
+    var el = document.getElementById(idRef.current); if (!el) return;
+    var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Wasooli - " + p.who + "</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+  }
+  var cell = { border: "1px solid #bbb", padding: "1px 3px", fontSize: 10, lineHeight: 1.25, color: "#222", verticalAlign: "middle", whiteSpace: "nowrap" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, textAlign: "center", padding: "2px 3px" });
+  var num = Object.assign({}, cell, { textAlign: "right" });
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
+          <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name={"wasooli-" + p.who} /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
+        </div>
+        <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
+          <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t ? p.t("appName") : "Raees Builders"} - {rbStoreName()}</div>
+          <RbTagline color="#9A6A12" size={12} />
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>{p.who} - Wasooli ki tafseel</div>
+          <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{p.dated}</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={head}>Date</th>
+              <th style={head}>Bill No</th>
+              <th style={head}>Naam</th>
+              <th style={Object.assign({}, head, { color: "#1E7A3C" })}>Wasooli</th>
+              <th style={head}>Kul jama</th>
+            </tr></thead>
+            <tbody>
+              {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi wasooli nahi</td></tr> : lines.map(function (l, i) {
+                return (
+                  <tr key={i}>
+                    <td style={cell}>{rbDate(l.x.date)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "center", fontWeight: 700 })}>{l.x.serial}</td>
+                    <td style={Object.assign({}, cell, { maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis" })}>{l.x.name}</td>
+                    <td style={Object.assign({}, num, { color: "#1E7A3C", fontWeight: 700 })}>{rbMoney(l.x.amt)}</td>
+                    <td style={num}>{rbMoney(l.run)}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td colSpan={3} style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" })}>Kul wasooli ({lines.length})</td>
+                <td style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1", color: "#1E7A3C" })}>{rbMoney(run)}</td>
+                <td style={Object.assign({}, num, { background: "#F6F1E1" })}></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
