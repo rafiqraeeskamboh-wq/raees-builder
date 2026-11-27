@@ -3944,6 +3944,8 @@ function dbDateLabel(d) {
   if (!m) return String(d || "");
   return m[3] + "-" + DB_MON[Number(m[2]) - 1] + "-" + m[1].slice(2);
 }
+/* balance ka rang: musbat (plus) = green, manfi (minus) = red */
+function rbSignClr(v) { return (Number(v) || 0) < 0 ? "#C0262D" : "#1E7A3C"; }
 var DB_C = { red: "#C0262D", blue: "#2A4FC9", head: "#9CC3EA", line: "#555", ink: "#111" };
 var dbCell = { border: "1px solid " + DB_C.line, padding: "4px 6px", fontSize: 11.5, color: DB_C.ink, verticalAlign: "top" };
 function DbSection(p) {
@@ -4177,8 +4179,8 @@ function DayBookReport(p) {
         <div style={{ textAlign: "center", fontSize: 13.5, fontWeight: 700, color: DB_C.ink, marginBottom: 6 }}>{book && book.name ? rbPersonTag(book) + " - Cash" : (book && book.role === "accountant" ? "User Cash" : "Admin Cash")}</div>
         <div style={{ textAlign: "center", fontSize: 12.5, fontFamily: "Courier New, monospace", fontWeight: 700, marginBottom: 12 }}>Dated: {dated}</div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: DB_C.red }}>Cash Opening</span>
-          <span style={{ minWidth: 110, border: "1px solid " + DB_C.line, padding: "4px 8px", textAlign: "right", fontSize: 13, fontWeight: 700, color: DB_C.red }}>{rbMoney(opening)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: rbSignClr(opening) }}>Cash Opening</span>
+          <span style={{ minWidth: 110, border: "1px solid " + DB_C.line, padding: "4px 8px", textAlign: "right", fontSize: 13, fontWeight: 700, color: rbSignClr(opening) }}>{rbMoney(opening)}</span>
         </div>
         {p.onCashAdjust && r.from ? <RbBalFix label="Opening Balance" value={opening} onSave={function (v, del) { var x = new Date(r.from + "T00:00:00"); x.setDate(x.getDate() - 1); p.onCashAdjust(book, isoOf(x), v - opening, del ? "Super Admin ne opening balance delete kiya: Rs " + rbMoney(opening) + " (0 kar diya)" : "Super Admin ne opening balance edit kiya: Rs " + rbMoney(opening) + " se Rs " + rbMoney(v)); }} /> : null}
 
@@ -4201,7 +4203,7 @@ function DayBookReport(p) {
         <div style={{ margin: "18px auto 14px", width: "60%", border: "2px solid #222", textAlign: "center", padding: "6px 0", fontSize: 17, fontWeight: 700, color: DB_C.red, letterSpacing: 1 }}>SUMMARY</div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
           <tbody>
-            <DbSumRow label="Opening Balance" value={rbMoney(opening)} />
+            <DbSumRow label="Opening Balance" value={rbMoney(opening)} color={rbSignClr(opening)} />
             <DbSumRow label="Total Cash Received" value={rbMoney(recT)} />
             <DbSumRow label="Total Income" value={rbMoney(income)} color={DB_C.blue} />
           </tbody>
@@ -4210,7 +4212,7 @@ function DayBookReport(p) {
           <tbody>
             <DbSumRow label="Payments/Expenses" value={rbMoney(outT)} />
             <DbSumRow label="Total Expense" value={rbMoney(outT)} />
-            <DbSumRow label="Closing Balance" value={rbMoney(closing)} color={DB_C.red} />
+            <DbSumRow label="Closing Balance" value={rbMoney(closing)} color={rbSignClr(closing)} />
           </tbody>
         </table>
         {p.onCashAdjust ? <RbBalFix label="Closing Balance" value={closing} onSave={function (v, del) { p.onCashAdjust(book, r.to || rbToday(), v - closing, del ? "Super Admin ne closing balance delete kiya: Rs " + rbMoney(closing) + " (0 kar diya)" : "Super Admin ne closing balance edit kiya: Rs " + rbMoney(closing) + " se Rs " + rbMoney(v)); }} /> : null}
@@ -5352,7 +5354,7 @@ function RbLedgerModal(p) {
             </tr></thead>
             <tbody>
               {r.from ? (
-                <tr><td style={cell}>{rbDateDin(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700, whiteSpace: "normal" })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{balTxt(opening)}</td></tr>
+                <tr><td style={cell}>{rbDateDin(r.from)}</td><td style={Object.assign({}, cell, { fontWeight: 700, whiteSpace: "normal" })}>Pichla baqi</td><td style={cell}></td><td style={cell}></td><td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 }, p.signColors ? { color: rbSignClr(opening) } : null)}>{balTxt(opening)}</td></tr>
               ) : null}
               {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi entry nahi</td></tr> : lines.map(function (l, i) {
                 return (
@@ -5369,7 +5371,7 @@ function RbLedgerModal(p) {
                 <td colSpan={2} style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>Kul</td>
                 <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(totA)}</td>
                 <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700 })}>{rbMoney(totB)}</td>
-                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: "#B0262B" })}>{balTxt(bal)}</td>
+                <td style={Object.assign({}, cell, { textAlign: "right", fontWeight: 700, color: p.signColors ? rbSignClr(bal) : "#B0262B" })}>{balTxt(bal)}</td>
               </tr>
             </tbody>
           </table>
@@ -5401,7 +5403,7 @@ function RbPersonLedgerModal(p) {
     list.forEach(function (x) { x.rows.forEach(function (r) { allRows.push(Object.assign({}, r, { detail: (x.name ? x.name + ": " : "") + r.detail })); }); });
     cur = { key: "__all", name: "Sab ikatha", role: "", rows: rbLedgerSort(allRows) };
   }
-  if (cur) return <RbLedgerModal t={p.t} title={cur.name} subtitle={(cur.key === "__all" ? "Admin + User ikatha" : (cur.role === "admin" ? "Admin" : "User")) + " - " + rbStoreName() + " store"} rows={cur.rows} colA="Aaya" colB="Gaya" balLabel="Paas mein" onClose={function () { setSel(""); }}
+  if (cur) return <RbLedgerModal t={p.t} title={cur.name} subtitle={(cur.key === "__all" ? "Admin + User ikatha" : (cur.role === "admin" ? "Admin" : "User")) + " - " + rbStoreName() + " store"} rows={cur.rows} colA="Aaya" colB="Gaya" balLabel="Paas mein" signColors={true} onClose={function () { setSel(""); }}
     note="Aaya = is bande ne paise liye (wasooli, advance, cash mila). Gaya = is ne paise diye (kharcha, payment, wapsi, cash diya)." />;
   return (
     <ModalShell onClose={p.onClose} title="Har bande ka ledger">
