@@ -6149,7 +6149,7 @@ function RbBillWasooliLedger(p) {
           {cols.map(function (k) { return <button key={k} onClick={function () { setOpenWho(k); }} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{k} ki wasooli tafseel · Rs {rbMoney(tot.by[k] || 0)}</button>; })}
         </div>
       ) : null}
-      {openWho ? <RbWasooliDetail t={p.t} who={openWho} list={det[openWho] || []} dated={dated} onClose={function () { setOpenWho(null); }} /> : null}
+      {openWho ? <RbWasooliDetail t={p.t} who={openWho} list={det[openWho] || []} dated={dated} all={p.all} from={f} to={rng === "custom" ? to : (rng === "all" ? "" : rbToday())} onClose={function () { setOpenWho(null); }} /> : null}
       <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
         <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t ? p.t("appName") : "Raees Builders"} - {rbStoreName()}</div>
         <RbTagline color="#9A6A12" size={12} />
@@ -6196,10 +6196,21 @@ function RbWasooliDetail(p) {
   var list = (p.list || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || ((Number(m.serial) || 0) - (Number(n.serial) || 0)); });
   var run = 0;
   var lines = list.map(function (x) { run += x.amt; return { x: x, run: run }; });
+  /* is bande ka kharch (jo paise is ke haath se gaye) - isi date mein */
+  var outs = React.useMemo(function () {
+    if (!p.all || p.who === "Advance") return [];
+    var me = null; rbPeopleLedgers(p.all).forEach(function (x) { if (!me && rbNm(x.name) === rbNm(p.who)) me = x; });
+    if (!me) return [];
+    return me.rows.filter(function (r) { var d = String(r.date || ""); return (Number(r.b) || 0) > 0 && (!p.from || d >= p.from) && (!p.to || d <= p.to); });
+  }, [p.all, p.who, p.from, p.to]);
+  var outRun = 0;
+  var outLines = outs.map(function (r) { outRun += Number(r.b) || 0; return { r: r, run: outRun }; });
+  var baqi = run - outRun;
   function printIt() {
     var el = document.getElementById(idRef.current); if (!el) return;
     var w = window.open("", "_blank"); if (!w) { window.print(); return; }
-    w.document.write("<html><head><title>Wasooli - " + p.who + "</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    var cl = el.cloneNode(true); Array.prototype.forEach.call(cl.querySelectorAll("[data-supfix]"), function (n) { n.parentNode.removeChild(n); });
+    w.document.write("<html><head><title>Wasooli - " + p.who + "</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
   var cell = { border: "1px solid #bbb", padding: "1px 3px", fontSize: 10, lineHeight: 1.25, color: "#222", verticalAlign: "middle", whiteSpace: "nowrap" };
@@ -6244,6 +6255,43 @@ function RbWasooliDetail(p) {
               </tr>
             </tbody>
           </table>
+          {p.who !== "Advance" ? (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#B0262B", margin: "12px 0 4px" }}>{p.who} - Kharch ki tafseel</div>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr>
+                  <th style={head}>Date</th>
+                  <th style={head}>Tafseel</th>
+                  <th style={Object.assign({}, head, { color: "#B0262B" })}>Kharch</th>
+                  <th style={head}>Kul kharch</th>
+                </tr></thead>
+                <tbody>
+                  {outLines.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharch nahi</td></tr> : outLines.map(function (l, i) {
+                    return (
+                      <tr key={i}>
+                        <td style={cell}>{rbDate(l.r.date)}</td>
+                        <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{l.r.detail}{l.r.fix || null}</td>
+                        <td style={Object.assign({}, num, { color: "#B0262B", fontWeight: 700 })}>{rbMoney(l.r.b)}</td>
+                        <td style={num}>{rbMoney(l.run)}</td>
+                      </tr>
+                    );
+                  })}
+                  <tr>
+                    <td colSpan={2} style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" })}>Kul kharch ({outLines.length})</td>
+                    <td style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1", color: "#B0262B" })}>{rbMoney(outRun)}</td>
+                    <td style={Object.assign({}, num, { background: "#F6F1E1" })}></td>
+                  </tr>
+                </tbody>
+              </table>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12 }}>
+                <tbody>
+                  <tr><td style={Object.assign({}, cell, { fontSize: 12, fontWeight: 700, padding: "4px 6px" })}>Aaya (wasooli)</td><td style={Object.assign({}, num, { fontSize: 12, fontWeight: 700, padding: "4px 6px", color: "#1E7A3C", width: "40%" })}>{rbMoney(run)}</td></tr>
+                  <tr><td style={Object.assign({}, cell, { fontSize: 12, fontWeight: 700, padding: "4px 6px" })}>Gaya (kharch)</td><td style={Object.assign({}, num, { fontSize: 12, fontWeight: 700, padding: "4px 6px", color: "#B0262B" })}>{rbMoney(outRun)}</td></tr>
+                  <tr><td style={Object.assign({}, cell, { fontSize: 13, fontWeight: 800, padding: "5px 6px", background: "#F6F1E1" })}>Baqi (paas mein)</td><td style={Object.assign({}, num, { fontSize: 13, fontWeight: 800, padding: "5px 6px", background: "#F6F1E1", color: rbSignClr(baqi) })}>{(baqi < 0 ? "-" : "") + rbMoney(Math.abs(baqi))}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -6272,7 +6320,7 @@ function RbLedgerTab(p) {
       </div>
       {sec === "income" ? <RbIncomeExpense t={t} all={p.personAll} /> : null}
       {sec === "bills" ? <RbBillWhoLedger sales={p.sales} /> : null}
-      {sec === "billwasooli" ? <RbBillWasooliLedger t={t} sales={p.sales} /> : null}
+      {sec === "billwasooli" ? <RbBillWasooliLedger t={t} sales={p.sales} all={p.personAll} /> : null}
       {sec === "party" ? <RbPartyModal t={t} parties={p.parties || []} partyLog={p.partyLog || []} variantsFor={p.variantsFor} remainingFor={p.remainingFor} onAddParty={p.onAddParty} onAddEntry={p.onAddPartyEntry} onClose={function () { pick("customer"); }} /> : null}
       {sec === "people" ? <RbPersonLedgerModal t={t} all={p.personAll} onClose={function () { pick("customer"); }} /> : null}
       {sec === "stock" ? (
