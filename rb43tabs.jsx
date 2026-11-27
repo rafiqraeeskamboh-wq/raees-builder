@@ -6073,6 +6073,107 @@ function RbBillWhoLedger(p) {
     </div>
   );
 }
+/* Bill wasooli ledger: Tareekh, Bill No, Naam, Total Bill, har bande (Admin Rafiq, User Sajid...) ki wasooli, Baqi */
+function RbBillWasooliLedger(p) {
+  var a = React.useState("month"), rng = a[0], setRng = a[1];
+  var b = React.useState(rbToday().slice(0, 8) + "01"), from = b[0], setFrom = b[1];
+  var c = React.useState(rbToday()), to = c[0], setTo = c[1];
+  var d = React.useState(""), q = d[0], setQ = d[1];
+  var idRef = React.useRef("rbbw" + rbUid());
+  function shift(days) { var x = new Date(); x.setDate(x.getDate() - days); return isoOf(x); }
+  var f = rng === "today" ? rbToday() : rng === "7" ? shift(6) : rng === "month" ? rbToday().slice(0, 8) + "01" : rng === "all" ? "" : from;
+  var tt = rng === "custom" ? to : "";
+  var qk = q.trim().toLowerCase();
+  var bills = (p.sales || []).filter(function (s) {
+    if (!s || s.isOpening) return false;
+    var dt = String(s.date || "");
+    if (f && dt < f) return false; if (tt && dt > tt) return false;
+    if (qk && String(s.serial).indexOf(qk) !== 0 && String(s.customerName || "").toLowerCase().indexOf(qk) < 0) return false;
+    return true;
+  }).sort(function (m, n) { return (Number(m.serial) || 0) - (Number(n.serial) || 0); });
+  /* har bill mein kis ne kitni wasooli ki */
+  var people = {}, rows = [], tot = { bill: 0, baqi: 0, by: {} };
+  bills.forEach(function (s) {
+    var got = {};
+    (s.payments || []).forEach(function (py) {
+      var amt = Number(py.amount) || 0; if (!amt) return;
+      var k = py.fromAdvance ? "Advance se" : rbWhoLabel(py.by, py.byName);
+      if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 3 : (py.by === "admin" ? 1 : 2) };
+      got[k] = (got[k] || 0) + amt; tot.by[k] = (tot.by[k] || 0) + amt;
+    });
+    var baqi = Math.max(0, Number(s.dues) || 0);
+    tot.bill += Number(s.totalBill) || 0; tot.baqi += baqi;
+    rows.push({ s: s, got: got, baqi: baqi });
+  });
+  var cols = Object.keys(people).map(function (k) { return people[k]; }).sort(function (m, n) { return (m.ord - n.ord) || m.k.localeCompare(n.k); }).map(function (x) { return x.k; });
+  function printIt() {
+    var el = document.getElementById(idRef.current); if (!el) return;
+    var w = window.open("", "_blank"); if (!w) { window.print(); return; }
+    w.document.write("<html><head><title>Bill Ledger</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + el.outerHTML + "</body></html>");
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
+  }
+  var pill = function (on) { return { padding: "7px 11px", borderRadius: 16, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }; };
+  var dIn = { padding: "8px 9px", borderRadius: 8, border: "1.5px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13 };
+  var cell = { border: "1px solid #bbb", padding: "4px 4px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, whiteSpace: "normal", textAlign: "center" });
+  var num = Object.assign({}, cell, { textAlign: "right" });
+  var totC = Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" });
+  var dated = rng === "all" ? "Shuru se ab tak" : (f === (tt || rbToday()) ? rbDate(f) : rbDate(f) + " - " + rbDate(tt || rbToday()));
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        {[["today", "Aaj"], ["7", "7 din"], ["month", "Is mahine"], ["all", "Sab"], ["custom", "Custom"]].map(function (o) { return <button key={o[0]} onClick={function () { setRng(o[0]); }} style={pill(rng === o[0])}>{o[1]}</button>; })}
+      </div>
+      {rng === "custom" ? (
+        <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input type="date" value={from} onChange={function (e) { setFrom(e.target.value); }} style={dIn} /><span style={{ color: "#A39C8A", fontSize: 12 }}>se</span>
+          <input type="date" value={to} onChange={function (e) { setTo(e.target.value); }} style={dIn} />
+        </div>
+      ) : null}
+      <input value={q} onChange={function (e) { setQ(e.target.value); }} placeholder="Bill number ya customer ka naam" style={Object.assign({}, rbInput(), { background: TC.appBg2, color: TC.cream, border: "1.5px solid #3A362C", marginBottom: 8 })} />
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        <RbShotBtn targetId={idRef.current} name="bill-ledger" />
+        <button onClick={printIt} style={{ flex: 1, padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button>
+      </div>
+      <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t ? p.t("appName") : "Raees Builders"} - {rbStoreName()}</div>
+        <RbTagline color="#9A6A12" size={12} />
+        <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>Bill Ledger - Wasooli</div>
+        <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{dated}</div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={head}>Tareekh</th>
+            <th style={head}>Bill No</th>
+            <th style={head}>Naam</th>
+            <th style={head}>Total Bill</th>
+            {cols.map(function (k) { return <th key={k} style={Object.assign({}, head, { color: "#1E7A3C" })}>{k}<br />wasooli</th>; })}
+            <th style={Object.assign({}, head, { color: "#B0262B" })}>Baqi Balance</th>
+          </tr></thead>
+          <tbody>
+            {rows.length === 0 ? <tr><td colSpan={5 + cols.length} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Is waqt mein koi bill nahi</td></tr> : rows.map(function (r) {
+              return (
+                <tr key={r.s.id}>
+                  <td style={cell}>{rbDate(r.s.date)}</td>
+                  <td style={Object.assign({}, cell, { textAlign: "center", fontWeight: 700 })}>{r.s.serial}</td>
+                  <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{r.s.customerName || "-"}</td>
+                  <td style={Object.assign({}, num, { fontWeight: 700 })}>{rbMoney(r.s.totalBill)}</td>
+                  {cols.map(function (k) { return <td key={k} style={Object.assign({}, num, { color: "#1E7A3C" })}>{r.got[k] ? rbMoney(r.got[k]) : ""}</td>; })}
+                  <td style={Object.assign({}, num, { fontWeight: 700, color: r.baqi > 0 ? "#C0262D" : "#1E7A3C" })}>{rbMoney(r.baqi)}</td>
+                </tr>
+              );
+            })}
+            <tr>
+              <td colSpan={3} style={Object.assign({}, totC, { textAlign: "right" })}>Kul ({rows.length} bill)</td>
+              <td style={totC}>{rbMoney(tot.bill)}</td>
+              {cols.map(function (k) { return <td key={k} style={Object.assign({}, totC, { color: "#1E7A3C" })}>{rbMoney(tot.by[k] || 0)}</td>; })}
+              <td style={Object.assign({}, totC, { color: tot.baqi > 0 ? "#C0262D" : "#1E7A3C" })}>{rbMoney(tot.baqi)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 function RbLedgerTab(p) {
   var t = p.t;
   var a = React.useState(function () { return rbUiGet("ledgerSec", "customer") || "customer"; }), sec = a[0], setSec = a[1];
@@ -6087,7 +6188,7 @@ function RbLedgerTab(p) {
   if (qk) list = list.filter(function (x) { return String(x.name).toLowerCase().indexOf(qk) >= 0 || String(x.sub).indexOf(q.trim()) >= 0; });
   list.sort(function (m, n) { return String(m.name).localeCompare(String(n.name)); });
   var cur = null; list.forEach(function (x) { if (x.key === openKey) cur = x; });
-  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["bills", "Bill / Wasooli"], ["stock", "Stock"], ["income", "Income / Kharcha"], ["party", "Dusri factory"]];
+  var tabs = [["customer", "Customer"], ["supplier", "Supplier"], ["labour", "Labour"], ["people", "User/Admin"], ["bills", "Bill / Wasooli"], ["billwasooli", "Bill Ledger"], ["stock", "Stock"], ["income", "Income / Kharcha"], ["party", "Dusri factory"]];
   return (
     <div style={{ padding: "14px 14px 4px" }}>
       <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber, marginBottom: 10 }}>Ledger</div>
@@ -6096,6 +6197,7 @@ function RbLedgerTab(p) {
       </div>
       {sec === "income" ? <RbIncomeExpense t={t} all={p.personAll} /> : null}
       {sec === "bills" ? <RbBillWhoLedger sales={p.sales} /> : null}
+      {sec === "billwasooli" ? <RbBillWasooliLedger t={t} sales={p.sales} /> : null}
       {sec === "party" ? <RbPartyModal t={t} parties={p.parties || []} partyLog={p.partyLog || []} variantsFor={p.variantsFor} remainingFor={p.remainingFor} onAddParty={p.onAddParty} onAddEntry={p.onAddPartyEntry} onClose={function () { pick("customer"); }} /> : null}
       {sec === "people" ? <RbPersonLedgerModal t={t} all={p.personAll} onClose={function () { pick("customer"); }} /> : null}
       {sec === "stock" ? (
