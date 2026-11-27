@@ -1411,6 +1411,46 @@ function RaeesBuilderApp() {
     RB_COLLS[coll].set(function (l) { return l.filter(function (x) { return !(x && x.id === id); }); });
     showToast("Delete ho gaya - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", RB_COLLS[coll].label);
   }
+  /* Super Admin: din ka stock (garder / slab) edit ya delete - kharid aur mazdoori bhi saath theek */
+  function superEditStock(id, qty, date) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    var tg = null; stockLog.forEach(function (e) { if (e && e.id === id) tg = e; });
+    if (!tg) return;
+    var nq = Math.max(0, Number(qty) || 0), nd = date || tg.date, diff = nq - (Number(tg.qty) || 0);
+    if (tg.purchaseId) setPurchases(function (arr) { return arr.map(function (x) { return x && x.id === tg.purchaseId ? Object.assign({}, x, { qty: nq, amount: Math.round((Number(x.rate) || 0) * nq * 100) / 100, date: nd }) : x; }); });
+    setLabourWork(function (a) { return a.map(function (x) {
+      if (!x || !x.auto || x.src !== "stock") return x;
+      if (x.srcId === id && !x.dayBharai) return Object.assign({}, x, { qty: nq, amount: labourEntryAmount(nq, x.rate, x.extra, 0), date: nd });
+      if (tg.category === "garden" && x.kind === "garder" && x.dayBharai && x.date === tg.date && diff) return Object.assign({}, x, { pieces: Math.max(0, (Number(x.pieces) || 0) + diff) });
+      return x;
+    }); });
+    setStockLog(function (a) { return a.map(function (e) { return e && e.id === id ? Object.assign({}, e, { qty: nq, date: nd }) : e; }); });
+    showToast("Stock entry theek ho gayi"); logActivity("super_edit", "Stock " + variantLabel(t, tg.category, tg.variant) + " " + tg.qty + " -> " + nq);
+  }
+  function superDeleteStock(id) {
+    if (role !== "admin" || !rbIsSuper()) return;
+    var tg = null; stockLog.forEach(function (e) { if (e && e.id === id) tg = e; });
+    if (!tg) return;
+    var q = Number(tg.qty) || 0;
+    if (tg.purchaseId) setPurchases(function (arr) { return arr.filter(function (x) { return !(x && x.id === tg.purchaseId); }); });
+    var moreGarder = stockLog.some(function (e) { return e && e.id !== id && e.category === "garden" && !e.isOpening && !e.supplierId && e.date === tg.date; });
+    setLabourWork(function (a) {
+      var out = [];
+      a.forEach(function (x) {
+        if (x && x.auto && x.src === "stock") {
+          if (x.srcId === id && !x.dayBharai) return;
+          if (tg.category === "garden" && !tg.supplierId && x.kind === "garder" && x.dayBharai && x.date === tg.date) {
+            if (!moreGarder) return;
+            out.push(Object.assign({}, x, { pieces: Math.max(0, (Number(x.pieces) || 0) - q) })); return;
+          }
+        }
+        out.push(x);
+      });
+      return out;
+    });
+    setStockLog(function (a) { return a.filter(function (e) { return !(e && e.id === id); }); });
+    showToast("Stock entry delete - Recycle Bin se wapas la sakte hain"); logActivity("super_delete", "Stock " + variantLabel(t, tg.category, tg.variant) + " +" + q);
+  }
   /* Super Admin sirf nigrani / settings ke liye - koi lain-dain nahi */
   function rbSuperNoTx() {
     if (role === "admin" && rbIsSuper()) { showToast("Super Admin lain-dain nahi kar sakta - Admin ya User se login karein"); return true; }
@@ -1528,7 +1568,7 @@ function RaeesBuilderApp() {
   };
   window.rbSuperApi = (role === "admin" && rbIsSuper()) ? {
     save: superSaveRecord, del: superDeleteRecord, salePay: superSalePay, advReturn: superAdvReturn,
-    delBill: superDeleteBill, editBill: startEditSale
+    delBill: superDeleteBill, editBill: startEditSale, editStock: superEditStock, delStock: superDeleteStock
   } : null;
 
   function t(k) {
@@ -2523,6 +2563,7 @@ function RaeesBuilderApp() {
     setTab(next);
   }
 function editStockEntry(id, qty, date) {
+    if (role === "admin" && rbIsSuper()) { superEditStock(id, qty, date); return; }
     var target = null;
     stockLog.forEach(function (e) { if (e.id === id) target = e; });
     if (target && target.purchaseId) {
@@ -2543,6 +2584,7 @@ function editStockEntry(id, qty, date) {
   }
 
   function deleteStockEntry(id) {
+    if (role === "admin" && rbIsSuper()) { superDeleteStock(id); return; }
     var gone = null;
     stockLog.forEach(function (e) { if (e.id === id) gone = e; });
     if (gone && gone.purchaseId) setPurchases(function (arr) { return arr.filter(function (x) { return x.id !== gone.purchaseId; }); });
