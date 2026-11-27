@@ -5268,7 +5268,7 @@ function rbPeopleLedgers(all) {
   function P(nm, role) { if (!String(nm || "").trim()) nm = legacyName[role === "admin" ? "admin" : "accountant"] || nm; if (String(nm || "").trim() && rbNm(nm) === rbNm(RB_SUPER_NAME)) { junk.rows = []; return junk; } /* Super Admin ka ledger nahi banta */
     var k = rbPersonKey(nm, role); if (!map[k]) map[k] = { key: k, name: rbPersonLabel(nm, role), role: role, rows: [] }; return map[k]; }
   ((rbGet("security", {}) || {}).people || []).forEach(function (x) { P(x.name, x.role).role = x.role; });
-  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
+  (all.sales || []).forEach(function (s) { (s.payments || []).forEach(function (pay) { if (pay.fromAdvance || !(Number(pay.amount) > 0)) return; var r = pay.by || s.createdBy || "admin"; P(pay.byName || (pay.by ? "" : s.createdByName), r).rows.push({ date: pay.date, serial: s.isOpening ? "" : s.serial, cust: s.customerName || "", detail: (s.isOpening ? "Purana baqi wasool" : "Wasooli bill #" + s.serial) + " - " + (s.customerName || "") + (pay.note ? " (" + pay.note + ")" : ""), a: Number(pay.amount), fix: pay.id ? <RbSupFix item={pay} noAdvanced={true} label={"Bill #" + s.serial + " wasooli - " + (s.customerName || "")} onSave={function (n) { window.rbSuperApi.salePay(s.id, pay.id, n); }} onDel={function () { window.rbSuperApi.salePay(s.id, pay.id, null); }} /> : null }); }); });
   (all.advances || []).forEach(function (x) {
     P(x.byName, x.by || "admin").rows.push({ date: x.date, detail: "Advance liya #" + (x.no || "-") + " - " + (x.name || ""), a: Number(x.amount) || 0, fix: <RbSupFix coll="advances" item={x} label={"Advance receipt #" + (x.no || "-") + " - " + (x.name || "")} /> });
     (x.returns || []).forEach(function (rt, ri) { P(rt.byName, rt.by || "admin").rows.push({ date: rt.date, detail: "Advance wapas diya #" + (x.no || "-") + " - " + (x.name || ""), b: Number(rt.amount) || 0, fix: <RbSupFix item={rt} noAdvanced={true} label={"Advance wapas - " + (x.name || "")} onSave={function (n) { window.rbSuperApi.advReturn(x.id, ri, n); }} onDel={function () { window.rbSuperApi.advReturn(x.id, ri, null); }} /> }); });
@@ -6146,7 +6146,7 @@ function RbBillWasooliLedger(p) {
       </div>
       {cols.length ? (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-          {cols.map(function (k) { return <button key={k} onClick={function () { setOpenWho(k); }} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{k} ki wasooli tafseel · Rs {rbMoney(tot.by[k] || 0)}</button>; })}
+          {cols.filter(function (k) { return k !== "Advance"; }).map(function (k) { return <button key={k} onClick={function () { setOpenWho(k); }} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 8, border: "none", background: TC.success, color: TC.cream, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{k} ka hisab (aaya / gaya)</button>; })}
         </div>
       ) : null}
       {openWho ? <RbWasooliDetail t={p.t} who={openWho} list={det[openWho] || []} dated={dated} all={p.all} from={f} to={rng === "custom" ? to : (rng === "all" ? "" : rbToday())} onClose={function () { setOpenWho(null); }} /> : null}
@@ -6189,109 +6189,120 @@ function RbBillWasooliLedger(p) {
     </div>
   );
 }
-/* ek bande (jaise Sajid) ki wasooli ki tafseel: har wasooli alag line, saath kul jama */
+/* ek bande (jaise Sajid) ka poora hisab - Day Book wala hi hisab:
+   pichla baqi + aaya (wasooli, advance, cash mila) - gaya (kharch, payment, cash diya) = baqi paas mein */
 function RbWasooliDetail(p) {
   rbUseBack(true, p.onClose);
   var idRef = React.useRef("rbwd" + rbUid());
-  var list = (p.list || []).slice().sort(function (m, n) { return String(m.date || "").localeCompare(String(n.date || "")) || ((Number(m.serial) || 0) - (Number(n.serial) || 0)); });
-  var run = 0;
-  var lines = list.map(function (x) { run += x.amt; return { x: x, run: run }; });
-  /* is bande ka kharch (jo paise is ke haath se gaye) - isi date mein */
-  var outs = React.useMemo(function () {
-    if (!p.all || p.who === "Advance") return [];
-    var me = null; rbPeopleLedgers(p.all).forEach(function (x) { if (!me && rbNm(x.name) === rbNm(p.who)) me = x; });
-    if (!me) return [];
-    return me.rows.filter(function (r) { var d = String(r.date || ""); return (Number(r.b) || 0) > 0 && (!p.from || d >= p.from) && (!p.to || d <= p.to); });
+  var calc = React.useMemo(function () {
+    var me = null; if (p.all) rbPeopleLedgers(p.all).forEach(function (x) { if (!me && rbNm(x.name) === rbNm(p.who)) me = x; });
+    var opening = 0, ins = [], outs = [];
+    (me ? me.rows : []).forEach(function (r) {
+      var d = String(r.date || ""), a = Number(r.a) || 0, b = Number(r.b) || 0;
+      if (p.from && d < p.from) { opening += a - b; return; }
+      if (p.to && d && d > p.to) return;
+      if (a > 0) ins.push(r);
+      if (b > 0) outs.push(r);
+    });
+    return { opening: opening, ins: ins, outs: outs };
   }, [p.all, p.who, p.from, p.to]);
-  var outRun = 0;
-  var outLines = outs.map(function (r) { outRun += Number(r.b) || 0; return { r: r, run: outRun }; });
-  var baqi = run - outRun;
+  var inRun = 0, inLines = calc.ins.map(function (r) { inRun += Number(r.a) || 0; return { r: r, run: inRun }; });
+  var outRun = 0, outLines = calc.outs.map(function (r) { outRun += Number(r.b) || 0; return { r: r, run: outRun }; });
+  var wasooli = calc.ins.reduce(function (n, r) { return n + (r.serial !== undefined ? (Number(r.a) || 0) : 0); }, 0);
+  var closing = calc.opening + inRun - outRun;
+  function sgn(v) { return (v < 0 ? "-" : "") + rbMoney(Math.abs(v)); }
   function printIt() {
     var el = document.getElementById(idRef.current); if (!el) return;
     var w = window.open("", "_blank"); if (!w) { window.print(); return; }
     var cl = el.cloneNode(true); Array.prototype.forEach.call(cl.querySelectorAll("[data-supfix]"), function (n) { n.parentNode.removeChild(n); });
-    w.document.write("<html><head><title>Wasooli - " + p.who + "</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
+    w.document.write("<html><head><title>Hisab - " + p.who + "</title><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:12px;font-family:Arial,sans-serif;background:#fff'>" + cl.outerHTML + "</body></html>");
     w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 400);
   }
   var cell = { border: "1px solid #bbb", padding: "1px 3px", fontSize: 10, lineHeight: 1.25, color: "#222", verticalAlign: "middle", whiteSpace: "nowrap" };
   var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, textAlign: "center", padding: "2px 3px" });
   var num = Object.assign({}, cell, { textAlign: "right" });
+  var totC = Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" });
+  var sumL = Object.assign({}, cell, { fontSize: 12, fontWeight: 700, padding: "4px 6px" });
+  var sumR = Object.assign({}, num, { fontSize: 12, fontWeight: 700, padding: "4px 6px", width: "40%" });
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 9500, overflowY: "auto" }}>
       <div style={{ maxWidth: 560, margin: "0 auto", minHeight: "100vh", padding: "12px 6px", background: TC.appBg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <button onClick={p.onClose} style={{ background: "none", border: "none", color: TC.cream, fontSize: 13, cursor: "pointer", padding: 0 }}>&#8592; Wapas</button>
-          <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name={"wasooli-" + p.who} /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
+          <span style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><RbShotBtn targetId={idRef.current} name={"hisab-" + p.who} /><button onClick={printIt} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: TC.amber, color: TC.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Print / PDF</button></span>
         </div>
         <div id={idRef.current} data-shot="1" style={{ background: "#fff", borderRadius: 6, padding: "10px 4px", overflowX: "auto", fontFamily: "Arial, Helvetica, sans-serif" }}>
           <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: "#B0262B" }}>{p.t ? p.t("appName") : "Raees Builders"} - {rbStoreName()}</div>
           <RbTagline color="#9A6A12" size={12} />
-          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>{p.who} - Wasooli ki tafseel</div>
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, color: "#1F3F8A", margin: "4px 0" }}>{p.who} - Aaya / Gaya ka hisab</div>
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{p.dated}</div>
+
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1E7A3C", margin: "6px 0 4px" }}>Aaya (wasooli aur jo paise mile)</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr>
               <th style={head}>Date</th>
               <th style={head}>Bill No</th>
-              <th style={head}>Naam</th>
-              <th style={Object.assign({}, head, { color: "#1E7A3C" })}>Wasooli</th>
-              <th style={head}>Kul jama</th>
+              <th style={head}>Naam / Tafseel</th>
+              <th style={Object.assign({}, head, { color: "#1E7A3C" })}>Aaya</th>
+              <th style={head}>Kul</th>
             </tr></thead>
             <tbody>
-              {lines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi wasooli nahi</td></tr> : lines.map(function (l, i) {
+              {inLines.length === 0 ? <tr><td colSpan={5} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Kuch nahi aaya</td></tr> : inLines.map(function (l, i) {
+                var isBill = l.r.serial !== undefined;
                 return (
                   <tr key={i}>
-                    <td style={cell}>{rbDate(l.x.date)}</td>
-                    <td style={Object.assign({}, cell, { textAlign: "center", fontWeight: 700 })}>{l.x.serial}</td>
-                    <td style={Object.assign({}, cell, { maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis" })}>{l.x.name}</td>
-                    <td style={Object.assign({}, num, { color: "#1E7A3C", fontWeight: 700 })}>{rbMoney(l.x.amt)}</td>
+                    <td style={cell}>{rbDate(l.r.date)}</td>
+                    <td style={Object.assign({}, cell, { textAlign: "center", fontWeight: 700 })}>{isBill && l.r.serial ? l.r.serial : "-"}</td>
+                    <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{isBill ? (l.r.cust || "-") + (l.r.serial ? "" : " (purana baqi)") : l.r.detail}{l.r.fix || null}</td>
+                    <td style={Object.assign({}, num, { color: "#1E7A3C", fontWeight: 700 })}>{rbMoney(l.r.a)}</td>
                     <td style={num}>{rbMoney(l.run)}</td>
                   </tr>
                 );
               })}
               <tr>
-                <td colSpan={3} style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" })}>Kul wasooli ({lines.length})</td>
-                <td style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1", color: "#1E7A3C" })}>{rbMoney(run)}</td>
-                <td style={Object.assign({}, num, { background: "#F6F1E1" })}></td>
+                <td colSpan={3} style={Object.assign({}, totC, { textAlign: "right" })}>Kul aaya ({inLines.length})</td>
+                <td style={Object.assign({}, totC, { color: "#1E7A3C" })}>{rbMoney(inRun)}</td>
+                <td style={totC}></td>
               </tr>
             </tbody>
           </table>
-          {p.who !== "Advance" ? (
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#B0262B", margin: "12px 0 4px" }}>{p.who} - Kharch ki tafseel</div>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead><tr>
-                  <th style={head}>Date</th>
-                  <th style={head}>Tafseel</th>
-                  <th style={Object.assign({}, head, { color: "#B0262B" })}>Kharch</th>
-                  <th style={head}>Kul kharch</th>
-                </tr></thead>
-                <tbody>
-                  {outLines.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharch nahi</td></tr> : outLines.map(function (l, i) {
-                    return (
-                      <tr key={i}>
-                        <td style={cell}>{rbDate(l.r.date)}</td>
-                        <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{l.r.detail}{l.r.fix || null}</td>
-                        <td style={Object.assign({}, num, { color: "#B0262B", fontWeight: 700 })}>{rbMoney(l.r.b)}</td>
-                        <td style={num}>{rbMoney(l.run)}</td>
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td colSpan={2} style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" })}>Kul kharch ({outLines.length})</td>
-                    <td style={Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1", color: "#B0262B" })}>{rbMoney(outRun)}</td>
-                    <td style={Object.assign({}, num, { background: "#F6F1E1" })}></td>
+
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#B0262B", margin: "12px 0 4px" }}>Gaya (kharch)</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={head}>Date</th>
+              <th style={head}>Tafseel</th>
+              <th style={Object.assign({}, head, { color: "#B0262B" })}>Gaya</th>
+              <th style={head}>Kul</th>
+            </tr></thead>
+            <tbody>
+              {outLines.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharch nahi</td></tr> : outLines.map(function (l, i) {
+                return (
+                  <tr key={i}>
+                    <td style={cell}>{rbDate(l.r.date)}</td>
+                    <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{l.r.detail}{l.r.fix || null}</td>
+                    <td style={Object.assign({}, num, { color: "#B0262B", fontWeight: 700 })}>{rbMoney(l.r.b)}</td>
+                    <td style={num}>{rbMoney(l.run)}</td>
                   </tr>
-                </tbody>
-              </table>
-              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12 }}>
-                <tbody>
-                  <tr><td style={Object.assign({}, cell, { fontSize: 12, fontWeight: 700, padding: "4px 6px" })}>Aaya (wasooli)</td><td style={Object.assign({}, num, { fontSize: 12, fontWeight: 700, padding: "4px 6px", color: "#1E7A3C", width: "40%" })}>{rbMoney(run)}</td></tr>
-                  <tr><td style={Object.assign({}, cell, { fontSize: 12, fontWeight: 700, padding: "4px 6px" })}>Gaya (kharch)</td><td style={Object.assign({}, num, { fontSize: 12, fontWeight: 700, padding: "4px 6px", color: "#B0262B" })}>{rbMoney(outRun)}</td></tr>
-                  <tr><td style={Object.assign({}, cell, { fontSize: 13, fontWeight: 800, padding: "5px 6px", background: "#F6F1E1" })}>Baqi (paas mein)</td><td style={Object.assign({}, num, { fontSize: 13, fontWeight: 800, padding: "5px 6px", background: "#F6F1E1", color: rbSignClr(baqi) })}>{(baqi < 0 ? "-" : "") + rbMoney(Math.abs(baqi))}</td></tr>
-                </tbody>
-              </table>
-            </div>
-          ) : null}
+                );
+              })}
+              <tr>
+                <td colSpan={2} style={Object.assign({}, totC, { textAlign: "right" })}>Kul gaya ({outLines.length})</td>
+                <td style={Object.assign({}, totC, { color: "#B0262B" })}>{rbMoney(outRun)}</td>
+                <td style={totC}></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12 }}>
+            <tbody>
+              <tr><td style={sumL}>Pichla baqi (Opening)</td><td style={Object.assign({}, sumR, { color: rbSignClr(calc.opening) })}>{sgn(calc.opening)}</td></tr>
+              <tr><td style={sumL}>Aaya (kul) <span style={{ fontWeight: 400, color: "#555" }}>- is mein wasooli {rbMoney(wasooli)}</span></td><td style={Object.assign({}, sumR, { color: "#1E7A3C" })}>{rbMoney(inRun)}</td></tr>
+              <tr><td style={sumL}>Gaya (kharch)</td><td style={Object.assign({}, sumR, { color: "#B0262B" })}>{rbMoney(outRun)}</td></tr>
+              <tr><td style={Object.assign({}, sumL, { fontSize: 13, background: "#F6F1E1" })}>Baqi paas mein (Closing)</td><td style={Object.assign({}, sumR, { fontSize: 13, background: "#F6F1E1", color: rbSignClr(closing) })}>{sgn(closing)}</td></tr>
+            </tbody>
+          </table>
+          <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>Pichla baqi + Aaya - Gaya = Baqi paas mein. Ye Day Book ke Closing Balance jaisa hi hai.</div>
         </div>
       </div>
     </div>
