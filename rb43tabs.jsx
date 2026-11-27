@@ -6093,20 +6093,19 @@ function RbBillWasooliLedger(p) {
   }).sort(function (m, n) { return (Number(m.serial) || 0) - (Number(n.serial) || 0); });
   /* har bill mein kis ne kitni wasooli ki */
   var people = {}, rows = [], tot = { bill: 0, baqi: 0, by: {} };
-  /* sab login wale bande (Rafiq, Fayaz, Sajid, Mehboob, Ramzan...) ka apna khana hamesha */
+  /* sirf wohi naam jin ki wasooli is ledger mein hai (naya naam aaye to us ka khana khud ban jaye) - sirf saada naam */
   var books = rbMakeBooks().filter(function (bk) { return bk.name; });
-  books.forEach(function (bk, i) { var k = rbPersonTag(bk); if (!people[k]) people[k] = { k: k, ord: (bk.role === "admin" ? 100 : 200) + i }; });
   function whoKey(py) {
-    if (py.fromAdvance) return "Advance se";
+    if (py.fromAdvance) return "Advance";
     var hit = null; books.forEach(function (bk) { if (!hit && rbBookMine(bk, py.byName, py.by)) hit = bk; });
-    return hit ? rbPersonTag(hit) : rbWhoLabel(py.by, py.byName);
+    return hit ? hit.name : (String(py.byName || "").trim() || rbWhoLabel(py.by, ""));
   }
   bills.forEach(function (s) {
     var got = {};
     (s.payments || []).forEach(function (py) {
       var amt = Number(py.amount) || 0; if (!amt) return;
       var k = whoKey(py);
-      if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 900 : (py.by === "admin" ? 150 : 250) };
+      if (!people[k]) people[k] = { k: k, ord: py.fromAdvance ? 3 : (py.by === "admin" ? 1 : 2) };
       got[k] = (got[k] || 0) + amt; tot.by[k] = (tot.by[k] || 0) + amt;
     });
     var baqi = Math.max(0, Number(s.dues) || 0);
@@ -6122,8 +6121,8 @@ function RbBillWasooliLedger(p) {
   }
   var pill = function (on) { return { padding: "7px 11px", borderRadius: 16, border: "1.5px solid " + (on ? TC.amber : "#3A362C"), background: on ? TC.amber : "transparent", color: on ? TC.ink : "#D8CDA9", fontSize: 12, fontWeight: 700, cursor: "pointer" }; };
   var dIn = { padding: "8px 9px", borderRadius: 8, border: "1.5px solid #3A362C", background: TC.appBg2, color: TC.cream, fontSize: 13 };
-  var cell = { border: "1px solid #bbb", padding: "4px 4px", fontSize: 10.5, color: "#222", verticalAlign: "top", whiteSpace: "nowrap" };
-  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, whiteSpace: "normal", textAlign: "center" });
+  var cell = { border: "1px solid #bbb", padding: "1px 3px", fontSize: 10, lineHeight: 1.25, color: "#222", verticalAlign: "middle", whiteSpace: "nowrap" };
+  var head = Object.assign({}, cell, { background: "#EFE9D6", fontWeight: 700, whiteSpace: "normal", textAlign: "center", padding: "2px 3px" });
   var num = Object.assign({}, cell, { textAlign: "right" });
   var totC = Object.assign({}, num, { fontWeight: 700, background: "#F6F1E1" });
   var dated = rng === "all" ? "Shuru se ab tak" : (f === (tt || rbToday()) ? rbDate(f) : rbDate(f) + " - " + rbDate(tt || rbToday()));
@@ -6153,9 +6152,9 @@ function RbBillWasooliLedger(p) {
             <th style={head}>Tareekh</th>
             <th style={head}>Bill No</th>
             <th style={head}>Naam</th>
-            <th style={head}>Total Bill</th>
-            {cols.map(function (k) { return <th key={k} style={Object.assign({}, head, { color: "#1E7A3C" })}>{k}<br />wasooli</th>; })}
-            <th style={Object.assign({}, head, { color: "#B0262B" })}>Baqi Balance</th>
+            <th style={head}>Total</th>
+            {cols.map(function (k) { return <th key={k} style={Object.assign({}, head, { color: "#1E7A3C" })}>{k}</th>; })}
+            <th style={Object.assign({}, head, { color: "#B0262B" })}>Baqi</th>
           </tr></thead>
           <tbody>
             {rows.length === 0 ? <tr><td colSpan={5 + cols.length} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Is waqt mein koi bill nahi</td></tr> : rows.map(function (r) {
@@ -6163,7 +6162,7 @@ function RbBillWasooliLedger(p) {
                 <tr key={r.s.id}>
                   <td style={cell}>{rbDate(r.s.date)}</td>
                   <td style={Object.assign({}, cell, { textAlign: "center", fontWeight: 700 })}>{r.s.serial}</td>
-                  <td style={Object.assign({}, cell, { whiteSpace: "normal", wordBreak: "break-word" })}>{r.s.customerName || "-"}</td>
+                  <td style={Object.assign({}, cell, { maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" })}>{r.s.customerName || "-"}</td>
                   <td style={Object.assign({}, num, { fontWeight: 700 })}>{rbMoney(r.s.totalBill)}</td>
                   {cols.map(function (k) { return <td key={k} style={Object.assign({}, num, { color: "#1E7A3C" })}>{r.got[k] ? rbMoney(r.got[k]) : ""}</td>; })}
                   <td style={Object.assign({}, num, { fontWeight: 700, color: r.baqi > 0 ? "#C0262D" : "#1E7A3C" })}>{rbMoney(r.baqi)}</td>
