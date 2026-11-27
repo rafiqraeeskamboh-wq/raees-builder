@@ -1434,7 +1434,7 @@ function SupplierModal(p) {
                     <input type="number" inputMode="numeric" value={pRate} onChange={function (e) { setPRate(e.target.value); }} placeholder="0" style={fld} />
                   </div>
                 </div>
-                <div style={lbl}>TAREEKH</div>
+                <div style={lbl}>DATE</div>
                 <input type="date" value={pDate} onChange={function (e) { setPDate(e.target.value); }} style={fld} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, padding: "11px 14px", borderRadius: 10, background: "rgba(92,122,63,.18)", border: "1px dashed " + TC.garden }}>
                   <span style={{ fontSize: 12, color: "#C9D6B8", fontWeight: 700 }}>{t("total")}</span>
@@ -1451,7 +1451,7 @@ function SupplierModal(p) {
                     <input type="number" inputMode="numeric" value={payAmt} onChange={function (e) { setPayAmt(e.target.value); }} placeholder="0" style={Object.assign({}, fld, { fontSize: 17, fontWeight: 700 })} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={lbl}>TAREEKH</div>
+                    <div style={lbl}>DATE</div>
                     <input type="date" value={payDate} onChange={function (e) { setPayDate(e.target.value); }} style={fld} />
                   </div>
                 </div>
@@ -2032,7 +2032,7 @@ function RbLabourWeekCard(p) {
           <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>RATE (Rs)</div><input type="number" inputMode="decimal" value={wRate} onChange={function (e) { setWRate(e.target.value); }} placeholder="0" style={fld} /></div>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-          <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>TAREEKH</div><input type="date" value={wDate} onChange={function (e) { setWDate(e.target.value); }} style={fld} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>DATE</div><input type="date" value={wDate} onChange={function (e) { setWDate(e.target.value); }} style={fld} /></div>
           <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>TAFSEEL (marzi se)</div><input value={wNote} onChange={function (e) { setWNote(e.target.value); }} placeholder="..." style={fld} /></div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", borderRadius: 9, background: "rgba(92,122,63,.18)", border: "1px dashed " + TC.garden, marginBottom: 8 }}>
@@ -2131,7 +2131,7 @@ function RbLabourWeekCard(p) {
             <div style={{ borderRadius: 9, overflow: "hidden", border: "1px solid #E6DCC0" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto", background: "#FBF8EE" }}>
               <thead><tr>
-                <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>TAREEKH</th>
+                <th style={Object.assign({}, hd, { textAlign: "left", width: "17%" })}>DATE</th>
                 <th style={Object.assign({}, hd, { textAlign: "left" })}>KAAM</th>
                 <th style={Object.assign({}, hd, { textAlign: "right", width: "18%" })}>MAZDOORI</th>
                 <th style={Object.assign({}, hd, { textAlign: "right", width: "18%" })}>MILA</th>
@@ -2313,7 +2313,7 @@ function RbLabourSimple(p) {
             {mode === "adv" ? <div style={{ fontSize: 11, color: "#E6C875", marginBottom: 6 }}>Bara advance baqi: Rs {rbMoney(tot.advBal || 0)}{advType === "advCut" ? " - is se zyada nahi kat sakta" : ""}</div> : null}
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>RAQAM (Rs)</div><input type="number" inputMode="numeric" value={amt} onChange={function (ev) { setAmt(ev.target.value); }} placeholder="0" style={Object.assign({}, fld, { fontWeight: 800, fontSize: 17 })} /></div>
-              <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>TAREEKH</div><input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={fld} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={lbl}>DATE</div><input type="date" value={dt} onChange={function (ev) { setDt(ev.target.value); }} style={fld} /></div>
             </div>
             <div style={lbl}>TAFSEEL (lazmi)</div>
             <input value={note} onChange={function (ev) { setNote(ev.target.value); }} placeholder={mode === "work" ? "Jaise: maal utara, safai" : "Jaise: hafta, naqad"} style={Object.assign({}, fld, { marginBottom: 8, border: "1.5px solid " + (note.trim() ? "#4A4436" : TC.stamp) })} />
@@ -2787,7 +2787,7 @@ function RbPartyModal(p) {
         <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Ledger - {cur.name}</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr><th rowSpan={2} style={Object.assign({}, head, { width: "14%" })}>Tareekh</th><th rowSpan={2} style={head}>Tafseel</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Garder</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Slab</th></tr>
+            <tr><th rowSpan={2} style={Object.assign({}, head, { width: "14%" })}>Date</th><th rowSpan={2} style={head}>Tafseel</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Garder</th><th colSpan={2} style={Object.assign({}, head, { textAlign: "center" })}>Slab</th></tr>
             <tr><th style={Object.assign({}, head, { textAlign: "right" })}>Nagg</th><th style={Object.assign({}, head, { textAlign: "right" })}>Ft</th><th style={Object.assign({}, head, { textAlign: "right" })}>Nagg</th><th style={Object.assign({}, head, { textAlign: "right" })}>Fot</th></tr>
           </thead>
           <tbody>
@@ -3402,7 +3402,7 @@ function CustomerOpeningModal(p) {
         );
       })}
       <button onClick={function () { setRows(rows.concat([blank(), blank(), blank()])); }} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1.5px dashed #6B6656", background: "transparent", color: "#A39C8A", fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>+ Aur customer (3 line)</button>
-      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>Tareekh (sab ke liye)</div>
+      <div style={{ fontSize: 11, color: "#A39C8A", marginBottom: 4 }}>Date (sab ke liye)</div>
       <input type="date" value={dt} onChange={function (e) { setDt(e.target.value); }} style={Object.assign({}, inS, { marginBottom: 10 })} />
       {ready.length ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12.5, color: "#D8CDA9" }}>
@@ -4331,7 +4331,7 @@ function ReportsTab(p) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div className="rb-display" style={{ fontSize: 22, fontWeight: 700, color: TC.amber }}>Day Book</div>
         {personLedger ? <RbPersonLedgerModal t={t} all={p.role === "accountant" ? Object.assign({}, p, { onlyMe: true }) : p} onClose={function () { setPersonLedger(false); }} /> : null}
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: TC.cream, fontWeight: 700 }}>Tareekh
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: TC.cream, fontWeight: 700 }}>Date
           <input type="date" value={range.preset === "custom" && range.from && range.from === range.to ? range.from : (range.preset === "today" ? rbToday() : "")} onChange={function (ev) { var d = ev.target.value; if (d) setRange({ preset: "custom", from: d, to: d }); }} style={{ padding: "7px 8px", borderRadius: 7, border: "2px solid " + TC.amber, background: "transparent", color: TC.cream, fontSize: 13.5, colorScheme: "dark" }} />
         </label>
       </div>
@@ -4395,7 +4395,7 @@ function ReportsTab(p) {
                   <span>Likhe hue kharche ({myExps.length})</span>
                   <span className="rb-mono">Rs {rbMoney(tot)}</span>
                 </div>
-                {myExps.length === 0 ? <div style={{ fontSize: 11, color: "#A39C8A" }}>Is tareekh mein koi kharcha nahi</div> : myExps.map(function (x) {
+                {myExps.length === 0 ? <div style={{ fontSize: 11, color: "#A39C8A" }}>Is date mein koi kharcha nahi</div> : myExps.map(function (x) {
                   return (
                     <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderBottom: "1px solid #2E2B23", fontSize: 12, color: "#D8CDA9" }}>
                       <span style={{ minWidth: 0 }}>{rbDate(x.date)} · {x.detail || "-"}{x.byName ? <span style={{ color: "#A39C8A" }}> · {x.byName}</span> : null}</span>
@@ -4411,7 +4411,7 @@ function ReportsTab(p) {
 
       {view === "book" ? (
         <div style={{ background: TC.appBg2, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Day Book ki tareekh (custom)</div>
+          <div style={{ fontSize: 12.5, color: TC.cream, fontWeight: 700, marginBottom: 6 }}>Day Book ki date (custom)</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
             {[["Aaj", function () { var d = rbToday(); return { preset: "custom", from: d, to: d }; }],
               ["Kal", function () { var x = new Date(); x.setDate(x.getDate() - 1); var d = isoOf(x); return { preset: "custom", from: d, to: d }; }],
@@ -5003,7 +5003,7 @@ var rbSupRow = { background: "#1F1C16", borderRadius: 7, padding: "8px 10px", ma
 
 /* ---------- Super Admin: kisi bhi entry ke saath chhote Edit / Delete buttons ----------
    <RbSupFix coll="expenses" item={x} />  ya nested ke liye onSave / onDel khud dein */
-var RB_FIX_FIELDS = [["date", "Tareekh", "date"], ["amount", "Raqam (Rs)", "num"], ["discount", "Discount (Rs)", "num"], ["detail", "Tafseel", "text"], ["name", "Naam", "text"], ["customerName", "Customer", "text"], ["mobile", "Mobile", "text"], ["note", "Note", "text"], ["qty", "Tadaad", "num"], ["bags", "Bags", "num"], ["cementBags", "Cement (bags)", "num"], ["rate", "Rate", "num"], ["totalBill", "Bill raqam", "num"]];
+var RB_FIX_FIELDS = [["date", "Date", "date"], ["amount", "Raqam (Rs)", "num"], ["discount", "Discount (Rs)", "num"], ["detail", "Tafseel", "text"], ["name", "Naam", "text"], ["customerName", "Customer", "text"], ["mobile", "Mobile", "text"], ["note", "Note", "text"], ["qty", "Tadaad", "num"], ["bags", "Bags", "num"], ["cementBags", "Cement (bags)", "num"], ["rate", "Rate", "num"], ["totalBill", "Bill raqam", "num"]];
 function RbSupFixModal(p) {
   var item = p.item;
   var fields = RB_FIX_FIELDS.filter(function (f) { return Object.prototype.hasOwnProperty.call(item, f[0]) && (item[f[0]] == null || typeof item[f[0]] !== "object"); });
@@ -5346,7 +5346,7 @@ function RbLedgerModal(p) {
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead><tr>
-              <th style={Object.assign({}, head, { width: "17%" })}>Tareekh</th>
+              <th style={Object.assign({}, head, { width: "17%" })}>Date</th>
               <th style={head}>Tafseel</th>
               <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>{p.colA}</th>
               <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>{p.colB}</th>
@@ -5638,7 +5638,7 @@ function RbLabourDayLedger(p) {
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " - " + (r.to ? rbDate(r.to) : rbDate(rbToday()))}</div>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead><tr>
-              <th style={Object.assign({}, head, { width: "12%" })}>Tareekh</th>
+              <th style={Object.assign({}, head, { width: "12%" })}>Date</th>
               <th style={Object.assign({}, head, { width: "20%" })}>Customer</th>
               <th style={head}>Fotwari / Tafseel</th>
               <th style={Object.assign({}, head, { width: "13%", textAlign: "right" })}>Total amount</th>
@@ -5688,7 +5688,7 @@ function RbLabourDayLedger(p) {
                 <div style={{ textAlign: "center", fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 6 }}>Bara advance (alag hisaab)</div>
                 <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                   <thead><tr>
-                    <th style={Object.assign({}, head, { width: "16%" })}>Tareekh</th>
+                    <th style={Object.assign({}, head, { width: "16%" })}>Date</th>
                     <th style={head}>Tafseel</th>
                     <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Diya</th>
                     <th style={Object.assign({}, head, { width: "17%", textAlign: "right" })}>Kata</th>
@@ -5741,7 +5741,7 @@ function RbStockRangeReport(p) {
   var label = !r.from && !r.to ? "Shuru se ab tak" : (r.from ? rbDate(r.from) : "") + " se " + (r.to ? rbDate(r.to) : rbDate(rbToday())) + " tak";
   return (
     <div style={{ background: TC.paper, borderRadius: 10, padding: 12, marginBottom: 14 }}>
-      <div className="rb-display" style={{ fontSize: 13, color: TC.ink, fontWeight: 700, marginBottom: 8 }}>Stock hisaab - tareekh se tareekh</div>
+      <div className="rb-display" style={{ fontSize: 13, color: TC.ink, fontWeight: 700, marginBottom: 8 }}>Stock hisaab - date se date</div>
       <RangeFilter t={t} range={range} onChange={setRange} />
       <div style={{ fontSize: 11.5, color: TC.inkSoft, fontWeight: 700, marginBottom: 8 }}>{label}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
@@ -5779,7 +5779,7 @@ function RbStockRangeReport(p) {
           </tr>
         </tbody>
       </table>
-      <div style={{ fontSize: 10, color: TC.concrete, marginTop: 6 }}>Bika = gate pass se nikla maal (wapsi minus). Maujood = aakhri tareekh par stock mein.</div>
+      <div style={{ fontSize: 10, color: TC.concrete, marginTop: 6 }}>Bika = gate pass se nikla maal (wapsi minus). Maujood = aakhri date par stock mein.</div>
     </div>
   );
 }
@@ -5966,7 +5966,7 @@ function RbIncomeExpense(p) {
         <div style={{ textAlign: "center", fontSize: 12, color: "#333", margin: "4px 0 10px" }}>{!r.from && !r.to ? "Shuru se ab tak" : (r.from === r.to ? rbDate(r.from) : (r.from ? rbDate(r.from) : "") + " - " + rbDate(r.to || rbToday()))}</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#1F3F8A", marginBottom: 4 }}>Income (bill wise)</div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
-          <thead><tr><th style={Object.assign({}, head, { width: "16%" })}>Bill</th><th style={head}>Naam</th><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%", textAlign: "right" })}>Income</th></tr></thead>
+          <thead><tr><th style={Object.assign({}, head, { width: "16%" })}>Bill</th><th style={head}>Naam</th><th style={Object.assign({}, head, { width: "18%" })}>Date</th><th style={Object.assign({}, head, { width: "24%", textAlign: "right" })}>Income</th></tr></thead>
           <tbody>
             {bills.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi bill nahi</td></tr> : bills.map(function (s) {
               return <tr key={s.id}><td style={cell}>Bill {s.serial}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{s.customerName || "-"}</td><td style={cell}>{rbDateDin(s.date)}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(s.totalBill)}</td></tr>;
@@ -5976,7 +5976,7 @@ function RbIncomeExpense(p) {
         </table>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#B0262B", marginBottom: 4 }}>Expense (tafseel wise)</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><th style={Object.assign({}, head, { width: "18%" })}>Tareekh</th><th style={Object.assign({}, head, { width: "24%" })}>Qism</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { width: "22%", textAlign: "right" })}>Raqam</th></tr></thead>
+          <thead><tr><th style={Object.assign({}, head, { width: "18%" })}>Date</th><th style={Object.assign({}, head, { width: "24%" })}>Qism</th><th style={head}>Tafseel</th><th style={Object.assign({}, head, { width: "22%", textAlign: "right" })}>Raqam</th></tr></thead>
           <tbody>
             {exp.length === 0 ? <tr><td colSpan={4} style={Object.assign({}, cell, { textAlign: "center", color: "#888" })}>Koi kharcha nahi</td></tr> : exp.map(function (x, i) {
               return <tr key={i}><td style={cell}>{rbDateDin(x.date)}</td><td style={cell}>{x.kind}</td><td style={Object.assign({}, cell, { wordBreak: "break-word" })}>{x.detail}{x.by ? <span style={{ color: "#777" }}>{" - " + x.by}</span> : null}</td><td style={Object.assign({}, cell, { textAlign: "right" })}>{rbMoney(x.amt)}</td></tr>;
@@ -6149,7 +6149,7 @@ function RbBillWasooliLedger(p) {
         <div style={{ textAlign: "center", fontSize: 11.5, color: "#333", marginBottom: 8 }}>{dated}</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>
-            <th style={head}>Tareekh</th>
+            <th style={head}>Date</th>
             <th style={head}>Bill No</th>
             <th style={head}>Naam</th>
             <th style={head}>Total</th>

@@ -443,7 +443,7 @@ var TRANSLATIONS = {
     navBills: "بل", billsSummary: "بلوں کا ریکارڈ", billsCount: "بل",
     billsTotal: "کل رقم", billsReceived: "وصول شدہ", billsDue: "باقی رقم", noBills: "ابھی تک کوئی بل نہیں۔",
     saleType: "سیل کی قسم", cashSale: "نقد سیل", customizedSale: "پیمائشی سیل",
-    customerName: "گاہک کا نام", date: "تاریخ", addItem: "آئٹم شامل کریں",
+    customerName: "گاہک کا نام", date: "Date", addItem: "آئٹم شامل کریں",
     chooseCategory: "کیٹگری منتخب کریں", garden: "گارڈر", slab: "سلیب",
     discount: "رعایت", preparedBy: "تیار کنندہ", returnLabel: "واپسی", gpReturn: "واپسی (گارڈر / سل)", unitFt: "فٹ", unitNagg: "نگ", ratePerFt: "ریٹ / فٹ", ratePerNagg: "ریٹ / نگ", gpMore: "اور گیٹ پاس (اگلا چکر)", gpPendingLbl: "ابھی جانا باقی", gpTripLbl: "گیٹ پاس", siteWaste: "ویسٹیج (سائٹ پر)", siteWasteTitle: "سائٹ پر ویسٹیج", siteWasteHint: "گیٹ پاس کا جو گارڈر / سل کسٹمر کی سائٹ پر ٹوٹ گیا / ضائع ہوا وہ لکھیں۔ اسٹاک اور بل پر اثر نہیں ہوگا — صرف ریکارڈ اور خلاصہ۔", siteWasteNone: "اس گیٹ پاس میں ویسٹیج کے لیے گارڈر / سل باقی نہیں", siteWasteSave: "ویسٹیج درج کریں", siteWasteSaved: "سائٹ ویسٹیج درج ہو گیا", siteWasteDone: "سائٹ ویسٹیج", yardWaste: "اِدھر (یارڈ / اسٹاک) ویسٹیج", siteWasteSum: "اُدھر (سائٹ / گیٹ پاس) ویسٹیج", siteWasteOld: "پہلے درج ویسٹیج", confirmDelSiteWaste: "یہ ویسٹیج اندراج ہٹا دیں؟", gpReturnTitle: "گیٹ پاس واپسی", gpReturnHint: "جتنا گارڈر / سل واپس آیا وہ لکھیں — اسٹاک میں واپس جمع ہو جائے گا۔", gpReturnNone: "اس گیٹ پاس میں واپسی کے لیے گارڈر / سل باقی نہیں", gpReturnDone: "واپس آیا", returnItems: "مال واپسی",
     returnQty: "واپسی تعداد", returnReason: "وجہ (اختیاری)", returnSaved: "واپسی محفوظ ہو گئی", returnTotal: "کل واپسی",
